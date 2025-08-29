@@ -62,26 +62,48 @@ const configuration: webpack.Configuration = {
 
   module: {
     rules: [
+      // CSS-Module
       {
-        test: /\.s?(c|a)ss$/,
+        test: /\.module\.css$/,
         use: [
           'style-loader',
           {
             loader: 'css-loader',
-            options: {
-              modules: true,
-              sourceMap: true,
-              importLoaders: 1,
-            },
+            options: { modules: true, sourceMap: true, importLoaders: 1 },
+          },
+          { loader: 'postcss-loader' },
+        ],
+      },
+      // normales CSS
+      {
+        test: /\.css$/,
+        exclude: /\.module\.css$/,
+        use: [
+          'style-loader',
+          {
+            loader: 'css-loader',
+            options: { sourceMap: true, importLoaders: 1 },
+          },
+          { loader: 'postcss-loader' },
+        ],
+      },
+      // SCSS-Module
+      {
+        test: /\.module\.s[ac]ss$/,
+        use: [
+          'style-loader',
+          {
+            loader: 'css-loader',
+            options: { modules: true, sourceMap: true, importLoaders: 1 },
           },
           'sass-loader',
         ],
-        include: /\.module\.s?(c|a)ss$/,
       },
+      // normales SCSS
       {
-        test: /\.s?css$/,
+        test: /\.s[ac]ss$/,
+        exclude: /\.module\.s[ac]ss$/,
         use: ['style-loader', 'css-loader', 'sass-loader'],
-        exclude: /\.module\.s?(c|a)ss$/,
       },
       // Fonts
       {
@@ -102,9 +124,7 @@ const configuration: webpack.Configuration = {
             options: {
               prettier: false,
               svgo: false,
-              svgoConfig: {
-                plugins: [{ removeViewBox: false }],
-              },
+              svgoConfig: { plugins: [{ removeViewBox: false }] },
               titleProp: true,
               ref: true,
             },
