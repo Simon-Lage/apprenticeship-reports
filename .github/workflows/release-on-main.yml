@@ -15,21 +15,31 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Use Node
+      - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Bump version (patch) & tag
+        shell: bash
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           npm version patch -m "ci(release): %s [skip ci]"
           git push --follow-tags
-        shell: bash
 
       - name: Install deps
         run: npm ci
+
+      # >>> einzige Neuerung: vor dem Build das PFX validieren
+      - name: Validate PFX password
+        shell: pwsh
+        run: |
+          $bytes = [Convert]::FromBase64String("${{ secrets.CSC_LINK }}")
+          $pfx   = "$env:RUNNER_TEMP\cs.pfx"
+          [IO.File]::WriteAllBytes($pfx, $bytes)
+          certutil -p "${{ secrets.CSC_KEY_PASSWORD }}" -dump $pfx
+      # <<<
 
       - name: Build, sign & publish to GitHub Releases (Windows NSIS)
         env:
