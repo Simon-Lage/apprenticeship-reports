@@ -220,7 +220,12 @@
     },
     "extraResources": ["./assets/**"],
     "publish": [
-      { "provider": "github", "owner": "Simon-Lage", "repo": "apprenticeship-reports" }
+      {
+        "provider": "github",
+        "owner": "Simon-Lage",
+        "repo": "apprenticeship-reports",
+        "releaseType": "release"
+      }
     ]
   },
   "collective": {
