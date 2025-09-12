@@ -19,6 +19,8 @@ class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
     autoUpdater.logger = log;
+    autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.on('update-downloaded', () => { autoUpdater.quitAndInstall(); });
     if (app.isPackaged) {
       autoUpdater.checkForUpdatesAndNotify();
     }
