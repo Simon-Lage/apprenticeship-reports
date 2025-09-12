@@ -271,5 +271,6 @@
       ".erb/dll/**"
     ],
     "logLevel": "quiet"
-  }
+  },
+  "version": "0.0.1"
 }
