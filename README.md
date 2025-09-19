@@ -7,11 +7,11 @@ Download / Herunterladen
 ---
 
 ## Aktuelle Version
-- Version: v0.0.17
+- Version: v0.0.18
 - Veröffentlicht am: 19.09.2025
 
 ## Latest Version
-- Version: v0.0.17
+- Version: v0.0.18
 - Released on: September 19, 2025
 
 ---
