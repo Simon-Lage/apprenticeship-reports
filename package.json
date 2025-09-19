@@ -210,7 +210,11 @@
       ],
       "publisherName": [
         "Apprenticeship Reports"
-      ]
+      ],
+      "artifactName": "Apprenticeship-Reports-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": true
     },
     "linux": {
       "target": [
