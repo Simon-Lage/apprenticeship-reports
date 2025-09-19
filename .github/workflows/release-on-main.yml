@@ -81,7 +81,7 @@ jobs:
             const rel = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
             const downloadUrl = `https://github.com/${owner}/${repo}/releases/latest/download/Apprenticeship-Reports-Setup.exe`;
             const body = `
-            Download & Hinweise
+            **Download & Hinweise**
 
             Nur die Datei "Apprenticeship-Reports-Setup.exe" herunterladen und ausführen.
 
@@ -92,7 +92,7 @@ jobs:
 
             ---
 
-            Download & Notes
+            **Download & Notes**
 
             Download and run only "Apprenticeship-Reports-Setup.exe".
 
