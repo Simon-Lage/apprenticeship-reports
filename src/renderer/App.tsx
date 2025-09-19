@@ -6,7 +6,7 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<div>test-update 2</div>} />
+        <Route path="/" element={<div>test-update 3</div>} />
       </Routes>
     </Router>
   );

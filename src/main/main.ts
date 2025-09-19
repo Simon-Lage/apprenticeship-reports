@@ -21,16 +21,20 @@ class AppUpdater {
     log.transports.file.level = 'info';
     autoUpdater.logger = log;
 
-    // WICHTIG: nicht automatisch beim Beenden installieren
-    autoUpdater.autoInstallOnAppQuit = false;
+    // Beim Beenden automatisch installieren (aber NICHT sofort schließen)
+    autoUpdater.autoInstallOnAppQuit = true;
+    // (optional explizit) automatisch herunterladen:
+    // autoUpdater.autoDownload = true;
 
-    // Wenn Download fertig: Nutzer fragen, ob jetzt installieren
+    // Wenn Download fertig: Nutzer optional fragen, ob JETZT installiert werden soll.
+    // Bei "Später" wird beim nächsten Beenden automatisch installiert.
     autoUpdater.on('update-downloaded', async () => {
       const res = await dialog.showMessageBox(mainWindow, {
         type: 'question',
         title: 'Update bereit',
         message: 'Ein Update wurde heruntergeladen.',
-        detail: 'Jetzt neu starten und installieren? Bitte ungespeicherte Daten vorher sichern.',
+        detail:
+          'Jetzt neu starten und installieren? Wenn du „Später“ wählst, wird das Update automatisch beim Beenden installiert.',
         buttons: ['Jetzt installieren', 'Später'],
         defaultId: 0,
         cancelId: 1,
@@ -39,10 +43,11 @@ class AppUpdater {
       if (res.response === 0) {
         autoUpdater.quitAndInstall();
       }
+      // Bei "Später": nichts tun → Installation erfolgt beim nächsten Quit automatisch.
     });
 
     if (app.isPackaged) {
-      // Nur prüfen (keine Auto-Notification, keine Auto-Installation)
+      // Nur prüfen/aktualisieren; keine System-Notification nötig
       autoUpdater.checkForUpdates();
     }
   }
@@ -132,10 +137,10 @@ const createWindow = async () => {
     return { action: 'deny' };
   });
 
-  // Auto-Updates steuern (mit Bestätigungsdialog, kein Auto-Exit)
+  // Auto-Updates steuern (kein Auto-Exit bei Erkennung)
   // eslint-disable-next-line
   new AppUpdater(mainWindow);
-};
+}
 
 /**
  * Add event listeners...
