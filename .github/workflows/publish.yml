@@ -1,3 +1,4 @@
+# file: .github/workflows/publish.yml
 name: Publish
 
 on:
@@ -9,7 +10,7 @@ jobs:
   publish:
     # To enable auto publishing to github, update your electron publisher
     # config in package.json > "build" and remove the conditional below
-    if: ${{ github.repository_owner == 'Simon-Lage' }}
+    if: ${{ github.repository_owner == 'Simon-Lage' && false }}
 
     runs-on: ${{ matrix.os }}
 
