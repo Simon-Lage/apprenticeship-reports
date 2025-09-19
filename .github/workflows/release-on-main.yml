@@ -9,6 +9,7 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,19 +20,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
-      - name: Bump version (patch) & tag
+      # 1) Version lokal erhöhen, aber KEIN Tag/Push
+      - name: Bump version (patch) locally only
         shell: bash
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          npm version patch -m "ci(release): %s [skip ci]"
-          git push --follow-tags
-
-      - name: Read app version
-        id: pkgver
-        shell: bash
-        run: echo "ver=$(node -p \"require('./package.json').version\")" >> $GITHUB_OUTPUT
+          npm version patch --no-git-tag-version
+          echo "ver=$(node -p \"require('./package.json').version\")" >> $GITHUB_ENV
 
       - name: Install deps
         run: npm ci
@@ -47,8 +45,26 @@ jobs:
           [IO.File]::WriteAllBytes($pfx, $bytes)
           certutil -p "${{ secrets.CSC_KEY_PASSWORD }}" -dump $pfx
 
-      - name: Build & sign (Windows NSIS) without publishing
+      # 2) Build & Publish – erstellt Release + latest.yml + Assets
+      - name: Publish (electron-builder -> GitHub Release)
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-        run: npx electron-builder --win nsis --publish always -c.extraMetadata.version=${{ steps.pkgver.outputs.ver }}
+        run: |
+          npx electron-builder --win nsis --publish always -c.extraMetadata.version=${{ env.ver }}
+
+      # 3) Erst JETZT taggen & committen (damit bei Fehler kein „Tag ohne Release“ entsteht)
+      - name: Commit bumped version and push tag
+        if: ${{ success() }}
+        shell: bash
+        run: |
+          # commit der lokalen Versionserhöhung
+          if ! git diff --quiet; then
+            git add package.json package-lock.json || true
+            git commit -m "ci(release): v${{ env.ver }} [skip ci]"
+          fi
+
+          # Tag setzen und pushen
+          git tag "v${{ env.ver }}"
+          git push --follow-tags
