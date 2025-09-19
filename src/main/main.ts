@@ -1,3 +1,4 @@
+// file: src/main/main.ts
 /* eslint global-require: off, no-console: off, promise/always-return: off */
 
 /**
@@ -9,20 +10,40 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 
 class AppUpdater {
-  constructor() {
+  constructor(mainWindow: BrowserWindow) {
     log.transports.file.level = 'info';
     autoUpdater.logger = log;
-    autoUpdater.autoInstallOnAppQuit = true;
-    autoUpdater.on('update-downloaded', () => { autoUpdater.quitAndInstall(); });
+
+    // WICHTIG: nicht automatisch beim Beenden installieren
+    autoUpdater.autoInstallOnAppQuit = false;
+
+    // Wenn Download fertig: Nutzer fragen, ob jetzt installieren
+    autoUpdater.on('update-downloaded', async () => {
+      const res = await dialog.showMessageBox(mainWindow, {
+        type: 'question',
+        title: 'Update bereit',
+        message: 'Ein Update wurde heruntergeladen.',
+        detail: 'Jetzt neu starten und installieren? Bitte ungespeicherte Daten vorher sichern.',
+        buttons: ['Jetzt installieren', 'Später'],
+        defaultId: 0,
+        cancelId: 1,
+        noLink: true,
+      });
+      if (res.response === 0) {
+        autoUpdater.quitAndInstall();
+      }
+    });
+
     if (app.isPackaged) {
-      autoUpdater.checkForUpdatesAndNotify();
+      // Nur prüfen (keine Auto-Notification, keine Auto-Installation)
+      autoUpdater.checkForUpdates();
     }
   }
 }
@@ -111,9 +132,9 @@ const createWindow = async () => {
     return { action: 'deny' };
   });
 
-  // Remove this if your app does not use auto updates
+  // Auto-Updates steuern (mit Bestätigungsdialog, kein Auto-Exit)
   // eslint-disable-next-line
-  new AppUpdater();
+  new AppUpdater(mainWindow);
 };
 
 /**
