@@ -21,13 +21,8 @@ class AppUpdater {
     log.transports.file.level = 'info';
     autoUpdater.logger = log;
 
-    // Beim Beenden automatisch installieren (aber NICHT sofort schließen)
     autoUpdater.autoInstallOnAppQuit = true;
-    // (optional explizit) automatisch herunterladen:
-    // autoUpdater.autoDownload = true;
 
-    // Wenn Download fertig: Nutzer optional fragen, ob JETZT installiert werden soll.
-    // Bei "Später" wird beim nächsten Beenden automatisch installiert.
     autoUpdater.on('update-downloaded', async () => {
       const res = await dialog.showMessageBox(mainWindow, {
         type: 'question',
