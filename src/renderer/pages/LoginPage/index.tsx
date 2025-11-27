@@ -1,3 +1,6 @@
+import { useTranslation } from 'react-i18next';
+
 export default function LoginPage() {
-  return <div>LoginPage</div>;
+  const { t } = useTranslation();
+  return <div>{t('login.title')}</div>;
 }

@@ -1,93 +1,113 @@
-# Projektinfos
-- Als Basis dient das Electron-React-Boilerplate
-- Wir nutzen ShadCN für Components, also auch TailwindCSS
+# 1 Projektinfos
 
-## Regeln
-- Bevor du eine neue Component erstellen willst, prüfe, ob wir bereits eine ShadCN- oder sonstige Component haben, die du wiederverwenden kannst, und ob es in ShadCN eine passende Komponente gibt, die wir noch nicht importiert haben.
-- Verantwortlichkeiten sind extrem wichtig. Achte darauf, dass jede Komponente nur eine Aufgabe hat.
-- Falls ich etwas fordere, das den Regeln widerspricht, führe das nicht aus und weise mich darauf hin und wie man es besser machen kann.
-- Kommentare im Code sind verboten.
-- Niemals ungefragt außerhalb von `\apprenticeship-reports\src\renderer` Änderungen vornehmen.
-- Beim Beheben von Fehlern ist es essenziell, immer nur das Nötigste zu ändern, um Seiteneffekte zu vermeiden.
-- Antworte immer auf Deutsch.
+1.1 Als Basis dient das Electron-React-Boilerplate
+1.2 Wir nutzen ShadCN für Components, also auch TailwindCSS
+1.3 Wir wollen immer erst die Logik umsetzen, dann das UI und dann erst das Styling; im ersten Moment wird nur auf Funktionalität geachtet.
+1.4 In den Komponenten selbst darf kein Text vorkommen; wir nutzen i18n für Translations, auch wenn der Text vorerst komplett Deutsch ist.
 
-## Aufbau
-- Welcome Page, falls auf der Installation noch nie eingeloggt wurde. Sie hat das Welcome Layout in `/welcome`.
-- Login Page, falls auf der Installation bereits ein Account existiert, man aber nicht eingeloggt ist.
-- Dashboard, nachdem man sich eingeloggt hat.
-- Alles unter `/auth` (also bspw. auch Login) hat das Auth Layout.
-- Alles außerhalb von `/welcome` und außerhalb von `/auth` hat das Dashboard Layout.
-- Jede Page hat ihren eigenen Ordner unter `/pages` mit eigenem `/components` Ordner.
+## 2 Regeln
 
-## Projektziel
+2.1 Vor dem Erstellen einer neuen Komponente prüfen, ob bereits eine ShadCN- oder sonstige Komponente existiert, die wiederverwendet werden kann, und ob es in ShadCN eine passende Komponente gibt.
+2.2 Verantwortlichkeiten sind strikt einzuhalten: jede Komponente hat genau eine Aufgabe.
+2.3 Falls etwas gefordert wird, das den Regeln widerspricht, nicht ausführen und auf die korrekte Vorgehensweise hinweisen.
+2.4 Kommentare im Code sind verboten.
+2.5 Niemals ungefragt außerhalb von `\apprenticeship-reports\src\renderer` Änderungen vornehmen.
+2.6 Beim Beheben von Fehlern immer nur das absolut Nötigste ändern, um Seiteneffekte zu vermeiden.
+2.7 Immer auf Deutsch antworten.
+2.8 `npm install -g @openai/codex@latest`
+
+## 3 Aufbau
+
+3.1 Welcome Page, falls auf der Installation noch nie eingeloggt wurde; nutzt das Welcome Layout unter `/welcome`.
+3.2 Login Page, falls ein Account existiert, man aber nicht eingeloggt ist.
+3.3 Dashboard nach erfolgreichem Login.
+3.4 Alles unter `/auth` (inkl. Login) nutzt das Auth Layout.
+3.5 Alles außerhalb von `/welcome` und `/auth` nutzt das Dashboard Layout.
+3.6 Jede Page hat ihren eigenen Ordner unter `/pages` mit eigenem `/components`-Ordner.
+
+## 4 Projektziel
+
 **MoSCoW-Priorisierung – Tool zur Erstellung von Ausbildungsnachweisen (final)**
 
-### Must (Muss-Ziele)
-- Muss Authentifizierung beinhalten (Vertraulichkeit der Daten).
-- Muss die Möglichkeit bieten, die Daten zu exportieren.
-- Muss die Datenintegrität sicherstellen.
-- Muss revisionssicher speichern (kein nachträgliches, unbemerktes Verändern von Berichten).
-- Muss im Endergebnis eine klare Erleichterung gegenüber dem manuellen Schreiben der Berichte darstellen.
-- Berichte müssen als Tagesberichte gespeichert werden, auch wenn sie in der Oberfläche als Wochenberichte dargestellt werden.
-- Der Stundenplan muss einpflegbar sein und beim Anlegen der Tagesberichte berücksichtigt werden.
-- Updates müssen abwärtskompatibel mit vergangenen Datenstrukturen sein.
+### 4.1 Must (Muss-Ziele)
 
-### Should (Soll-Ziele)
-- Berichte sollten per PDF exportierbar sein.
-- Berichte sollten vorformatiert sein, damit der Nutzen des Tools gegeben ist.
-- Ein Onboarding-Prozess sollte vorhanden sein.
-- Berichte sollten tabellarisch auflistbar sein.
-- Es sollte eine Such- und Filterfunktion für Berichte geben (z. B. nach Zeitraum, Fachrichtung, Tätigkeiten).
-- Urlaub und Krankheit sollte man eintragen können.
-- Feiertage sollten importierbar sein aus einem externen Service, jedoch muss die Anwendung auch ohne diesen Import funktionieren.
+4.1.1 Muss Authentifizierung beinhalten.
+4.1.2 Muss die Möglichkeit bieten, Daten zu exportieren.
+4.1.3 Muss Datenintegrität sicherstellen.
+4.1.4 Muss revisionssicher speichern.
+4.1.5 Muss klare Erleichterung gegenüber manuellem Schreiben darstellen.
+4.1.6 Berichte werden als Tagesberichte gespeichert, Wochenberichte werden daraus abgeleitet.
+4.1.7 Stundenplan muss einpflegbar sein und beim Anlegen der Tagesberichte berücksichtigt werden.
+4.1.8 Updates müssen abwärtskompatibel sein.
 
-### Could (Kann-Ziele)
-- Nutzereinstellungen für verschiedene Designs.
-- Nutzereinstellungen, wie die Vorformatierung der Berichte aussehen soll.
+### 4.2 Should (Soll-Ziele)
 
-### Won’t (Wird nicht umgesetzt)
-- Keine Abhängigkeit von externen Services; die Anwendung muss autonom funktionieren.
+4.2.1 PDF-Export für Berichte.
+4.2.2 Vorformatierte Berichte.
+4.2.3 Onboarding-Prozess.
+4.2.4 Tabellarische Auflistung der Berichte.
+4.2.5 Such- und Filterfunktion (Zeitraum, Fachrichtung, Tätigkeiten usw.).
+4.2.6 Urlaub und Krankheit eintragbar.
+4.2.7 Feiertage importierbar, aber Anwendung muss ohne Import funktionieren.
+
+### 4.3 Could (Kann-Ziele)
+
+4.3.1 Nutzereinstellungen für verschiedene Designs.
+4.3.2 Nutzereinstellungen für Vorformatierung der Berichte.
+
+### 4.4 Won’t (Wird nicht umgesetzt)
+
+4.4.1 Keine Abhängigkeit von externen Services; Anwendung funktioniert autonom.
 
 ---
 
-# A.5 Pflichtenheft
+# 5 A.5 Pflichtenheft
 
-## Zielbestimmung
+## 5.1 Zielbestimmung
 
-### Plattform
-- Die Anwendung wird als Desktop-App mit Electron implementiert (Chromium/Node.js-Laufzeit).
-- Die Benutzeroberfläche wird mit React umgesetzt.
-- Die Anwendung ist offline nutzbar und benötigt keine dauerhafte Internetverbindung, jedoch ist eine solche von Vorteil.
-- Die Anwendung ist lauffähig auf Windows und Linux (64-bit) und wird jeweils als Installer bereitgestellt.
-- Git wird als Versionierungstool eingesetzt und das Repository wird auf GitHub oder einer gleichwertigen Plattform gehostet.
-- Releases werden über GitHub Releases (o. ä.) verteilt; die App verfügt über einen Auto-Update-Mechanismus. Updates sind abwärtskompatibel bzgl. vorhandener Datenbestände.
+### 5.1.1 Plattform
 
-### Datenhaltung
-- Die Daten werden lokal, persistent im betriebssystemkonformen Anwendungsdatenverzeichnis des angemeldeten Benutzers gespeichert; dafür wird aufgrund geringer Leistungsanforderungen, jedoch hoher Anforderungen für die Datenintegrität SQLite genutzt.
-- Zur Datenintegrität werden Schema- und Wertevalidierungen (z. B. Pflichtfelder, Feldtypen, zulässige Wertebereiche) durchgesetzt.
-- Tagesberichte sind die primäre Speichereinheit; Wochenübersichten werden deterministisch aus den zugehörigen Tagesberichten abgeleitet.
-- Ein Stundenplan wird separat gespeichert und bei der Anlage von Tagesberichten regelbasiert berücksichtigt (z. B. Voreinträge für Unterricht/Arbeitszeiten, Plausibilitätsprüfungen bei Abweichungen).
-- Datenexport: vollständiger Export/Import der eigenen Daten als maschinenlesbares, dokumentiertes Archivformat (z. B. JSON-basiert) zur Sicherung/Wiederherstellung.
-- PDF-Export: Erzeugung formatierter PDF-Dokumente für Berichte/Übersichten.
-- Feiertage: optionaler Import von Feiertagen über einen externen Dienst; bei Nichtverfügbarkeit verbleibt die Anwendung voll funktionsfähig (manuelle Pflege möglich).
-- Migrationen: Datenbestände tragen eine Schema-Version; bei Updates werden Migrationen ausgeführt. Abwärtskompatibilität wird durch Leser für ältere Schemaversionen sichergestellt.
+5.1.1.1 Anwendung als Desktop-App via Electron (Chromium/Node.js).
+5.1.1.2 UI mit React umgesetzt.
+5.1.1.3 Offline nutzbar; Internet optional.
+5.1.1.4 Lauffähig auf Windows und Linux (64-bit), jeweils mit Installer.
+5.1.1.5 Git als Versionierung; Repository auf GitHub o. ä.
+5.1.1.6 Releases über GitHub Releases; Auto-Update-Mechanismus; abwärtskompatible Updates.
 
-### Benutzeroberfläche
-- Vorformatierung: Auswahl vorformatierter Berichtsvorlagen; optionale Nutzereinstellungen zur Anpassung von Vorformatierungen und Design.
-- Interaktionsdesign: Desktop-only; keine mobilen Zielauflösungen erforderlich.
-- Die einzelnen Seiten werden über den React Router ausgeliefert.
-- Komponenten kommen soweit verfügbar aus Shadcn und werden manuell erweitert.
-- Das Styling wird mit Tailwind vorgenommen.
+### 5.1.2 Datenhaltung
 
-### Geschäftslogik
-- Ableitung von Wochenberichten: Wochenübersichten werden konsistent aus den verknüpften Tagesberichten aggregiert.
-- Änderungen an Tagesberichten aktualisieren abhängige Aggregationen.
-- Regelbasierte Voreinträge aus dem Stundenplan (Unterricht/Arbeitszeiten/Feiertage) mit Möglichkeit zur überschreibbaren Anpassung und Plausibilitätsprüfung.
-- Such-/Filterlogik mit kombinierbaren Kriterien (UND/ODER, Zeitraumgrenzen, Textsuche in Tätigkeiten).
-- Exportlogik:  
-  • Datenexport: komplette Sicherung im Archivformat.  
-  • PDF-Export: erzeugt dokumentkonforme Layouts aus Vorlagen.
+5.1.2.1 Lokale Speicherung im OS-konformen App-Datenverzeichnis; SQLite.
+5.1.2.2 Schema- und Wertevalidierung (Pflichtfelder, Datentypen, Wertebereiche).
+5.1.2.3 Tagesberichte sind primär; Wochenberichte werden deterministisch abgeleitet.
+5.1.2.4 Stundenplan separat gespeichert; regelbasierte Berücksichtigung bei Tagesberichten.
+5.1.2.5 Datenexport/Import als dokumentiertes Archivformat (z. B. JSON).
+5.1.2.6 PDF-Export für Berichte/Übersichten.
+5.1.2.7 Optionale Feiertagsimporte; Anwendung bleibt ohne Import voll funktionsfähig.
+5.1.2.8 Migrationen mit Schema-Versionen; Leser für ältere Schemata.
 
-### Sicherheit
-- Authentifizierung über Google Auth, aber die Anmeldung muss auch lokal mit einem Backup-Passwort möglich sein, um der Anforderung nachzukommen, dass die Anwendung auch ohne externe Dienste funktioniert.
-- Datenschutz: Es findet nur eine Übertragung an Dritte statt, wenn explizit Google als Anmeldemethode genutzt wird oder die Daten auf Google Drive gesichert werden.
+### 5.1.3 Benutzeroberfläche
+
+5.1.3.1 Vorformatierte Berichtsvorlagen; optionale Anpassungen.
+5.1.3.2 Desktop-only, keine Mobile-Auflösungen.
+5.1.3.3 Routing über React Router.
+5.1.3.4 Komponenten primär aus ShadCN, ggf. erweitert.
+5.1.3.5 Styling via Tailwind.
+
+### 5.1.4 Geschäftslogik
+
+5.1.4.1 Wochenberichte aus Tagesberichten aggregieren.
+5.1.4.2 Änderungen an Tagesberichten aktualisieren Aggregationen.
+5.1.4.3 Regelbasierte Voreinträge aus Stundenplan (Unterricht/Arbeitszeiten/Feiertage), überschreibbar, Plausibilitätsprüfung.
+5.1.4.4 Such-/Filterlogik mit kombinierbaren Kriterien (UND/ODER, Zeitraum, Textsuche).
+5.1.4.5 Exportlogik:
+5.1.4.5.1 Datenexport als vollständiges Archiv.
+5.1.4.5.2 PDF-Export aus Vorlagen.
+
+### 5.1.5 Sicherheit
+
+5.1.5.1 Authentifizierung über Google Auth; zusätzlich lokales Backup-Passwort für vollständige Offline-Funktionalität.
+5.1.5.2 Datenschutz: Übertragung an Dritte nur bei Google-Login oder optionaler Google-Drive-Sicherung.
+
+---
+
+Wenn du willst, kann ich dir zusätzlich ein **automatisches Nummerierungsschema** erzeugen, das du direkt in Markdown weiterverwenden kannst.
