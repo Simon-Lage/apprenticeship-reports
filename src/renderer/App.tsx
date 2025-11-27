@@ -1,7 +1,7 @@
 import { MemoryRouter as Router, useRoutes } from 'react-router-dom';
 import { Suspense } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
-import { routes } from './routes';
+import routes from './routes';
 import './tailwind.css';
 import './App.css';
 
