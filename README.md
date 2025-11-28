@@ -7,12 +7,12 @@ Download / Herunterladen
 ---
 
 ## Aktuelle Version
-- Version: v0.0.24
-- Veröffentlicht am: 21.11.2025
+- Version: v0.0.25
+- Veröffentlicht am: 27.11.2025
 
 ## Latest Version
-- Version: v0.0.24
-- Released on: November 21, 2025
+- Version: v0.0.25
+- Released on: November 27, 2025
 
 ---
 
