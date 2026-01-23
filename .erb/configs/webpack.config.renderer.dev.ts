@@ -161,6 +161,7 @@ const configuration: webpack.Configuration = {
      */
     new webpack.EnvironmentPlugin({
       NODE_ENV: 'development',
+      GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
     }),
 
     new webpack.LoaderOptionsPlugin({

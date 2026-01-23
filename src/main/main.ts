@@ -10,11 +10,16 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
+import dotenv from 'dotenv';
 import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './utils';
+import { registerAuthHandlers } from './auth/handlers';
+
+dotenv.config({ path: path.join(process.cwd(), '.env') });
+dotenv.config({ path: path.join(process.cwd(), '.env.local'), override: true });
 
 class AppUpdater {
   constructor(mainWindow: BrowserWindow) {
@@ -55,6 +60,7 @@ ipcMain.on('ipc-example', async (event, arg) => {
   console.log(msgTemplate(arg));
   event.reply('ipc-example', msgTemplate('pong'));
 });
+registerAuthHandlers();
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');

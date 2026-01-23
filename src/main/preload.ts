@@ -22,6 +22,49 @@ const electronHandler = {
       ipcRenderer.once(channel, (_event, ...args) => func(...args));
     },
   },
+  auth: {
+    status() {
+      return ipcRenderer.invoke('auth:status');
+    },
+    init(password: string) {
+      return ipcRenderer.invoke('auth:init', { password });
+    },
+    loginWithPassword(password: string) {
+      return ipcRenderer.invoke('auth:login:password', { password });
+    },
+    loginWithGoogle() {
+      return ipcRenderer.invoke('auth:login:google');
+    },
+    linkGoogle() {
+      return ipcRenderer.invoke('auth:link:google');
+    },
+    unlinkGoogle() {
+      return ipcRenderer.invoke('auth:unlink:google');
+    },
+    changePassword(password: string) {
+      return ipcRenderer.invoke('auth:change:password', { password });
+    },
+    changeGoogle() {
+      return ipcRenderer.invoke('auth:change:google');
+    },
+    logout() {
+      return ipcRenderer.invoke('auth:logout');
+    },
+    reset(password: string) {
+      return ipcRenderer.invoke('auth:reset', { password });
+    },
+  },
+  backup: {
+    exportLocal() {
+      return ipcRenderer.invoke('backup:export:local');
+    },
+    exportDrive() {
+      return ipcRenderer.invoke('backup:export:drive');
+    },
+    importEncrypted() {
+      return ipcRenderer.invoke('backup:import');
+    },
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);

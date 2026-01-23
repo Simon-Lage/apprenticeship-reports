@@ -129,6 +129,7 @@ const configuration: webpack.Configuration = {
     new webpack.EnvironmentPlugin({
       NODE_ENV: 'production',
       DEBUG_PROD: false,
+      GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
     }),
 
     new MiniCssExtractPlugin({

@@ -1,3 +1,5 @@
+codex resume 019be14a-30a8-7ee0-80d8-6aa3766233e4
+
 # 1 Projektinfos
 
 1.1 Als Basis dient das Electron-React-Boilerplate
@@ -15,6 +17,7 @@
 2.6 Beim Beheben von Fehlern immer nur das absolut Nötigste ändern, um Seiteneffekte zu vermeiden.
 2.7 Immer auf Deutsch antworten.
 2.8 `npm install -g @openai/codex@latest`
+2.9 Bei Unsicherheit Context7 fuer Bibliotheksdokumentation nutzen.
 
 ## 3 Aufbau
 
@@ -111,3 +114,9 @@
 ---
 
 Wenn du willst, kann ich dir zusätzlich ein **automatisches Nummerierungsschema** erzeugen, das du direkt in Markdown weiterverwenden kannst.
+
+
+
+Passwort:
+fsdDf4etw$rge4rt4
+
