@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron';
-import { googleClientId } from '../../shared/authConfig';
+import { getGoogleClientSecret, googleClientId } from '../../shared/authConfig';
 import { AuthSession, AuthStatus } from '../../shared/authTypes';
 import { exportGoogleDriveEncrypted, exportLocalEncrypted, importEncryptedBackup } from './backup';
 import { DbService } from './db';
@@ -59,6 +59,7 @@ const getStatus = async (): Promise<AuthStatus> => {
 };
 
 const getClientId = () => googleClientId;
+const getClientSecret = () => getGoogleClientSecret();
 
 export const registerAuthHandlers = () => {
   ipcMain.handle('auth:status', async () => getStatus());
@@ -91,7 +92,7 @@ export const registerAuthHandlers = () => {
     if (!keyring?.google) {
       throw new Error('google_not_linked');
     }
-    const { user } = await startGoogleLogin(getClientId());
+    const { user } = await startGoogleLogin(getClientId(), getClientSecret());
     if (user.id !== keyring.google.sub) {
       throw new Error('google_account_mismatch');
     }
@@ -109,7 +110,7 @@ export const registerAuthHandlers = () => {
     if (keyring.google) {
       throw new Error('google_already_linked');
     }
-    const { user } = await startGoogleLogin(getClientId());
+    const { user } = await startGoogleLogin(getClientId(), getClientSecret());
     const googleWrap = wrapDekWithGoogle(session.dek as Buffer, user.id);
     const updated = buildKeyring(keyring.password, googleWrap);
     await saveKeyring(updated);
@@ -148,7 +149,7 @@ export const registerAuthHandlers = () => {
     if (!keyring?.password) {
       throw new Error('not_initialized');
     }
-    const { user } = await startGoogleLogin(getClientId());
+    const { user } = await startGoogleLogin(getClientId(), getClientSecret());
     const googleWrap = wrapDekWithGoogle(session.dek as Buffer, user.id);
     const updated = buildKeyring(keyring.password, googleWrap);
     await saveKeyring(updated);

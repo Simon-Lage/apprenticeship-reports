@@ -64,6 +64,7 @@ const exchangeCodeForTokens = async (
   verifier: string,
   redirectUri: string,
   clientId: string,
+  clientSecret?: string,
 ): Promise<AuthResult> => {
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
@@ -72,6 +73,9 @@ const exchangeCodeForTokens = async (
     code_verifier: verifier,
     redirect_uri: redirectUri,
   });
+  if (clientSecret) {
+    body.set('client_secret', clientSecret);
+  }
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: {
@@ -143,6 +147,7 @@ const validateIdToken = async (idToken: string, clientId: string): Promise<AuthU
 
 export const startGoogleLogin = async (
   clientId: string,
+  clientSecret?: string,
 ): Promise<{ user: AuthUser; idToken: string }> => {
   if (!clientId) {
     throw new Error('client_id_missing');
@@ -169,7 +174,13 @@ export const startGoogleLogin = async (
 
   await shell.openExternal(url.toString());
   const { code } = await waitForAuthCode(server, state);
-  const tokens = await exchangeCodeForTokens(code, verifier, redirectUri, clientId);
+  const tokens = await exchangeCodeForTokens(
+    code,
+    verifier,
+    redirectUri,
+    clientId,
+    clientSecret,
+  );
   const user = await validateIdToken(tokens.idToken, clientId);
   return { user, idToken: tokens.idToken };
 };

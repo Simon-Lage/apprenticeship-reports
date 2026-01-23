@@ -10,6 +10,8 @@ codex resume 019be14a-30a8-7ee0-80d8-6aa3766233e4
 ## 2 Regeln
 
 2.1 Vor dem Erstellen einer neuen Komponente prüfen, ob bereits eine ShadCN- oder sonstige Komponente existiert, die wiederverwendet werden kann, und ob es in ShadCN eine passende Komponente gibt.
+2.1.1 Falls eine passende ShadCN-Komponente existiert, muss sie verwendet werden.
+2.1.2 Falls keine passende ShadCN-Komponente existiert, darf sie installiert und genutzt werden.
 2.2 Verantwortlichkeiten sind strikt einzuhalten: jede Komponente hat genau eine Aufgabe.
 2.3 Falls etwas gefordert wird, das den Regeln widerspricht, nicht ausführen und auf die korrekte Vorgehensweise hinweisen.
 2.4 Kommentare im Code sind verboten.
