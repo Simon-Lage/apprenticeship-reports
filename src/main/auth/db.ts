@@ -71,6 +71,13 @@ export class DbService {
     return this.openedPath ?? getDbPath();
   }
 
+  getDatabase() {
+    if (!this.db) {
+      throw new Error('db_not_open');
+    }
+    return this.db;
+  }
+
   async exportDecrypted() {
     if (!this.db) {
       throw new Error('db_not_open');

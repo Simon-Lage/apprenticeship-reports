@@ -33,7 +33,8 @@ const migrations: Migration[] = [
         week_start TEXT NOT NULL,
         week_end TEXT NOT NULL,
         department_when_sent TEXT,
-        trainer_email_when_sent TEXT
+        trainer_email_when_sent TEXT,
+        sent INTEGER NOT NULL DEFAULT 0
       )`,
       `CREATE TABLE IF NOT EXISTS daily_reports (
         id TEXT PRIMARY KEY,
@@ -63,6 +64,12 @@ const migrations: Migration[] = [
         to_date TEXT NOT NULL,
         note TEXT
       )`,
+    ],
+  },
+  {
+    version: 2,
+    statements: [
+      `ALTER TABLE weekly_reports ADD COLUMN sent INTEGER NOT NULL DEFAULT 0`,
     ],
   },
 ];

@@ -15,7 +15,7 @@ codex resume 019be14a-30a8-7ee0-80d8-6aa3766233e4
 2.2 Verantwortlichkeiten sind strikt einzuhalten: jede Komponente hat genau eine Aufgabe.
 2.3 Falls etwas gefordert wird, das den Regeln widerspricht, nicht ausführen und auf die korrekte Vorgehensweise hinweisen.
 2.4 Kommentare im Code sind verboten.
-2.5 Niemals ungefragt außerhalb von `\apprenticeship-reports\src\renderer` Änderungen vornehmen.
+2.5 Änderungen außerhalb von `\apprenticeship-reports\src\renderer` sind erlaubt, wenn der User sie explizit anfordert.
 2.6 Beim Beheben von Fehlern immer nur das absolut Nötigste ändern, um Seiteneffekte zu vermeiden.
 2.7 Immer auf Deutsch antworten.
 2.8 `npm install -g @openai/codex@latest`
@@ -135,6 +135,7 @@ codex resume 019be14a-30a8-7ee0-80d8-6aa3766233e4
 - `week_end` (date)
 - `department_when_sent` (text, nullable)
 - `trainer_email_when_sent` (text, nullable)
+- `sent` (boolean)
 
 ## 6.3 Beziehungen (Kardinalität)
 

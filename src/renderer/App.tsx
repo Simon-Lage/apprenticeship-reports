@@ -13,7 +13,7 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={null}>
           <AppRoutes />
         </Suspense>
       </Router>
