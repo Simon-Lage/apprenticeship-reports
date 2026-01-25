@@ -66,6 +66,87 @@ codex resume 019be14a-30a8-7ee0-80d8-6aa3766233e4
 
 ---
 
+# 6 Datenbankplanung (Text)
+
+## 6.1 Grundsätze
+
+6.1.1 Alle Tabellennamen und Spaltennamen sind Englisch.
+6.1.2 Jede `id` ist eine UUID, außer explizit als AUTO INCREMENT definiert.
+6.1.3 Alle Textfelder werden vor Speicherung getrimmt.
+6.1.4 Es gibt genau einen User, daher keine `users`-Tabelle.
+6.1.5 Nutzerinfos und Settings liegen in `config`.
+
+## 6.2 Tabellen
+
+### 6.2.1 `config`
+
+- `id` (uuid, pk)
+- `name` (text)
+- `surname` (text)
+- `ihk_link` (text)
+- `department` (text)
+- `trainer_email` (text)
+- `training_start` (date)
+- `training_end` (date)
+- `settings` (json)
+- weitere Felder folgen
+
+### 6.2.2 `timetable`
+
+- `id` (uuid, pk)
+- `teacher` (text)
+- `subject` (text)
+- `weekday` (int)
+- `order` (int)
+
+### 6.2.3 `daily_reports`
+
+- `id` (uuid, pk)
+- `created_at` (datetime)
+- `updated_at` (datetime)
+- `day_type` (enum: school, work, leave)
+- `weekly_report_id` (int, fk -> `weekly_reports.id`, nullable)
+
+### 6.2.4 `daily_report_entries`
+
+- `daily_report_id` (uuid, fk -> `daily_reports.id`)
+- `entry_id` (int, fk -> `entries.id`)
+- `position` (int)
+- pk: (`daily_report_id`, `entry_id`)
+
+### 6.2.5 `entries`
+
+- `id` (int, pk, auto increment)
+- `activities` (text)
+- `day_type` (enum: school, work, leave)
+
+### 6.2.6 `absences`
+
+- `id` (uuid, pk)
+- `type` (enum: vacation, sick, weekend, holiday, school_break, other)
+- `from_date` (date)
+- `to_date` (date)
+- `note` (text, nullable)
+
+### 6.2.7 `weekly_reports`
+
+- `id` (int, pk, auto increment)
+- `week_start` (date)
+- `week_end` (date)
+- `department_when_sent` (text, nullable)
+- `trainer_email_when_sent` (text, nullable)
+
+## 6.3 Beziehungen (Kardinalität)
+
+6.3.1 `weekly_reports` 1 — n `daily_reports`
+6.3.2 `daily_reports` n — n `entries` via `daily_report_entries`
+
+## 6.4 Hinweise zur Konsistenz
+
+6.4.1 `department_when_sent` und `trainer_email_when_sent` werden beim Speichern aus `config` kopiert und ändern sich später nicht mit.
+6.4.2 `day_type` in `entries` muss zum `day_type` des zugehörigen `daily_reports` passen.
+6.4.3 `weekday` und `order` in `timetable` sind Pflichtfelder zur stabilen Sortierung.
+
 # 5 A.5 Pflichtenheft
 
 ## 5.1 Zielbestimmung
@@ -114,9 +195,6 @@ codex resume 019be14a-30a8-7ee0-80d8-6aa3766233e4
 5.1.5.2 Datenschutz: Übertragung an Dritte nur bei Google-Login oder optionaler Google-Drive-Sicherung.
 
 ---
-
-Wenn du willst, kann ich dir zusätzlich ein **automatisches Nummerierungsschema** erzeugen, das du direkt in Markdown weiterverwenden kannst.
-
 
 
 Passwort:

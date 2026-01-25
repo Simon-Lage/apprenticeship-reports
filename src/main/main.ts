@@ -17,6 +17,7 @@ import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './utils';
 import { registerAuthHandlers } from './auth/handlers';
+import { isCriticalOperationActive } from './criticalOperations';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 dotenv.config({ path: path.join(process.cwd(), '.env.local'), override: true });
@@ -54,6 +55,25 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let quitDialogOpen = false;
+
+const showCriticalBlockDialog = () => {
+  if (quitDialogOpen) {
+    return;
+  }
+  quitDialogOpen = true;
+  const dialogTarget = mainWindow ?? undefined;
+  dialog.showMessageBoxSync(dialogTarget, {
+    type: 'warning',
+    title: 'Bitte warten',
+    message: 'Gerade laeuft ein kritischer Vorgang.',
+    detail: 'Die Anwendung kann erst nach Abschluss geschlossen werden.',
+    buttons: ['OK'],
+    defaultId: 0,
+    noLink: true,
+  });
+  quitDialogOpen = false;
+};
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -128,6 +148,13 @@ const createWindow = async () => {
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+  mainWindow.on('close', (event) => {
+    if (!isCriticalOperationActive()) {
+      return;
+    }
+    event.preventDefault();
+    showCriticalBlockDialog();
+  });
 
   const menuBuilder = new MenuBuilder(mainWindow);
   menuBuilder.buildMenu();
@@ -153,6 +180,14 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+app.on('before-quit', (event) => {
+  if (!isCriticalOperationActive()) {
+    return;
+  }
+  event.preventDefault();
+  showCriticalBlockDialog();
 });
 
 app

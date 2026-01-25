@@ -65,6 +65,11 @@ const electronHandler = {
       return ipcRenderer.invoke('backup:import');
     },
   },
+  debug: {
+    exportDecryptedDb() {
+      return ipcRenderer.invoke('debug:export-decrypted-db');
+    },
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);

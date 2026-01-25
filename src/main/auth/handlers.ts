@@ -14,6 +14,7 @@ import {
   wrapDekWithGoogle,
   wrapDekWithPassword,
 } from './keyring';
+import { startCriticalOperation } from '../criticalOperations';
 import { resetApplication } from './reset';
 
 type AuthSessionState = {
@@ -34,6 +35,20 @@ const setSession = async (dek: Buffer, user: AuthSession['user'], method: AuthSe
   session.dek = dek;
   session.user = user;
   session.method = method;
+};
+
+const isDebugDekEnabled = () =>
+  process.env.SHOW_DEBUG_DEK_KEY_IAEJFJDKDSMSDKLMDMFGKLKFMEKFEMFPEP342342324234 === 'true';
+
+const maybeLogDek = () => {
+  if (!isDebugDekEnabled()) {
+    return;
+  }
+  if (!session.dek) {
+    console.error(`[debug] NO SQLCipher DEK found`);
+    return;
+  }
+  console.log(`[debug] SQLCipher DEK: ${session.dek.toString('hex')}`);
 };
 
 const clearSession = async () => {
@@ -65,16 +80,22 @@ export const registerAuthHandlers = () => {
   ipcMain.handle('auth:status', async () => getStatus());
 
   ipcMain.handle('auth:init', async (_event, payload: { password: string }) => {
-    const status = await getStatus();
-    if (status.hasPassword) {
-      throw new Error('already_initialized');
+    const endCritical = startCriticalOperation();
+    try {
+      const status = await getStatus();
+      if (status.hasPassword) {
+        throw new Error('already_initialized');
+      }
+      const dek = createDek();
+      const passwordWrap = wrapDekWithPassword(dek, payload.password);
+      const keyring = buildKeyring(passwordWrap);
+      await saveKeyring(keyring);
+      await setSession(dek, null, 'password');
+      maybeLogDek();
+      return { user: null, method: 'password' } satisfies AuthSession;
+    } finally {
+      endCritical();
     }
-    const dek = createDek();
-    const passwordWrap = wrapDekWithPassword(dek, payload.password);
-    const keyring = buildKeyring(passwordWrap);
-    await saveKeyring(keyring);
-    await setSession(dek, null, 'password');
-    return { user: null, method: 'password' } satisfies AuthSession;
   });
 
   ipcMain.handle('auth:login:password', async (_event, payload: { password: string }) => {
@@ -84,6 +105,7 @@ export const registerAuthHandlers = () => {
     }
     const dek = unwrapDekWithPassword(keyring.password, payload.password);
     await setSession(dek, null, 'password');
+    maybeLogDek();
     return { user: null, method: 'password' } satisfies AuthSession;
   });
 
@@ -98,6 +120,7 @@ export const registerAuthHandlers = () => {
     }
     const dek = unwrapDekWithGoogle(keyring.google);
     await setSession(dek, user, 'google');
+    maybeLogDek();
     return { user, method: 'google' } satisfies AuthSession;
   });
 
@@ -170,4 +193,12 @@ export const registerAuthHandlers = () => {
   ipcMain.handle('backup:export:local', async () => exportLocalEncrypted());
   ipcMain.handle('backup:export:drive', async () => exportGoogleDriveEncrypted());
   ipcMain.handle('backup:import', async () => importEncryptedBackup());
+
+  ipcMain.handle('debug:export-decrypted-db', async () => {
+    ensureSession();
+    if (!isDebugDekEnabled()) {
+      throw new Error('debug_dek_disabled');
+    }
+    return dbService.exportDecrypted();
+  });
 };
