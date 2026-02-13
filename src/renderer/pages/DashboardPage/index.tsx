@@ -53,9 +53,9 @@ export default function DashboardPage() {
         <Button
           type="button"
           variant="outline"
+          icon={<FcGoogle />}
           onClick={() => navigate('/welcome/setup-google')}
         >
-          <FcGoogle />
           {t('dashboard.addGoogle')}
         </Button>
       ) : null}

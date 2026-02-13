@@ -27,6 +27,9 @@ codex resume 019be14a-30a8-7ee0-80d8-6aa3766233e4
 2.14 Erst wenn kein passendes Item vorhanden ist, neue Komponente bauen oder via ShadCN hinzufuegen; davor `get_add_command_for_items` verwenden.
 2.15 Nach Hinzufuegen oder Erstellen von ShadCN-bezogenen Komponenten immer `get_audit_checklist` ausfuehren und relevante Punkte pruefen.
 2.16 Falls MCP fuer ShadCN nicht verfuegbar ist, mit `npx shadcn@latest` arbeiten und dieselbe Reihenfolge einhalten: suchen, vergleichen, dann erst implementieren.
+2.17 Inhalt darf nur in Ausnahmefaellen ausserhalb einer `Card` gerendert werden.
+2.18 Der Standardstil fuer ShadCN-Komponenten ist ein glassy iOS-Look.
+2.19 Wenn bestehende Komponenten dem glassy Standardstil nicht entsprechen, muessen sie gezielt angepasst werden.
 
 ## 3 Aufbau
 

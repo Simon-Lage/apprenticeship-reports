@@ -3,3 +3,15 @@
 @import "./shadcn-theme.css";
 
 @custom-variant dark (&:is(.dark *));
+
+@layer base {
+  body {
+    @apply relative flex items-center justify-center overflow-y-hidden text-white font-sans h-screen w-screen;
+    background: linear-gradient(
+      200.96deg,
+      #fedc2a -29.09%,
+      #dd5789 51.77%,
+      #7a2c9e 129.35%
+    );
+  }
+}

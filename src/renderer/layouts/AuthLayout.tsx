@@ -2,7 +2,7 @@ import { Outlet } from 'react-router-dom';
 
 export default function AuthLayout() {
   return (
-    <div>
+    <div className="layout layout-auth">
       <Outlet />
     </div>
   );

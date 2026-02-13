@@ -13,7 +13,7 @@ const buttonVariants = cva(
         destructive:
           'bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
         outline:
-          'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50',
+          'border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50',
         secondary:
           'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost:
@@ -41,10 +41,15 @@ function Button({
   variant,
   size,
   asChild = false,
+  icon,
+  iconPosition = 'start',
+  children,
   ...props
 }: React.ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
+    icon?: React.ReactNode;
+    iconPosition?: 'start' | 'end';
   }) {
   const Comp = asChild ? Slot : 'button';
 
@@ -53,7 +58,11 @@ function Button({
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
-    />
+    >
+      {icon && iconPosition === 'start' ? icon : null}
+      {children}
+      {icon && iconPosition === 'end' ? icon : null}
+    </Comp>
   );
 }
 
