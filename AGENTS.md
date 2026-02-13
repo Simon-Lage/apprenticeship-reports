@@ -20,6 +20,7 @@ codex resume 019be14a-30a8-7ee0-80d8-6aa3766233e4
 2.7 Immer auf Deutsch antworten.
 2.8 `npm install -g @openai/codex@latest`
 2.9 Bei Unsicherheit Context7 fuer Bibliotheksdokumentation nutzen.
+2.10 Bei spezifischen Framework-, Build- oder Konfigurationsaenderungen (insbesondere Electron, Electron-React-Boilerplate, Webpack und Routing-Setup) immer zuerst Context7 konsultieren.
 
 ## 3 Aufbau
 
@@ -200,4 +201,3 @@ codex resume 019be14a-30a8-7ee0-80d8-6aa3766233e4
 
 Passwort:
 fsdDf4etw$rge4rt4
-
