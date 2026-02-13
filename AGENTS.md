@@ -21,6 +21,12 @@ codex resume 019be14a-30a8-7ee0-80d8-6aa3766233e4
 2.8 `npm install -g @openai/codex@latest`
 2.9 Bei Unsicherheit Context7 fuer Bibliotheksdokumentation nutzen.
 2.10 Bei spezifischen Framework-, Build- oder Konfigurationsaenderungen (insbesondere Electron, Electron-React-Boilerplate, Webpack und Routing-Setup) immer zuerst Context7 konsultieren.
+2.11 Bei UI-Umsetzungen zuerst vorhandene Komponenten in `src/renderer/components` und `src/renderer/components/ui` pruefen, danach erst neue Komponenten erstellen.
+2.12 Vor jeder neuen UI-Komponente zuerst ShadCN-MCP nutzen: `get_project_registries`, dann `search_items_in_registries` oder `list_items_in_registries`.
+2.13 Wenn ein passendes ShadCN-Item existiert, immer dieses verwenden; bei Unklarheit zusaetzlich `get_item_examples_from_registries` und `view_items_in_registries` nutzen.
+2.14 Erst wenn kein passendes Item vorhanden ist, neue Komponente bauen oder via ShadCN hinzufuegen; davor `get_add_command_for_items` verwenden.
+2.15 Nach Hinzufuegen oder Erstellen von ShadCN-bezogenen Komponenten immer `get_audit_checklist` ausfuehren und relevante Punkte pruefen.
+2.16 Falls MCP fuer ShadCN nicht verfuegbar ist, mit `npx shadcn@latest` arbeiten und dieselbe Reihenfolge einhalten: suchen, vergleichen, dann erst implementieren.
 
 ## 3 Aufbau
 

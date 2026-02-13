@@ -166,6 +166,7 @@
     "rimraf": "^6.0.1",
     "sass": "^1.86.0",
     "sass-loader": "^16.0.5",
+    "shadcn": "^3.8.4",
     "style-loader": "^4.0.0",
     "tailwindcss": "^4.1.12",
     "terser-webpack-plugin": "^5.3.14",

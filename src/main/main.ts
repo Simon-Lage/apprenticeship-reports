@@ -167,7 +167,7 @@ const createWindow = async () => {
   // Auto-Updates steuern (kein Auto-Exit bei Erkennung)
   // eslint-disable-next-line
   new AppUpdater(mainWindow);
-}
+};
 
 /**
  * Add event listeners...
