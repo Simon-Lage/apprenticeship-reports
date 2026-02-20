@@ -2,7 +2,11 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@/renderer/*": ["./src/renderer/*"],
+      "@/components/*": ["./src/renderer/components/*"],
+      "@/lib/*": ["./src/renderer/lib/*"],
+      "@/hooks/*": ["./src/renderer/hooks/*"]
     },
     "incremental": true,
     "target": "es2022",
@@ -20,3 +24,4 @@
   },
   "exclude": ["test", "release/build", "release/app/dist", ".erb/dll"]
 }
+

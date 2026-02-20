@@ -1,5 +1,5 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import './tailwind.css';
+import './globals.css';
 import './App.css';
 
 export default function App() {
@@ -11,3 +11,4 @@ export default function App() {
     </Router>
   );
 }
+
