@@ -2,11 +2,11 @@ import { ipcMain } from 'electron';
 import { getGoogleClientSecret, googleClientId } from '../../shared/authConfig';
 import { AuthSession, AuthStatus } from '../../shared/authTypes';
 import { exportGoogleDriveEncrypted, exportLocalEncrypted, importEncryptedBackup } from './backup';
-import { DbService } from './db';
 import { startGoogleLogin } from './google';
 import {
   buildKeyring,
   createDek,
+  getGoogleDriveRefreshToken,
   loadKeyring,
   saveKeyring,
   unwrapDekWithGoogle,
@@ -16,31 +16,19 @@ import {
 } from './keyring';
 import { startCriticalOperation } from '../criticalOperations';
 import { resetApplication } from './reset';
-
-type AuthSessionState = {
-  dek: Buffer | null;
-  user: AuthSession['user'];
-  method: AuthSession['method'] | null;
-};
-
-const dbService = new DbService();
-const session: AuthSessionState = {
-  dek: null,
-  user: null,
-  method: null,
-};
-
-const setSession = async (dek: Buffer, user: AuthSession['user'], method: AuthSession['method']) => {
-  await dbService.open(dek);
-  session.dek = dek;
-  session.user = user;
-  session.method = method;
-};
+import {
+  clearAuthenticatedSession,
+  ensureAuthenticatedSession,
+  getAuthSessionState,
+  getDbService,
+  setAuthenticatedSession,
+} from './runtime';
 
 const isDebugDekEnabled = () =>
   process.env.SHOW_DEBUG_DEK_KEY_IAEJFJDKDSMSDKLMDMFGKLKFMEKFEMFPEP342342324234 === 'true';
 
 const maybeLogDek = () => {
+  const session = getAuthSessionState();
   if (!isDebugDekEnabled()) {
     return;
   }
@@ -51,25 +39,19 @@ const maybeLogDek = () => {
   console.log(`[debug] SQLCipher DEK: ${session.dek.toString('hex')}`);
 };
 
-const clearSession = async () => {
-  await dbService.close();
-  session.dek = null;
-  session.user = null;
-  session.method = null;
-};
-
-const ensureSession = () => {
-  if (!session.dek || !session.method) {
-    throw new Error('not_authenticated');
-  }
-};
-
 const getStatus = async (): Promise<AuthStatus> => {
   const keyring = await loadKeyring();
+  let hasGoogleDriveAccess = false;
+  try {
+    hasGoogleDriveAccess = !!getGoogleDriveRefreshToken(keyring?.google);
+  } catch {
+    hasGoogleDriveAccess = false;
+  }
   return {
     hasPassword: !!keyring?.password,
     hasGoogle: !!keyring?.google,
     googleSub: keyring?.google?.sub,
+    hasGoogleDriveAccess,
   };
 };
 
@@ -90,7 +72,7 @@ export const registerAuthHandlers = () => {
       const passwordWrap = wrapDekWithPassword(dek, payload.password);
       const keyring = buildKeyring(passwordWrap);
       await saveKeyring(keyring);
-      await setSession(dek, null, 'password');
+      await setAuthenticatedSession(dek, null, 'password');
       maybeLogDek();
       return { user: null, method: 'password' } satisfies AuthSession;
     } finally {
@@ -104,7 +86,7 @@ export const registerAuthHandlers = () => {
       throw new Error('not_initialized');
     }
     const dek = unwrapDekWithPassword(keyring.password, payload.password);
-    await setSession(dek, null, 'password');
+    await setAuthenticatedSession(dek, null, 'password');
     maybeLogDek();
     return { user: null, method: 'password' } satisfies AuthSession;
   });
@@ -119,13 +101,14 @@ export const registerAuthHandlers = () => {
       throw new Error('google_account_mismatch');
     }
     const dek = unwrapDekWithGoogle(keyring.google);
-    await setSession(dek, user, 'google');
+    await setAuthenticatedSession(dek, user, 'google');
     maybeLogDek();
     return { user, method: 'google' } satisfies AuthSession;
   });
 
   ipcMain.handle('auth:link:google', async () => {
-    ensureSession();
+    ensureAuthenticatedSession();
+    const session = getAuthSessionState();
     const keyring = await loadKeyring();
     if (!keyring?.password) {
       throw new Error('not_initialized');
@@ -141,7 +124,7 @@ export const registerAuthHandlers = () => {
   });
 
   ipcMain.handle('auth:unlink:google', async () => {
-    ensureSession();
+    ensureAuthenticatedSession();
     const keyring = await loadKeyring();
     if (!keyring?.password) {
       throw new Error('not_initialized');
@@ -155,7 +138,8 @@ export const registerAuthHandlers = () => {
   });
 
   ipcMain.handle('auth:change:password', async (_event, payload: { password: string }) => {
-    ensureSession();
+    ensureAuthenticatedSession();
+    const session = getAuthSessionState();
     const keyring = await loadKeyring();
     if (!keyring?.password) {
       throw new Error('not_initialized');
@@ -167,7 +151,8 @@ export const registerAuthHandlers = () => {
   });
 
   ipcMain.handle('auth:change:google', async () => {
-    ensureSession();
+    ensureAuthenticatedSession();
+    const session = getAuthSessionState();
     const keyring = await loadKeyring();
     if (!keyring?.password) {
       throw new Error('not_initialized');
@@ -180,13 +165,14 @@ export const registerAuthHandlers = () => {
   });
 
   ipcMain.handle('auth:logout', async () => {
-    await clearSession();
+    await clearAuthenticatedSession();
     return true;
   });
 
   ipcMain.handle('auth:reset', async (_event, payload: { password: string }) => {
+    const dbService = getDbService();
     await resetApplication(payload.password, dbService);
-    await clearSession();
+    await clearAuthenticatedSession();
     return true;
   });
 
@@ -195,7 +181,8 @@ export const registerAuthHandlers = () => {
   ipcMain.handle('backup:import', async () => importEncryptedBackup());
 
   ipcMain.handle('debug:export-decrypted-db', async () => {
-    ensureSession();
+    ensureAuthenticatedSession();
+    const dbService = getDbService();
     if (!isDebugDekEnabled()) {
       throw new Error('debug_dek_disabled');
     }

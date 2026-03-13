@@ -16,4 +16,5 @@ export type AuthStatus = {
   hasPassword: boolean;
   hasGoogle: boolean;
   googleSub?: string;
+  hasGoogleDriveAccess?: boolean;
 };

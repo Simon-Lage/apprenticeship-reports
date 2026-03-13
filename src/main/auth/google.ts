@@ -6,10 +6,20 @@ import { AuthUser } from '../../shared/authTypes';
 type AuthResult = {
   idToken: string;
   accessToken?: string;
+  refreshToken?: string;
   expiresIn?: number;
   scope?: string;
   tokenType?: string;
 };
+
+type StartGoogleOAuthOptions = {
+  scopes: string[];
+  accessType?: 'online' | 'offline';
+  prompt?: 'consent' | 'select_account' | 'none';
+  includeGrantedScopes?: boolean;
+};
+
+const GOOGLE_DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
 const base64Url = (input: Buffer) =>
   input
@@ -90,6 +100,7 @@ const exchangeCodeForTokens = async (
   const data = (await response.json()) as {
     id_token?: string;
     access_token?: string;
+    refresh_token?: string;
     expires_in?: number;
     scope?: string;
     token_type?: string;
@@ -100,6 +111,7 @@ const exchangeCodeForTokens = async (
   return {
     idToken: data.id_token,
     accessToken: data.access_token,
+    refreshToken: data.refresh_token,
     expiresIn: data.expires_in,
     scope: data.scope,
     tokenType: data.token_type,
@@ -145,12 +157,28 @@ const validateIdToken = async (idToken: string, clientId: string): Promise<AuthU
   };
 };
 
-export const startGoogleLogin = async (
+const normalizeScopes = (scopes: string[]) =>
+  Array.from(
+    new Set(scopes.map((scope) => scope.trim()).filter((scope) => scope.length > 0)),
+  );
+
+export const startGoogleOAuth = async (
   clientId: string,
-  clientSecret?: string,
-): Promise<{ user: AuthUser; idToken: string }> => {
+  clientSecret: string | undefined,
+  options: StartGoogleOAuthOptions,
+): Promise<{
+  user: AuthUser;
+  idToken: string;
+  accessToken?: string;
+  refreshToken?: string;
+  scope?: string;
+}> => {
   if (!clientId) {
     throw new Error('client_id_missing');
+  }
+  const scopes = normalizeScopes(options.scopes);
+  if (scopes.length === 0) {
+    throw new Error('scope_missing');
   }
   const verifier = createRandomString(64);
   const challenge = await createCodeChallenge(verifier);
@@ -167,10 +195,19 @@ export const startGoogleLogin = async (
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('client_id', clientId);
   url.searchParams.set('redirect_uri', redirectUri);
-  url.searchParams.set('scope', 'openid email profile');
+  url.searchParams.set('scope', scopes.join(' '));
   url.searchParams.set('code_challenge', challenge);
   url.searchParams.set('code_challenge_method', 'S256');
   url.searchParams.set('state', state);
+  if (options.accessType) {
+    url.searchParams.set('access_type', options.accessType);
+  }
+  if (options.prompt) {
+    url.searchParams.set('prompt', options.prompt);
+  }
+  if (options.includeGrantedScopes) {
+    url.searchParams.set('include_granted_scopes', 'true');
+  }
 
   await shell.openExternal(url.toString());
   const { code } = await waitForAuthCode(server, state);
@@ -182,5 +219,75 @@ export const startGoogleLogin = async (
     clientSecret,
   );
   const user = await validateIdToken(tokens.idToken, clientId);
-  return { user, idToken: tokens.idToken };
+  return {
+    user,
+    idToken: tokens.idToken,
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+    scope: tokens.scope,
+  };
 };
+
+export const startGoogleLogin = async (
+  clientId: string,
+  clientSecret?: string,
+): Promise<{ user: AuthUser; idToken: string }> => {
+  const result = await startGoogleOAuth(clientId, clientSecret, {
+    scopes: ['openid', 'email', 'profile'],
+  });
+  return { user: result.user, idToken: result.idToken };
+};
+
+export const startGoogleDriveConsent = async (
+  clientId: string,
+  clientSecret?: string,
+) =>
+  startGoogleOAuth(clientId, clientSecret, {
+    scopes: ['openid', 'email', 'profile', GOOGLE_DRIVE_FILE_SCOPE],
+    accessType: 'offline',
+    prompt: 'consent',
+    includeGrantedScopes: true,
+  });
+
+export const refreshGoogleAccessToken = async (
+  clientId: string,
+  clientSecret: string | undefined,
+  refreshToken: string,
+  scopes: string[],
+): Promise<{ accessToken: string; expiresIn: number; scope: string }> => {
+  const body = new URLSearchParams({
+    grant_type: 'refresh_token',
+    client_id: clientId,
+    refresh_token: refreshToken,
+    scope: normalizeScopes(scopes).join(' '),
+  });
+  if (clientSecret) {
+    body.set('client_secret', clientSecret);
+  }
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body,
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`token_refresh_failed: ${text}`);
+  }
+  const data = (await response.json()) as {
+    access_token?: string;
+    expires_in?: number;
+    scope?: string;
+  };
+  if (!data.access_token) {
+    throw new Error('access_token_missing');
+  }
+  return {
+    accessToken: data.access_token,
+    expiresIn: data.expires_in ?? 3600,
+    scope: data.scope ?? '',
+  };
+};
+
+export const GOOGLE_DRIVE_SCOPE = GOOGLE_DRIVE_FILE_SCOPE;

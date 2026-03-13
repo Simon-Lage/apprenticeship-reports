@@ -4,7 +4,12 @@ import { FcGoogle } from 'react-icons/fc';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import LiquidGlassModule from 'liquid-glass-react';
 import { Button } from '../../components/ui/button';
-import { CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,6 +24,9 @@ type LiquidGlassProps = {
   elasticity?: number;
   cornerRadius?: number;
   className?: string;
+  padding?: string;
+  style?: React.CSSProperties;
+  mouseContainer?: React.RefObject<HTMLElement | null> | null;
   overLight?: boolean;
   mode?: 'standard' | 'polar' | 'prominent' | 'shader';
 };
@@ -69,67 +77,68 @@ export default function LoginPage() {
   };
 
   return (
-    <LiquidGlass
-      cornerRadius={16}
-      mode="prominent"
-      displacementScale={72}
-      blurAmount={0.095}
-      saturation={185}
-      aberrationIntensity={1.2}
-      elasticity={0.18}
-      overLight
-      className="w-[min(92vw,28rem)]"
-    >
-      <CardHeader>
-        <CardTitle>{t('login.title')}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="password">{t('login.password')}</Label>
-          <div className="flex gap-2">
-            <Input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="current-password"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              aria-label={
-                showPassword ? t('login.hidePassword') : t('login.showPassword')
-              }
-              onClick={() => setShowPassword((current) => !current)}
-            >
-              {showPassword ? <FiEyeOff /> : <FiEye />}
-            </Button>
-          </div>
-        </div>
-        {errorKey ? (
-          <div className="text-sm text-destructive">{t(errorKey)}</div>
-        ) : null}
-        <div className="flex flex-col gap-3">
-          <Button
-            onClick={handlePasswordLogin}
-            disabled={passwordLoading || googleLoading}
-          >
-            {t('login.passwordSubmit')}
-          </Button>
-          {status?.hasGoogle ? (
-            <Button
-              type="button"
-              variant="outline"
-              icon={<FcGoogle />}
-              onClick={handleGoogleLogin}
-              disabled={passwordLoading || googleLoading}
-            >
-              {t('login.google')}
-            </Button>
-          ) : null}
-        </div>
-      </CardContent>
-    </LiquidGlass>
+    <div className="relative flex h-screen w-screen items-center justify-center">
+      <LiquidGlass
+        cornerRadius={16}
+        elasticity={0}
+        padding="0px"
+        style={{ position: 'absolute', top: '50%', left: '50%' }}
+      >
+        <Card className="w-[min(92vw,28rem)] border-0 bg-transparent py-4 shadow-none">
+          <CardHeader>
+            <CardTitle>{t('login.title')}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="password">{t('login.password')}</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label={
+                    showPassword
+                      ? t('login.hidePassword')
+                      : t('login.showPassword')
+                  }
+                  onClick={() => setShowPassword((current) => !current)}
+                >
+                  {showPassword ? <FiEyeOff /> : <FiEye />}
+                </Button>
+              </div>
+            </div>
+            {errorKey ? (
+              <div className="text-sm text-destructive">{t(errorKey)}</div>
+            ) : null}
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={handlePasswordLogin}
+                disabled={passwordLoading || googleLoading}
+              >
+                {t('login.passwordSubmit')}
+              </Button>
+              {status?.hasGoogle ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  icon={<FcGoogle />}
+                  onClick={handleGoogleLogin}
+                  disabled={passwordLoading || googleLoading}
+                >
+                  {t('login.google')}
+                </Button>
+              ) : null}
+            </div>
+          </CardContent>
+        </Card>
+      </LiquidGlass>
+    </div>
   );
 }

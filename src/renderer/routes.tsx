@@ -11,23 +11,23 @@ const lazyPage = (loader: () => Promise<{ default: unknown }>) =>
     loader().then((module) => ({ default: module.default as ComponentType })),
   );
 
-const LoginPage = lazyPage(() => import('./pages/LoginPage'));
-const WelcomePage = lazyPage(() => import('./pages/WelcomePage'));
-const SetupPasswordPage = lazyPage(() => import('./pages/SetupPasswordPage'));
-const SetupGooglePage = lazyPage(() => import('./pages/SetupGooglePage'));
-const DashboardPage = lazyPage(() => import('./pages/DashboardPage'));
-const OnboardingPage = lazyPage(() => import('./pages/OnboardingPage'));
-const ForgotPasswordPage = lazyPage(() => import('./pages/ForgotPasswordPage'));
-const HomePage = lazyPage(() => import('./pages/HomePage'));
-const DailyReportPage = lazyPage(() => import('./pages/DailyReportPage'));
-const WeeklyReportPage = lazyPage(() => import('./pages/WeeklyReportPage'));
+const LoginPage = lazyPage(() => import('./pages/LoginPage/index.js'));
+const WelcomePage = lazyPage(() => import('./pages/WelcomePage/index.js'));
+const SetupPasswordPage = lazyPage(() => import('./pages/SetupPasswordPage/index.js'));
+const SetupGooglePage = lazyPage(() => import('./pages/SetupGooglePage/index.js'));
+const DashboardPage = lazyPage(() => import('./pages/DashboardPage/index.js'));
+const OnboardingPage = lazyPage(() => import('./pages/OnboardingPage/index.js'));
+const ForgotPasswordPage = lazyPage(() => import('./pages/ForgotPasswordPage/index.js'));
+const HomePage = lazyPage(() => import('./pages/HomePage/index.js'));
+const DailyReportPage = lazyPage(() => import('./pages/DailyReportPage/index.js'));
+const WeeklyReportPage = lazyPage(() => import('./pages/WeeklyReportPage/index.js'));
 const ReportsOverviewPage = lazyPage(
-  () => import('./pages/ReportsOverviewPage'),
+  () => import('./pages/ReportsOverviewPage/index.js'),
 );
-const SettingsPage = lazyPage(() => import('./pages/SettingsPage'));
-const TimeTablePage = lazyPage(() => import('./pages/TimeTablePage'));
-const ImportDataPage = lazyPage(() => import('./pages/ImportDataPage'));
-const ExportDataPage = lazyPage(() => import('./pages/ExportDataPage'));
+const SettingsPage = lazyPage(() => import('./pages/SettingsPage/index.js'));
+const TimeTablePage = lazyPage(() => import('./pages/TimeTablePage/index.js'));
+const ImportDataPage = lazyPage(() => import('./pages/ImportDataPage/index.js'));
+const ExportDataPage = lazyPage(() => import('./pages/ExportDataPage/index.js'));
 
 const routes: RouteObject[] = [
   {

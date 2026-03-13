@@ -89,6 +89,17 @@ const getCurrentVersion = (db: Database.Database) => {
 };
 
 const applyMigration = (db: Database.Database, migration: Migration) => {
+  if (migration.version === 2) {
+    const columns = db
+      .prepare("PRAGMA table_info('weekly_reports')")
+      .all() as Array<{ name: string }>;
+    const hasSent = columns.some((column) => column.name === 'sent');
+    if (hasSent) {
+      db.prepare('INSERT OR IGNORE INTO schema_migrations (version, applied_at) VALUES (?, ?)')
+        .run(migration.version, new Date().toISOString());
+      return;
+    }
+  }
   const apply = db.transaction((target: Migration) => {
     target.statements.forEach((statement) => {
       db.exec(statement);

@@ -17,6 +17,7 @@ import log from 'electron-log';
 import { resolveHtmlPath } from './utils';
 import { registerAuthHandlers } from './auth/handlers';
 import { isCriticalOperationActive } from './criticalOperations';
+import { registerLogicHandlers } from './logic/handlers';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 dotenv.config({ path: path.join(process.cwd(), '.env.local'), override: true });
@@ -62,6 +63,7 @@ const showCriticalBlockDialog = () => {
   }
   quitDialogOpen = true;
   const dialogTarget = mainWindow ?? undefined;
+  // @ts-ignore
   dialog.showMessageBoxSync(dialogTarget, {
     type: 'warning',
     title: 'Bitte warten',
@@ -80,6 +82,7 @@ ipcMain.on('ipc-example', async (event, arg) => {
   event.reply('ipc-example', msgTemplate('pong'));
 });
 registerAuthHandlers();
+registerLogicHandlers();
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');

@@ -23,6 +23,11 @@ type GoogleWrap = {
   nonce: string;
   ciphertext: string;
   authTag: string;
+  drive?: {
+    refreshToken: string;
+    scope: string;
+    updatedAt: string;
+  };
 };
 
 type KeyringData = {
@@ -163,3 +168,40 @@ export const buildKeyring = (passwordWrap: PasswordWrap, googleWrap?: GoogleWrap
   password: passwordWrap,
   google: googleWrap,
 });
+
+export const setGoogleDriveRefreshToken = (
+  googleWrap: GoogleWrap,
+  refreshToken: string,
+  scope: string,
+) => {
+  if (!safeStorage.isEncryptionAvailable()) {
+    throw new Error('safe_storage_unavailable');
+  }
+  const encrypted = safeStorage.encryptString(refreshToken);
+  return {
+    ...googleWrap,
+    drive: {
+      refreshToken: encrypted.toString('base64'),
+      scope,
+      updatedAt: new Date().toISOString(),
+    },
+  } satisfies GoogleWrap;
+};
+
+export const getGoogleDriveRefreshToken = (
+  googleWrap: GoogleWrap | undefined,
+) => {
+  if (!googleWrap?.drive) {
+    return null;
+  }
+  if (!safeStorage.isEncryptionAvailable()) {
+    throw new Error('safe_storage_unavailable');
+  }
+  const encrypted = Buffer.from(googleWrap.drive.refreshToken, 'base64');
+  const refreshToken = safeStorage.decryptString(encrypted);
+  return {
+    refreshToken,
+    scope: googleWrap.drive.scope,
+    updatedAt: googleWrap.drive.updatedAt,
+  };
+};

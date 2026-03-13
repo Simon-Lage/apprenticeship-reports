@@ -4,3 +4,4 @@ export * from './entriesRepository';
 export * from './absencesRepository';
 export * from './weeklyReportsRepository';
 export * from './timetableRepository';
+export * from './dailyReportsRepository';
