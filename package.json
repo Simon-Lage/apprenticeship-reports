@@ -62,6 +62,13 @@
       "json"
     ],
     "moduleNameMapper": {
+      "^@/main/(.*)$": "<rootDir>/src/main/$1",
+      "^@/renderer/(.*)$": "<rootDir>/src/renderer/$1",
+      "^@/components/(.*)$": "<rootDir>/src/renderer/components/$1",
+      "^@/lib/(.*)$": "<rootDir>/src/renderer/lib/$1",
+      "^@/hooks/(.*)$": "<rootDir>/src/renderer/hooks/$1",
+      "^@/shared/(.*)$": "<rootDir>/src/shared/$1",
+      "^@/(.*)$": "<rootDir>/$1",
       "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$": "<rootDir>/.erb/mocks/fileMock.js",
       "\\.(css|less|sass|scss)$": "identity-obj-proxy"
     },
@@ -295,4 +302,3 @@
   },
   "version": "0.0.20"
 }
-

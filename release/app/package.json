@@ -1,5 +1,7 @@
 {
   "name": "apprenticeship-reports",
+  "version": "0.0.20",
+  "description": "A programm to generate reports for apprenticeships",
   "license": "MIT",
   "author": {
     "name": "Simon Lage",

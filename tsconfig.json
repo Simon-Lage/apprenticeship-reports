@@ -3,10 +3,12 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
+      "@/main/*": ["./src/main/*"],
       "@/renderer/*": ["./src/renderer/*"],
       "@/components/*": ["./src/renderer/components/*"],
       "@/lib/*": ["./src/renderer/lib/*"],
-      "@/hooks/*": ["./src/renderer/hooks/*"]
+      "@/hooks/*": ["./src/renderer/hooks/*"],
+      "@/shared/*": ["./src/shared/*"]
     },
     "incremental": true,
     "target": "es2022",
@@ -24,4 +26,3 @@
   },
   "exclude": ["test", "release/build", "release/app/dist", ".erb/dll"]
 }
-

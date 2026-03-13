@@ -2,14 +2,14 @@ import * as React from "react"
 import { Command as CommandPrimitive } from "cmdk"
 import { SearchIcon } from "lucide-react"
 
-import { cn } from "@/renderer/lib/utils"
+import { cn } from "@/lib/utils"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/src/renderer/components/ui/dialog"
+} from "@/components/ui/dialog"
 
 function Command({
   className,
@@ -180,3 +180,4 @@ export {
   CommandShortcut,
   CommandSeparator,
 }
+

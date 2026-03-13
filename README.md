@@ -8,13 +8,18 @@ Download / Herunterladen
 
 ## Aktuelle Version
 - Version: v0.0.20
-- Veröffentlicht am: 19.09.2025
+- Veroeffentlicht am: 19.09.2025
 
 ## Latest Version
 - Version: v0.0.20
 - Released on: September 19, 2025
 
 ---
+
+## Datenbank
+- Aktuell nutzt die App lokal SQLite als produktive Datenbank.
+- Ein Umstieg auf SQLCipher ist fuer den produktiven Sicherheitsstand geplant, aber noch nicht umgesetzt.
+- Die aktuelle SQLite-Initialisierung und Migration werden bereits im Produktions-Bundle mit ausgeliefert.
 
 ### Hinweise / Notes
 - Nur "Apprenticeship-Reports-Setup.exe" manuell laden. / Download only "Apprenticeship-Reports-Setup.exe".
