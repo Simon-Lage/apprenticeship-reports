@@ -1,7 +1,7 @@
 import { useAppKernelTestHarness } from '@/src/test-utils/app-kernel-test-harness';
 
 describe('app kernel report mutations', () => {
-  const { createKernel, signIn, completeRequiredOnboarding } =
+  const { createKernel, signIn, completeRequiredOnboarding, setCurrentTime } =
     useAppKernelTestHarness();
 
   it('creates or updates a weekly report by week range', async () => {
@@ -9,6 +9,7 @@ describe('app kernel report mutations', () => {
     await kernel.boot();
     await signIn(kernel);
     await completeRequiredOnboarding(kernel);
+    setCurrentTime('2026-03-13T10:00:00.000Z');
 
     await kernel.upsertWeeklyReport({
       weekStart: '2026-03-09',
@@ -28,6 +29,25 @@ describe('app kernel report mutations', () => {
     expect(createdWeek?.values).toEqual({
       area: 'Backend',
     });
+    const initialHash = stateAfterCreate.reports.weeklyHashes[createdWeek!.id]?.hash;
+
+    setCurrentTime('2026-03-13T10:30:00.000Z');
+    await kernel.upsertWeeklyReport({
+      weekStart: '2026-03-09',
+      weekEnd: '2026-03-13',
+      values: {
+        area: 'Backend',
+      },
+    });
+    const stateAfterNoChange = await repository.read();
+    const unchangedWeek = Object.values(stateAfterNoChange.reports.weeklyReports).find(
+      (weeklyReport) =>
+        weeklyReport.weekStart === '2026-03-09' &&
+        weeklyReport.weekEnd === '2026-03-13',
+    );
+
+    expect(unchangedWeek?.updatedAt).toBe('2026-03-13T10:00:00.000Z');
+    setCurrentTime('2026-03-13T11:00:00.000Z');
 
     await kernel.upsertWeeklyReport({
       weekStart: '2026-03-09',
@@ -47,6 +67,10 @@ describe('app kernel report mutations', () => {
     expect(updatedWeek?.values).toEqual({
       area: 'Frontend',
     });
+    expect(updatedWeek?.updatedAt).toBe('2026-03-13T11:00:00.000Z');
+    expect(stateAfterUpdate.reports.weeklyHashes[updatedWeek!.id]?.hash).not.toBe(
+      initialHash,
+    );
     expect(Object.keys(stateAfterUpdate.reports.weeklyReports)).toHaveLength(1);
   });
 
@@ -55,6 +79,7 @@ describe('app kernel report mutations', () => {
     await kernel.boot();
     await signIn(kernel);
     await completeRequiredOnboarding(kernel);
+    setCurrentTime('2026-03-13T10:00:00.000Z');
 
     await kernel.upsertDailyReport({
       weekStart: '2026-03-09',
@@ -79,6 +104,28 @@ describe('app kernel report mutations', () => {
     expect(day?.values).toEqual({
       tasks: 'Setup project',
     });
+    expect(week?.updatedAt).toBe('2026-03-13T10:00:00.000Z');
+    const hashAfterFirstUpsert = state.reports.weeklyHashes[week!.id]?.hash;
+    expect(state.backup.dailyReportsSinceLastBackup).toBe(1);
+    setCurrentTime('2026-03-13T10:30:00.000Z');
+    await kernel.upsertDailyReport({
+      weekStart: '2026-03-09',
+      weekEnd: '2026-03-13',
+      date: '2026-03-09',
+      values: {
+        tasks: 'Setup project',
+      },
+    });
+
+    state = await repository.read();
+    week = Object.values(state.reports.weeklyReports).find(
+      (weeklyReport) =>
+        weeklyReport.weekStart === '2026-03-09' &&
+        weeklyReport.weekEnd === '2026-03-13',
+    );
+    expect(week?.updatedAt).toBe('2026-03-13T10:00:00.000Z');
+    expect(state.backup.dailyReportsSinceLastBackup).toBe(1);
+    setCurrentTime('2026-03-13T11:00:00.000Z');
 
     await kernel.upsertDailyReport({
       weekStart: '2026-03-09',
@@ -90,6 +137,11 @@ describe('app kernel report mutations', () => {
     });
 
     state = await repository.read();
+    week = Object.values(state.reports.weeklyReports).find(
+      (weeklyReport) =>
+        weeklyReport.weekStart === '2026-03-09' &&
+        weeklyReport.weekEnd === '2026-03-13',
+    );
     day = Object.values(state.reports.dailyReports).find(
       (dailyReport) => dailyReport.date === '2026-03-09',
     );
@@ -97,7 +149,13 @@ describe('app kernel report mutations', () => {
     expect(day?.values).toEqual({
       tasks: 'Fix lint issues',
     });
+    expect(week?.updatedAt).toBe('2026-03-13T11:00:00.000Z');
+    expect(state.reports.weeklyHashes[week!.id]?.hash).not.toBe(
+      hashAfterFirstUpsert,
+    );
+    expect(state.backup.dailyReportsSinceLastBackup).toBe(2);
     expect(Object.keys(state.reports.dailyReports)).toHaveLength(1);
+    setCurrentTime('2026-03-13T11:30:00.000Z');
 
     await kernel.deleteDailyReport({
       weekStart: '2026-03-09',
@@ -117,6 +175,7 @@ describe('app kernel report mutations', () => {
 
     expect(day).toBeUndefined();
     expect(week?.dailyReportIds).toEqual([]);
+    expect(week?.updatedAt).toBe('2026-03-13T11:30:00.000Z');
   });
 
   it('deletes a weekly report together with its days', async () => {
@@ -124,6 +183,7 @@ describe('app kernel report mutations', () => {
     await kernel.boot();
     await signIn(kernel);
     await completeRequiredOnboarding(kernel);
+    setCurrentTime('2026-03-13T10:00:00.000Z');
 
     await kernel.upsertDailyReport({
       weekStart: '2026-03-09',
@@ -160,5 +220,6 @@ describe('app kernel report mutations', () => {
 
     expect(week).toBeUndefined();
     expect(day).toBeUndefined();
+    expect(Object.keys(state.reports.weeklyHashes)).toHaveLength(0);
   });
 });

@@ -170,7 +170,6 @@ export const DeleteDailyReportInputSchema = z.object({
 
 export const RegisterWeeklyReportHashInputSchema = z.object({
   weeklyReportId: z.string().min(1),
-  payload: JsonObjectSchema,
 });
 
 export type InitializePasswordAuthInput = z.input<
