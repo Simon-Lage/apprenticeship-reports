@@ -30,6 +30,20 @@ export class GoogleDriveService {
   async authorizeConnection(
     permissionState: DrivePermissionState,
   ): Promise<AuthorizedDriveConnection> {
+    if (permissionState.refreshToken) {
+      const refreshed = await this.oauthService.refreshAccessToken(
+        permissionState.refreshToken,
+        permissionState.grantedScopes,
+      );
+
+      return {
+        accessToken: refreshed.accessToken,
+        grantedScopes: refreshed.grantedScopes.length
+          ? refreshed.grantedScopes
+          : permissionState.grantedScopes,
+      };
+    }
+
     if (permissionState.accessToken) {
       return {
         accessToken: permissionState.accessToken,
@@ -37,21 +51,7 @@ export class GoogleDriveService {
       };
     }
 
-    if (!permissionState.refreshToken) {
-      throw new Error('Google Drive ist nicht verbunden.');
-    }
-
-    const refreshed = await this.oauthService.refreshAccessToken(
-      permissionState.refreshToken,
-      permissionState.grantedScopes,
-    );
-
-    return {
-      accessToken: refreshed.accessToken,
-      grantedScopes: refreshed.grantedScopes.length
-        ? refreshed.grantedScopes
-        : permissionState.grantedScopes,
-    };
+    throw new Error('Google Drive ist nicht verbunden.');
   }
 
   async uploadBackup(input: {
@@ -103,9 +103,7 @@ export class GoogleDriveService {
     };
   }
 
-  async listBackups(
-    permissionState: DrivePermissionState,
-  ): Promise<{
+  async listBackups(permissionState: DrivePermissionState): Promise<{
     files: DriveBackupFile[];
     accessToken: string;
     grantedScopes: string[];

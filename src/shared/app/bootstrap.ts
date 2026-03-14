@@ -9,6 +9,7 @@ import { SettingsImportPreview } from '@/shared/settings/schema';
 
 export type AppLockReason =
   | 'authentication'
+  | 'password-setup'
   | 'drive-permissions'
   | 'onboarding';
 
@@ -53,6 +54,14 @@ export type AppBootstrapState = {
   };
 };
 
+type ResolvedOnboardingState = {
+  isConfigured: boolean;
+  isComplete: boolean;
+  nextStepId: string | null;
+  remainingStepIds: string[];
+  skippedStepIds: string[];
+};
+
 export function deriveAppBootstrapState(input: {
   now: string;
   session: AppSession | null;
@@ -65,6 +74,7 @@ export function deriveAppBootstrapState(input: {
   lastRestoredAt: string | null;
   onboardingState: OnboardingProgress;
   onboardingStepIds?: string[];
+  resolvedOnboarding?: ResolvedOnboardingState;
   pendingImport: SettingsImportPreview | null;
   lastExportedAt: string | null;
   weeklyHashCount: number;
@@ -75,23 +85,30 @@ export function deriveAppBootstrapState(input: {
   const drive = deriveDriveAccessState(input.drive, auth.isAuthenticated);
   const backup = deriveBackupStatus(input.backup);
   const onboardingStepIds = input.onboardingStepIds ?? [];
-  const completedStepIdSet = new Set(input.onboardingState.completedStepIds);
-  const remainingStepIds = onboardingStepIds.filter(
-    (stepId) => !completedStepIdSet.has(stepId),
+  const fallbackCompletedStepIdSet = new Set(
+    input.onboardingState.completedStepIds,
   );
-  const skippedStepIds = input.onboardingState.skippedStepIds ?? [];
-  const onboarding = {
+  const fallbackRemainingStepIds = onboardingStepIds.filter(
+    (stepId) => !fallbackCompletedStepIdSet.has(stepId),
+  );
+  const onboarding = input.resolvedOnboarding ?? {
     isConfigured: onboardingStepIds.length > 0,
     isComplete:
-      onboardingStepIds.length > 0 ? remainingStepIds.length === 0 : false,
-    nextStepId: remainingStepIds[0] ?? null,
-    remainingStepIds,
-    skippedStepIds,
+      onboardingStepIds.length > 0
+        ? fallbackRemainingStepIds.length === 0
+        : false,
+    nextStepId: fallbackRemainingStepIds[0] ?? null,
+    remainingStepIds: fallbackRemainingStepIds,
+    skippedStepIds: input.onboardingState.skippedStepIds ?? [],
   };
   const lockReasons: AppLockReason[] = [];
 
   if (!auth.isAuthenticated) {
     lockReasons.push('authentication');
+  }
+
+  if (!input.passwordConfigured) {
+    lockReasons.push('password-setup');
   }
 
   if (drive.isLocked) {

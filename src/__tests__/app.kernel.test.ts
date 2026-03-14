@@ -85,6 +85,8 @@ describe('app kernel', () => {
     kernel: AppKernel,
     grantedScopes: string[] = ['scope:drive'],
   ) {
+    await ensurePasswordSetup(kernel);
+
     return kernel.saveGoogleSession({
       account: {
         id: 'user-1',
@@ -95,6 +97,29 @@ describe('app kernel', () => {
       grantedScopes,
       rememberMe: true,
     });
+  }
+
+  async function ensurePasswordSetup(kernel: AppKernel) {
+    const bootstrap = await kernel.getBootstrapState();
+
+    if (bootstrap.auth.passwordConfigured) {
+      return;
+    }
+
+    await kernel.initializePasswordAuth({
+      password: 'CorrectHorse1',
+      rememberMe: true,
+    });
+  }
+
+  async function completeRequiredOnboarding(kernel: AppKernel) {
+    await kernel.saveOnboardingDraft({
+      stepId: 'profile',
+      values: {
+        firstName: 'Ada',
+      },
+    });
+    await kernel.completeOnboardingStep('profile');
   }
 
   async function writeReportsFixture(
@@ -210,6 +235,8 @@ describe('app kernel', () => {
   it('blocks local data writes until the user is authenticated', async () => {
     const { kernel } = createKernel();
     await kernel.boot();
+    await ensurePasswordSetup(kernel);
+    await kernel.clearGoogleSession();
 
     await expect(
       kernel.setSettingsValues({
@@ -217,12 +244,14 @@ describe('app kernel', () => {
           enabled: true,
         },
       }),
-    ).rejects.toThrow('Google-Login abgeschlossen');
+    ).rejects.toThrow('gueltige Anmeldung');
   });
 
   it('blocks local data writes until drive access is granted', async () => {
     const { kernel } = createKernel();
     await kernel.boot();
+    await ensurePasswordSetup(kernel);
+    await kernel.clearGoogleSession();
     await kernel.savePasswordSession({
       account: {
         id: 'user-1',
@@ -239,6 +268,88 @@ describe('app kernel', () => {
         },
       }),
     ).rejects.toThrow('Google-Drive-Berechtigungen fehlen');
+  });
+
+  it('blocks app usage when only google auth exists but no local password is configured', async () => {
+    const { kernel } = createKernel();
+    await kernel.boot();
+    await kernel.saveGoogleSession({
+      account: {
+        id: 'user-1',
+        email: 'user@example.com',
+        displayName: 'User Example',
+      },
+      accessToken: 'drive-token',
+      grantedScopes: ['scope:drive'],
+      rememberMe: true,
+    });
+
+    await expect(
+      kernel.setSettingsValues({
+        backup: {
+          enabled: true,
+        },
+      }),
+    ).rejects.toThrow('lokales Passwort');
+  });
+
+  it('blocks non-onboarding actions until required onboarding data is complete', async () => {
+    const { kernel } = createKernel();
+    await kernel.boot();
+    await signIn(kernel);
+
+    await expect(
+      kernel.setSettingsValues({
+        backup: {
+          enabled: true,
+        },
+      }),
+    ).rejects.toThrow('Onboarding ist unvollstaendig');
+  });
+
+  it('reopens onboarding when a required onboarding value is missing after restart', async () => {
+    const { kernel, repository } = createKernel();
+    await kernel.boot();
+    await signIn(kernel);
+    await completeRequiredOnboarding(kernel);
+
+    const stateBeforeRemoval = await kernel.getBootstrapState();
+
+    expect(stateBeforeRemoval.onboarding.isComplete).toBe(true);
+    expect(stateBeforeRemoval.app.lockReasons).not.toContain('onboarding');
+
+    const persistedState = await repository.read();
+    persistedState.settings.current.values = {};
+    await repository.write(persistedState);
+
+    const { kernel: restartedKernel } = createKernel();
+    await restartedKernel.boot();
+    const stateAfterRestart = await restartedKernel.getBootstrapState();
+
+    expect(stateAfterRestart.onboarding.isComplete).toBe(false);
+    expect(stateAfterRestart.onboarding.nextStepId).toBe('profile');
+    expect(stateAfterRestart.onboarding.remainingStepIds).toContain('profile');
+    expect(stateAfterRestart.app.lockReasons).toContain('onboarding');
+  });
+
+  it('treats prefilled required onboarding values as completed after authentication', async () => {
+    const { kernel, repository } = createKernel();
+    await kernel.boot();
+    const persistedState = await repository.read();
+
+    persistedState.settings.current.values = {
+      onboarding: {
+        profile: {
+          firstName: 'Ada',
+        },
+      },
+    };
+    await repository.write(persistedState);
+
+    const bootstrap = await signIn(kernel);
+
+    expect(bootstrap.onboarding.isComplete).toBe(true);
+    expect(bootstrap.app.lockReasons).not.toContain('onboarding');
   });
 
   it('clears stale drive consent when another account signs in', async () => {
@@ -264,6 +375,7 @@ describe('app kernel', () => {
     const { kernel } = createKernel();
     await kernel.boot();
     await signIn(kernel);
+    await completeRequiredOnboarding(kernel);
 
     await kernel.prepareSettingsImport(
       JSON.stringify({
@@ -291,6 +403,7 @@ describe('app kernel', () => {
     const { kernel } = createKernel();
     await kernel.boot();
     await signIn(kernel);
+    await completeRequiredOnboarding(kernel);
 
     const preview = await kernel.prepareSettingsImport(
       JSON.stringify({
@@ -312,7 +425,9 @@ describe('app kernel', () => {
       previewId: preview.id,
     });
 
-    expect(preview.differences).toHaveLength(1);
+    expect(preview.differences.map((difference) => difference.path)).toContain(
+      'backup',
+    );
     expect(bootstrap.settings.pendingImport).toBe(false);
     expect(bootstrap.backup.hasUnsavedChanges).toBe(true);
   });
@@ -375,7 +490,13 @@ describe('app kernel', () => {
     const { kernel, repository } = createKernel();
     await kernel.boot();
     await signIn(kernel);
+    await completeRequiredOnboarding(kernel);
     await kernel.setSettingsValues({
+      onboarding: {
+        profile: {
+          firstName: 'Ada',
+        },
+      },
       backup: {
         enabled: true,
       },
@@ -392,6 +513,7 @@ describe('app kernel', () => {
     const { kernel, repository } = createKernel();
     await kernel.boot();
     await signIn(kernel);
+    await completeRequiredOnboarding(kernel);
 
     await writeReportsFixture(repository, {
       weeklyReports: [
@@ -450,6 +572,7 @@ describe('app kernel', () => {
     const { kernel, repository } = createKernel();
     await kernel.boot();
     await signIn(kernel);
+    await completeRequiredOnboarding(kernel);
 
     await writeReportsFixture(repository, {
       weeklyReports: [
@@ -539,6 +662,7 @@ describe('app kernel', () => {
     const { kernel, repository } = createKernel();
     await kernel.boot();
     await signIn(kernel);
+    await completeRequiredOnboarding(kernel);
 
     await writeReportsFixture(repository, {
       weeklyReports: [
@@ -609,6 +733,7 @@ describe('app kernel', () => {
     const { kernel, repository } = createKernel();
     await kernel.boot();
     await signIn(kernel);
+    await completeRequiredOnboarding(kernel);
 
     await writeReportsFixture(repository, {
       weeklyReports: [
@@ -636,6 +761,11 @@ describe('app kernel', () => {
       ],
     });
     await kernel.setSettingsValues({
+      onboarding: {
+        profile: {
+          firstName: 'Ada',
+        },
+      },
       backup: {
         enabled: true,
       },
@@ -690,6 +820,11 @@ describe('app kernel', () => {
     expect(bootstrap.auth.status).toBe('active');
     expect(restoredState.recovery.pendingBackupImport).toBeNull();
     expect(restoredState.settings.current.values).toEqual({
+      onboarding: {
+        profile: {
+          firstName: 'Ada',
+        },
+      },
       backup: {
         enabled: true,
       },
@@ -727,7 +862,13 @@ describe('app kernel', () => {
     const { kernel } = createKernel({ googleDriveService: driveService });
     await kernel.boot();
     await signIn(kernel);
+    await completeRequiredOnboarding(kernel);
     await kernel.setSettingsValues({
+      onboarding: {
+        profile: {
+          firstName: 'Ada',
+        },
+      },
       backup: {
         enabled: true,
       },
@@ -776,7 +917,13 @@ describe('app kernel', () => {
     });
     await kernel.boot();
     await signIn(kernel);
+    await completeRequiredOnboarding(kernel);
     await kernel.setSettingsValues({
+      onboarding: {
+        profile: {
+          firstName: 'Ada',
+        },
+      },
       backup: {
         enabled: true,
       },
@@ -820,6 +967,7 @@ describe('app kernel', () => {
     });
     await kernel.boot();
     await signIn(kernel);
+    await completeRequiredOnboarding(kernel);
 
     for (let index = 0; index < 9; index += 1) {
       await kernel.recordDailyReport();

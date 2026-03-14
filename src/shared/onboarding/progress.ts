@@ -20,6 +20,8 @@ export type OnboardingStepDefinition = {
   schema: z.ZodType<JsonObject>;
 };
 
+export type OnboardingStepValueMap = Record<string, JsonObject | undefined>;
+
 function getStepDefinition(
   definitions: OnboardingStepDefinition[],
   stepId: string,
@@ -151,12 +153,37 @@ export function skipOnboardingStep(
 export function deriveOnboardingState(
   definitions: OnboardingStepDefinition[],
   progress: OnboardingProgress,
+  valuesByStep: OnboardingStepValueMap = {},
 ) {
+  const persistedCompletedStepIdSet = new Set(progress.completedStepIds);
+  const skippedStepIdSet = new Set(progress.skippedStepIds);
+  const completedStepIds = definitions
+    .filter((definition) => {
+      const isSkipped = Boolean(
+        definition.optional && skippedStepIdSet.has(definition.id),
+      );
+      const persistedValue = valuesByStep[definition.id];
+      const draftValue = progress.drafts[definition.id];
+      const hasValidPersistedValue =
+        typeof persistedValue !== 'undefined' &&
+        definition.schema.safeParse(persistedValue).success;
+      const hasValidDraftValue =
+        typeof draftValue !== 'undefined' &&
+        definition.schema.safeParse(draftValue).success;
+      const requiresPersistedValue = persistedCompletedStepIdSet.has(
+        definition.id,
+      );
+      const hasValidValue = requiresPersistedValue
+        ? hasValidPersistedValue
+        : hasValidPersistedValue || hasValidDraftValue;
+
+      return isSkipped || hasValidValue;
+    })
+    .map((definition) => definition.id);
+  const completedStepIdSet = new Set(completedStepIds);
   const requiredStepIds = definitions
     .filter((definition) => !definition.optional)
     .map((definition) => definition.id);
-  const completedStepIdSet = new Set(progress.completedStepIds);
-  const skippedStepIdSet = new Set(progress.skippedStepIds);
   const nextStep = definitions.find(
     (definition) => !completedStepIdSet.has(definition.id),
   );
@@ -168,6 +195,7 @@ export function deriveOnboardingState(
     isConfigured: definitions.length > 0,
     isComplete,
     nextStepId: isComplete ? null : (nextStep?.id ?? null),
+    completedStepIds,
     remainingStepIds: definitions
       .filter((definition) => !completedStepIdSet.has(definition.id))
       .map((definition) => definition.id),

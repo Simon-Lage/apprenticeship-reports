@@ -71,6 +71,8 @@ import { GoogleDriveService } from '@/main/services/GoogleDriveService';
 import { GoogleOAuthService } from '@/main/services/GoogleOAuthService';
 import { WeeklyReportHashService } from '@/main/services/WeeklyReportHashService';
 import { PasswordAuthService } from '@/main/services/PasswordAuthService';
+import { OnboardingResolver } from '@/main/services/OnboardingResolver';
+import { AppAccessGuard } from '@/main/services/AppAccessGuard';
 
 export type AppKernelOptions = {
   now?: () => string;
@@ -100,6 +102,10 @@ export class AppKernel {
 
   private readonly onboardingStepIds: string[];
 
+  private readonly onboardingResolver: OnboardingResolver;
+
+  private readonly accessGuard: AppAccessGuard;
+
   private readonly settingsSchemaVersion: number;
 
   private readonly normalizeSettingsValues: (values: JsonObject) => JsonObject;
@@ -125,8 +131,11 @@ export class AppKernel {
     this.driveScopes = options.driveScopes ?? [];
     this.driveExplanation = options.driveExplanation ?? null;
     this.onboardingSteps = options.onboardingSteps ?? [];
-    this.onboardingStepIds =
-      options.onboardingStepIds ?? this.onboardingSteps.map((step) => step.id);
+    this.onboardingResolver = new OnboardingResolver(
+      this.onboardingSteps,
+      options.onboardingStepIds,
+    );
+    this.onboardingStepIds = this.onboardingResolver.getStepIds();
     this.settingsSchemaVersion = options.settingsSchemaVersion ?? 1;
     this.normalizeSettingsValues =
       options.normalizeSettingsValues ??
@@ -134,6 +143,12 @@ export class AppKernel {
     this.passwordAuthService = options.passwordAuthService ?? null;
     this.googleOAuthService = options.googleOAuthService ?? null;
     this.googleDriveService = options.googleDriveService ?? null;
+    this.accessGuard = new AppAccessGuard({
+      now: this.now,
+      getCurrentSession: (currentState) => this.getCurrentSession(currentState),
+      getPasswordConfigured: () => this.passwordConfigured,
+      onboardingResolver: this.onboardingResolver,
+    });
   }
 
   private getSettingsSnapshotId(currentState: AppMetadata): string {
@@ -255,7 +270,7 @@ export class AppKernel {
     currentState?: AppMetadata,
   ): Promise<AppMetadata> {
     const resolvedState = currentState ?? (await this.repository.read());
-    this.assertDatabaseUnlocked(resolvedState);
+    this.accessGuard.assertDatabaseUnlocked(resolvedState);
     const connection = await this.getGoogleDriveService().authorizeConnection(
       resolvedState.drive,
     );
@@ -378,31 +393,6 @@ export class AppKernel {
     }
   }
 
-  private assertAuthenticated(currentState: AppMetadata): void {
-    const authState = deriveGoogleSessionState(
-      this.getCurrentSession(currentState),
-      this.now(),
-    );
-
-    if (!authState.isAuthenticated) {
-      throw new Error(
-        'Die lokale Datenbank ist gesperrt, bis der Google-Login abgeschlossen ist.',
-      );
-    }
-  }
-
-  private assertDatabaseUnlocked(currentState: AppMetadata): void {
-    this.assertAuthenticated(currentState);
-
-    const driveState = deriveDriveAccessState(currentState.drive, true);
-
-    if (driveState.isLocked) {
-      throw new Error(
-        'Google-Drive-Berechtigungen fehlen. Die Anwendung bleibt bis zur Freigabe gesperrt.',
-      );
-    }
-  }
-
   private createPasswordAccount(currentState: AppMetadata) {
     const onboardingValues = ensureJsonObject(
       currentState.settings.current.values.onboarding ?? {},
@@ -428,17 +418,9 @@ export class AppKernel {
     };
   }
 
-  private assertOnboardingStepIsKnown(stepId: string): void {
-    if (
-      this.onboardingStepIds.length &&
-      !this.onboardingStepIds.includes(stepId)
-    ) {
-      throw new Error(`Unknown onboarding step: ${stepId}`);
-    }
-  }
-
   private buildBootstrapState(currentState: AppMetadata): AppBootstrapState {
     const currentSession = this.getCurrentSession(currentState);
+    const onboardingState = this.onboardingResolver.derive(currentState);
 
     return deriveAppBootstrapState({
       now: this.now(),
@@ -454,6 +436,13 @@ export class AppKernel {
       lastRestoredAt: currentState.recovery.lastRestoredAt,
       onboardingState: currentState.onboarding,
       onboardingStepIds: this.onboardingStepIds,
+      resolvedOnboarding: {
+        isConfigured: onboardingState.isConfigured,
+        isComplete: onboardingState.isComplete,
+        nextStepId: onboardingState.nextStepId,
+        remainingStepIds: onboardingState.remainingStepIds,
+        skippedStepIds: onboardingState.skippedStepIds,
+      },
       pendingImport: currentState.settings.pendingImport,
       lastExportedAt: currentState.settings.lastExportedAt,
       weeklyHashCount: Object.keys(currentState.reports.weeklyHashes).length,
@@ -553,7 +542,7 @@ export class AppKernel {
 
   async connectGoogleDrive(): Promise<AppBootstrapState> {
     const currentState = await this.repository.read();
-    this.assertAuthenticated(currentState);
+    this.accessGuard.assertAuthenticated(currentState);
 
     if (!this.driveScopes.length) {
       throw new Error('Google Drive Scopes sind nicht konfiguriert.');
@@ -621,6 +610,7 @@ export class AppKernel {
   async savePasswordSession(
     input: SavePasswordSessionInput,
   ): Promise<AppBootstrapState> {
+    this.accessGuard.assertPasswordConfigured();
     const now = this.now();
     const nextSession = createPasswordSession(input, now);
     const previousSession = this.activeSession;
@@ -743,7 +733,7 @@ export class AppKernel {
   ): Promise<AppBootstrapState> {
     const now = this.now();
     const nextState = await this.repository.update((currentState) => {
-      this.assertAuthenticated(currentState);
+      this.accessGuard.assertAuthenticated(currentState);
 
       return AppMetadataSchema.parse({
         ...this.applyConfiguredDriveState(currentState),
@@ -772,7 +762,7 @@ export class AppKernel {
 
   async requestManualBackup(): Promise<AppBootstrapState> {
     const nextState = await this.repository.update((currentState) => {
-      this.assertDatabaseUnlocked(currentState);
+      this.accessGuard.assertApplicationUnlocked(currentState);
 
       return AppMetadataSchema.parse({
         ...currentState,
@@ -786,7 +776,7 @@ export class AppKernel {
 
   async recordDailyReport(): Promise<AppBootstrapState> {
     const nextState = await this.repository.update((currentState) => {
-      this.assertDatabaseUnlocked(currentState);
+      this.accessGuard.assertApplicationUnlocked(currentState);
 
       return AppMetadataSchema.parse({
         ...currentState,
@@ -801,7 +791,7 @@ export class AppKernel {
   async registerBackupSuccess(): Promise<AppBootstrapState> {
     const now = this.now();
     const nextState = await this.repository.update((currentState) => {
-      this.assertDatabaseUnlocked(currentState);
+      this.accessGuard.assertApplicationUnlocked(currentState);
 
       return AppMetadataSchema.parse({
         ...currentState,
@@ -828,7 +818,7 @@ export class AppKernel {
     let envelope: SettingsExportEnvelope | null = null;
 
     await this.repository.update((currentState) => {
-      this.assertDatabaseUnlocked(currentState);
+      this.accessGuard.assertApplicationUnlocked(currentState);
       envelope = createSettingsExportEnvelope(
         currentState.settings.current,
         exportedAt,
@@ -863,7 +853,7 @@ export class AppKernel {
     let preview: SettingsImportPreview | null = null;
 
     await this.repository.update((currentState) => {
-      this.assertDatabaseUnlocked(currentState);
+      this.accessGuard.assertApplicationUnlocked(currentState);
       preview = createSettingsImportPreview({
         id: this.createImportPreviewId(this.now(), 'settings'),
         createdAt: this.now(),
@@ -906,7 +896,7 @@ export class AppKernel {
   ): Promise<AppBootstrapState> {
     const now = this.now();
     const nextState = await this.repository.update((currentState) => {
-      this.assertDatabaseUnlocked(currentState);
+      this.accessGuard.assertApplicationUnlocked(currentState);
       const pendingImport = currentState.settings.pendingImport;
 
       if (!pendingImport || pendingImport.id !== input.previewId) {
@@ -934,7 +924,7 @@ export class AppKernel {
 
   async exportBackupArchive(): Promise<DatabaseBackupEnvelope> {
     const currentState = await this.repository.read();
-    this.assertDatabaseUnlocked(currentState);
+    this.accessGuard.assertApplicationUnlocked(currentState);
 
     return createDatabaseBackupEnvelope(
       this.applyConfiguredDriveState(currentState),
@@ -946,7 +936,7 @@ export class AppKernel {
     serialized: string,
   ): Promise<DatabaseBackupImportPreview> {
     const currentState = await this.repository.read();
-    this.assertDatabaseUnlocked(currentState);
+    this.accessGuard.assertApplicationUnlocked(currentState);
 
     const envelope = parseDatabaseBackupEnvelope(serialized);
     const now = this.now();
@@ -994,7 +984,7 @@ export class AppKernel {
     const now = this.now();
     const recoverySnapshotId = this.createRecoverySnapshotId(now);
     const nextState = await this.repository.update(async (currentState) => {
-      this.assertDatabaseUnlocked(currentState);
+      this.accessGuard.assertApplicationUnlocked(currentState);
       const pendingBackupImport = currentState.recovery.pendingBackupImport;
 
       if (!pendingBackupImport || pendingBackupImport.id !== input.previewId) {
@@ -1036,7 +1026,7 @@ export class AppKernel {
     const now = this.now();
     const parsedValues = this.parseSettingsValues(values);
     const nextState = await this.repository.update((currentState) => {
-      this.assertDatabaseUnlocked(currentState);
+      this.accessGuard.assertApplicationUnlocked(currentState);
 
       return AppMetadataSchema.parse({
         ...currentState,
@@ -1061,8 +1051,8 @@ export class AppKernel {
   ): Promise<AppBootstrapState> {
     const now = this.now();
     const nextState = await this.repository.update((currentState) => {
-      this.assertDatabaseUnlocked(currentState);
-      this.assertOnboardingStepIsKnown(input.stepId);
+      this.accessGuard.assertOnboardingAccessible(currentState);
+      this.onboardingResolver.assertStepIsKnown(input.stepId);
       const onboarding = this.onboardingSteps.length
         ? saveValidatedOnboardingStepDraft(
             this.onboardingSteps,
@@ -1110,8 +1100,8 @@ export class AppKernel {
   async completeOnboardingStep(stepId: string): Promise<AppBootstrapState> {
     const now = this.now();
     const nextState = await this.repository.update((currentState) => {
-      this.assertDatabaseUnlocked(currentState);
-      this.assertOnboardingStepIsKnown(stepId);
+      this.accessGuard.assertOnboardingAccessible(currentState);
+      this.onboardingResolver.assertStepIsKnown(stepId);
       const onboarding = this.onboardingSteps.length
         ? completeValidatedOnboardingStep(
             this.onboardingSteps,
@@ -1141,8 +1131,8 @@ export class AppKernel {
   async skipOnboardingStep(stepId: string): Promise<AppBootstrapState> {
     const now = this.now();
     const nextState = await this.repository.update((currentState) => {
-      this.assertDatabaseUnlocked(currentState);
-      this.assertOnboardingStepIsKnown(stepId);
+      this.accessGuard.assertOnboardingAccessible(currentState);
+      this.onboardingResolver.assertStepIsKnown(stepId);
       const onboarding = this.onboardingSteps.length
         ? skipValidatedOnboardingStep(
             this.onboardingSteps,
@@ -1177,7 +1167,7 @@ export class AppKernel {
     );
 
     await this.repository.update((currentState) => {
-      this.assertDatabaseUnlocked(currentState);
+      this.accessGuard.assertApplicationUnlocked(currentState);
 
       return AppMetadataSchema.parse({
         ...currentState,

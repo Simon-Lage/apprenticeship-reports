@@ -42,7 +42,11 @@ describe('onboarding progress', () => {
       'profile',
       '2026-03-13T10:06:00.000Z',
     );
-    const state = deriveOnboardingState(definitions, completedProgress);
+    const state = deriveOnboardingState(definitions, completedProgress, {
+      profile: {
+        firstName: 'Simon',
+      },
+    });
 
     expect(completedProgress.drafts.profile).toEqual({ firstName: 'Simon' });
     expect(state.isComplete).toBe(true);
