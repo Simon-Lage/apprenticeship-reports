@@ -54,7 +54,7 @@ Nicht Teil von Import/Export:
 ### Regeln
 
 - `weeks` ist immer ein Array.
-- `weeks` darf leer sein.
+- `weeks` darf nicht leer sein.
 - Ein einzelner Week-Eintrag darf nicht leer sein und muss voll validierbar sein.
 - `days` darf leer sein.
 - Week-Felder:
@@ -139,4 +139,3 @@ Nicht Teil von Import/Export:
 
 - Reports: `latest-timestamp`
 - Settings: Import wird nur nach expliziter Bestaetigung angewendet
-
