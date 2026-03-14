@@ -49,6 +49,14 @@ const appApi: AppApi = {
     ipcRenderer.invoke(AppIpcChannel.cancelBackupImport),
   applyBackupImport: (input) =>
     ipcRenderer.invoke(AppIpcChannel.applyBackupImport, input),
+  upsertWeeklyReport: (input) =>
+    ipcRenderer.invoke(AppIpcChannel.upsertWeeklyReport, input),
+  deleteWeeklyReport: (input) =>
+    ipcRenderer.invoke(AppIpcChannel.deleteWeeklyReport, input),
+  upsertDailyReport: (input) =>
+    ipcRenderer.invoke(AppIpcChannel.upsertDailyReport, input),
+  deleteDailyReport: (input) =>
+    ipcRenderer.invoke(AppIpcChannel.deleteDailyReport, input),
   setSettingsValues: (values) =>
     ipcRenderer.invoke(AppIpcChannel.setSettingsValues, values),
   saveOnboardingDraft: (input) =>

@@ -43,6 +43,10 @@ export const AppIpcChannel = {
   prepareBackupImport: 'app:prepare-backup-import',
   cancelBackupImport: 'app:cancel-backup-import',
   applyBackupImport: 'app:apply-backup-import',
+  upsertWeeklyReport: 'app:upsert-weekly-report',
+  deleteWeeklyReport: 'app:delete-weekly-report',
+  upsertDailyReport: 'app:upsert-daily-report',
+  deleteDailyReport: 'app:delete-daily-report',
   setSettingsValues: 'app:set-settings-values',
   saveOnboardingDraft: 'app:save-onboarding-draft',
   completeOnboardingStep: 'app:complete-onboarding-step',
@@ -140,6 +144,30 @@ export const PrepareDriveBackupImportInputSchema = z.object({
   fileId: z.string().min(1),
 });
 
+export const UpsertWeeklyReportInputSchema = z.object({
+  weekStart: z.string().date(),
+  weekEnd: z.string().date(),
+  values: JsonObjectSchema.optional().default({}),
+});
+
+export const DeleteWeeklyReportInputSchema = z.object({
+  weekStart: z.string().date(),
+  weekEnd: z.string().date(),
+});
+
+export const UpsertDailyReportInputSchema = z.object({
+  weekStart: z.string().date(),
+  weekEnd: z.string().date(),
+  date: z.string().date(),
+  values: JsonObjectSchema,
+});
+
+export const DeleteDailyReportInputSchema = z.object({
+  weekStart: z.string().date(),
+  weekEnd: z.string().date(),
+  date: z.string().date(),
+});
+
 export const RegisterWeeklyReportHashInputSchema = z.object({
   weeklyReportId: z.string().min(1),
   payload: JsonObjectSchema,
@@ -174,6 +202,18 @@ export type ApplyBackupImportInput = z.input<
 >;
 export type PrepareDriveBackupImportInput = z.infer<
   typeof PrepareDriveBackupImportInputSchema
+>;
+export type UpsertWeeklyReportInput = z.infer<
+  typeof UpsertWeeklyReportInputSchema
+>;
+export type DeleteWeeklyReportInput = z.infer<
+  typeof DeleteWeeklyReportInputSchema
+>;
+export type UpsertDailyReportInput = z.infer<
+  typeof UpsertDailyReportInputSchema
+>;
+export type DeleteDailyReportInput = z.infer<
+  typeof DeleteDailyReportInputSchema
 >;
 export type RegisterWeeklyReportHashInput = z.infer<
   typeof RegisterWeeklyReportHashInputSchema
@@ -225,6 +265,10 @@ export type AppApi = {
   applyBackupImport: (
     input: ApplyBackupImportInput,
   ) => Promise<AppBootstrapState>;
+  upsertWeeklyReport: (input: UpsertWeeklyReportInput) => Promise<AppBootstrapState>;
+  deleteWeeklyReport: (input: DeleteWeeklyReportInput) => Promise<AppBootstrapState>;
+  upsertDailyReport: (input: UpsertDailyReportInput) => Promise<AppBootstrapState>;
+  deleteDailyReport: (input: DeleteDailyReportInput) => Promise<AppBootstrapState>;
   setSettingsValues: (values: JsonObject) => Promise<AppBootstrapState>;
   saveOnboardingDraft: (
     input: SaveOnboardingDraftInput,

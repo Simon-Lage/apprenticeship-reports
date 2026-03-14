@@ -10,16 +10,11 @@ import { AppBootstrapState } from '@/shared/app/bootstrap';
 import { AppMetadataSchema } from '@/shared/app/state';
 import {
   markBackupDirty,
-  registerBackupSuccess,
-  registerCloseBackupCheck,
-  registerDailyReportForBackup,
-  requestManualBackup,
 } from '@/shared/backup/policy';
 import { JsonObject, JsonObjectSchema } from '@/shared/common/json';
 import {
   ApplyBackupImportInput,
   ApplySettingsImportInput,
-  RegisterWeeklyReportHashInput,
   SaveOnboardingDraftInput,
 } from '@/shared/ipc/app-api';
 import {
@@ -32,7 +27,6 @@ import {
   createWeekIdentity,
   mergeReportsState,
 } from '@/shared/reports/models';
-import { WeeklyReportHashRecord } from '@/shared/reports/stable';
 import {
   createSettingsExportEnvelope,
   createSettingsImportPreview,
@@ -41,14 +35,14 @@ import {
   SettingsExportEnvelope,
   SettingsImportPreview,
 } from '@/shared/settings/schema';
-import { AppKernelAuthDrive } from '@/main/services/AppKernelAuthDrive';
+import { AppKernelReports } from '@/main/services/AppKernelReports';
 import { AppKernelOptions } from '@/main/services/AppKernelCore';
 import { AppMetadataRepository } from '@/main/services/AppMetadataRepository';
 import { WeeklyReportHashService } from '@/main/services/WeeklyReportHashService';
 
 export type { AppKernelOptions };
 
-export class AppKernel extends AppKernelAuthDrive {
+export class AppKernel extends AppKernelReports {
   constructor(
     repository: AppMetadataRepository,
     weeklyReportHashService: WeeklyReportHashService,
@@ -271,59 +265,6 @@ export class AppKernel extends AppKernelAuthDrive {
     return this.buildBootstrapState(nextState);
   }
 
-  async requestManualBackup(): Promise<AppBootstrapState> {
-    const nextState = await this.repository.update((currentState) => {
-      this.accessGuard.assertApplicationUnlocked(currentState);
-
-      return AppMetadataSchema.parse({
-        ...currentState,
-        backup: requestManualBackup(currentState.backup),
-      });
-    });
-    const processedState = await this.tryProcessPendingBackup(nextState);
-
-    return this.buildBootstrapState(processedState);
-  }
-
-  async recordDailyReport(): Promise<AppBootstrapState> {
-    const nextState = await this.repository.update((currentState) => {
-      this.accessGuard.assertApplicationUnlocked(currentState);
-
-      return AppMetadataSchema.parse({
-        ...currentState,
-        backup: registerDailyReportForBackup(currentState.backup),
-      });
-    });
-    const processedState = await this.tryProcessPendingBackup(nextState);
-
-    return this.buildBootstrapState(processedState);
-  }
-
-  async registerBackupSuccess(): Promise<AppBootstrapState> {
-    const now = this.now();
-    const nextState = await this.repository.update((currentState) => {
-      this.accessGuard.assertApplicationUnlocked(currentState);
-
-      return AppMetadataSchema.parse({
-        ...currentState,
-        backup: registerBackupSuccess(currentState.backup, now),
-      });
-    });
-
-    return this.buildBootstrapState(nextState);
-  }
-
-  async handleAppClose(): Promise<void> {
-    const nextState = await this.repository.update((currentState) =>
-      AppMetadataSchema.parse({
-        ...currentState,
-        backup: registerCloseBackupCheck(currentState.backup),
-      }),
-    );
-
-    await this.tryProcessPendingBackup(nextState);
-  }
-
   async setSettingsValues(values: JsonObject): Promise<AppBootstrapState> {
     const now = this.now();
     const parsedValues = this.parseSettingsValues(values);
@@ -458,32 +399,4 @@ export class AppKernel extends AppKernelAuthDrive {
     return this.buildBootstrapState(nextState);
   }
 
-  async registerWeeklyReportHash(
-    input: RegisterWeeklyReportHashInput,
-  ): Promise<WeeklyReportHashRecord> {
-    const now = this.now();
-    const record = this.weeklyReportHashService.createRecord(
-      input.weeklyReportId,
-      input.payload,
-      now,
-    );
-
-    await this.repository.update((currentState) => {
-      this.accessGuard.assertApplicationUnlocked(currentState);
-
-      return AppMetadataSchema.parse({
-        ...currentState,
-        backup: markBackupDirty(currentState.backup),
-        reports: {
-          ...currentState.reports,
-          weeklyHashes: {
-            ...currentState.reports.weeklyHashes,
-            [record.weeklyReportId]: record,
-          },
-        },
-      });
-    });
-
-    return record;
-  }
 }

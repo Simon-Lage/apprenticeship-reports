@@ -9,6 +9,8 @@ import {
   AuthenticateWithGoogleInputSchema,
   AuthenticateWithPasswordInputSchema,
   ChangePasswordInputSchema,
+  DeleteDailyReportInputSchema,
+  DeleteWeeklyReportInputSchema,
   GrantDriveScopesInputSchema,
   InitializePasswordAuthInputSchema,
   PrepareDriveBackupImportInputSchema,
@@ -17,6 +19,8 @@ import {
   SaveOnboardingDraftInputSchema,
   SavePasswordSessionInputSchema,
   SetDriveScopesInputSchema,
+  UpsertDailyReportInputSchema,
+  UpsertWeeklyReportInputSchema,
 } from '@/shared/ipc/app-api';
 
 export function registerAppHandlers(appKernel: AppKernel): void {
@@ -126,6 +130,22 @@ export function registerAppHandlers(appKernel: AppKernel): void {
 
   ipcMain.handle(AppIpcChannel.applyBackupImport, (_event, input) =>
     appKernel.applyBackupImport(ApplyBackupImportInputSchema.parse(input)),
+  );
+
+  ipcMain.handle(AppIpcChannel.upsertWeeklyReport, (_event, input) =>
+    appKernel.upsertWeeklyReport(UpsertWeeklyReportInputSchema.parse(input)),
+  );
+
+  ipcMain.handle(AppIpcChannel.deleteWeeklyReport, (_event, input) =>
+    appKernel.deleteWeeklyReport(DeleteWeeklyReportInputSchema.parse(input)),
+  );
+
+  ipcMain.handle(AppIpcChannel.upsertDailyReport, (_event, input) =>
+    appKernel.upsertDailyReport(UpsertDailyReportInputSchema.parse(input)),
+  );
+
+  ipcMain.handle(AppIpcChannel.deleteDailyReport, (_event, input) =>
+    appKernel.deleteDailyReport(DeleteDailyReportInputSchema.parse(input)),
   );
 
   ipcMain.handle(AppIpcChannel.setSettingsValues, (_event, values) =>
