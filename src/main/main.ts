@@ -26,8 +26,8 @@ class AppUpdater {
         title: 'Update bereit',
         message: 'Ein Update wurde heruntergeladen.',
         detail:
-          'Jetzt neu starten und installieren? Wenn du spaeter waehlst, wird das Update automatisch beim Beenden installiert.',
-        buttons: ['Jetzt installieren', 'Spaeter'],
+          'Jetzt neu starten und installieren? Wenn du später wählst, wird das Update automatisch beim Beenden installiert.',
+        buttons: ['Jetzt installieren', 'Später'],
         defaultId: 0,
         cancelId: 1,
         noLink: true,
@@ -101,7 +101,8 @@ function createAppKernel(): AppKernel {
 
   return new AppKernel(repository, new WeeklyReportHashService(), {
     driveScopes: getConfiguredDriveScopes(),
-    driveExplanation: 'Die Google-Drive-Berechtigung wird fuer regelmaessige Backups benoetigt.',
+    driveExplanation:
+      'Die Google-Drive-Berechtigung wird für regelmässige Backups benötigt.',
     onboardingSteps: defaultOnboardingSteps,
     passwordAuthService,
     googleOAuthService,
@@ -127,7 +128,7 @@ async function createWindow(): Promise<void> {
     height: 860,
     minWidth: 1100,
     minHeight: 760,
-    icon: getAssetPath('icon.png'),
+    icon: getAssetPath('apprenticeship-reports-logo-small.png'),
     webPreferences: {
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
