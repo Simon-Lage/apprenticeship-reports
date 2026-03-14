@@ -48,6 +48,22 @@ type ReportsMutationResult = {
   dailyReportWritten: boolean;
 };
 
+function assertValidWeekRange(weekStart: string, weekEnd: string): void {
+  if (weekEnd < weekStart) {
+    throw new Error('Invalid week range: weekEnd must not be before weekStart.');
+  }
+}
+
+function assertDateWithinWeek(
+  date: string,
+  weekStart: string,
+  weekEnd: string,
+): void {
+  if (date < weekStart || date > weekEnd) {
+    throw new Error('Daily report date must be within the selected week range.');
+  }
+}
+
 function createWeekId(weekStart: string, weekEnd: string): string {
   return `week-${weekStart}-${weekEnd}`;
 }
@@ -153,6 +169,7 @@ export function applyUpsertWeeklyReport(
   reports: ReportsState,
   input: UpsertWeeklyReportInput,
 ): ReportsMutationResult {
+  assertValidWeekRange(input.weekStart, input.weekEnd);
   const parsedReports = ReportsStateSchema.parse(reports);
   const currentWeeklyReport = findWeeklyReportByIdentity({
     weeklyReports: parsedReports.weeklyReports,
@@ -203,6 +220,7 @@ export function applyDeleteWeeklyReport(
   reports: ReportsState,
   input: DeleteWeeklyReportInput,
 ): ReportsMutationResult {
+  assertValidWeekRange(input.weekStart, input.weekEnd);
   const parsedReports = ReportsStateSchema.parse(reports);
   const weeklyReport = findWeeklyReportByIdentity({
     weeklyReports: parsedReports.weeklyReports,
@@ -244,6 +262,8 @@ export function applyUpsertDailyReport(
   reports: ReportsState,
   input: UpsertDailyReportInput,
 ): ReportsMutationResult {
+  assertValidWeekRange(input.weekStart, input.weekEnd);
+  assertDateWithinWeek(input.date, input.weekStart, input.weekEnd);
   const parsedReports = ReportsStateSchema.parse(reports);
   const currentWeeklyReport =
     findWeeklyReportByIdentity({
@@ -293,7 +313,7 @@ export function applyUpsertDailyReport(
   const nextDailyReportIds = currentWeeklyReport.dailyReportIds.includes(
     nextDailyReport.id,
   )
-    ? currentWeeklyReport.dailyReportIds
+    ? [...currentWeeklyReport.dailyReportIds]
     : [...currentWeeklyReport.dailyReportIds, nextDailyReport.id];
   const sortedDailyReportIds = nextDailyReportIds.sort((leftId, rightId) => {
     const leftDailyReport = nextDailyReports[leftId];
@@ -333,6 +353,8 @@ export function applyDeleteDailyReport(
   reports: ReportsState,
   input: DeleteDailyReportInput,
 ): ReportsMutationResult {
+  assertValidWeekRange(input.weekStart, input.weekEnd);
+  assertDateWithinWeek(input.date, input.weekStart, input.weekEnd);
   const parsedReports = ReportsStateSchema.parse(reports);
   const weeklyReport = findWeeklyReportByIdentity({
     weeklyReports: parsedReports.weeklyReports,

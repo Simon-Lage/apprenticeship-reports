@@ -18,8 +18,23 @@ describe('app kernel', () => {
     const bootstrap = await kernel.boot();
 
     expect(bootstrap.app.isLocked).toBe(true);
-    expect(bootstrap.app.lockReasons).toContain('authentication');
+    expect(bootstrap.app.lockReasons).toContain('password-setup');
+    expect(bootstrap.app.lockReasons).not.toContain('authentication');
     expect(bootstrap.database.status).toBe('locked');
+  });
+
+  it('enforces password-first onboarding before profile data can be written', async () => {
+    const { kernel } = createKernel();
+    await kernel.boot();
+
+    await expect(
+      kernel.saveOnboardingDraft({
+        stepId: 'profile',
+        values: {
+          firstName: 'Ada',
+        },
+      }),
+    ).rejects.toThrow('lokales Passwort');
   });
 
   it('creates a sqlite database and migrates legacy json metadata', async () => {

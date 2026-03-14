@@ -222,4 +222,37 @@ describe('app kernel report mutations', () => {
     expect(day).toBeUndefined();
     expect(Object.keys(state.reports.weeklyHashes)).toHaveLength(0);
   });
+
+  it('rejects invalid week ranges for report mutations', async () => {
+    const { kernel } = createKernel();
+    await kernel.boot();
+    await signIn(kernel);
+    await completeRequiredOnboarding(kernel);
+
+    await expect(
+      kernel.upsertWeeklyReport({
+        weekStart: '2026-03-13',
+        weekEnd: '2026-03-09',
+        values: {},
+      }),
+    ).rejects.toThrow('Invalid week range');
+  });
+
+  it('rejects daily report dates outside the selected week range', async () => {
+    const { kernel } = createKernel();
+    await kernel.boot();
+    await signIn(kernel);
+    await completeRequiredOnboarding(kernel);
+
+    await expect(
+      kernel.upsertDailyReport({
+        weekStart: '2026-03-09',
+        weekEnd: '2026-03-13',
+        date: '2026-03-14',
+        values: {
+          tasks: 'Out of range',
+        },
+      }),
+    ).rejects.toThrow('within the selected week range');
+  });
 });

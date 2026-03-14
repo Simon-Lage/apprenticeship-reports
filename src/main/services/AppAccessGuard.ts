@@ -59,7 +59,8 @@ export class AppAccessGuard {
   }
 
   assertApplicationUnlocked(currentState: AppMetadata): void {
-    this.assertOnboardingAccessible(currentState);
+    this.assertPasswordConfigured();
+    this.assertDatabaseUnlocked(currentState);
     const onboardingState = this.onboardingResolver.derive(currentState);
 
     if (onboardingState.isConfigured && !onboardingState.isComplete) {

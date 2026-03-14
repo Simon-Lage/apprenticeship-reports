@@ -103,7 +103,7 @@ export function deriveAppBootstrapState(input: {
   };
   const lockReasons: AppLockReason[] = [];
 
-  if (!auth.isAuthenticated) {
+  if (input.passwordConfigured && !auth.isAuthenticated) {
     lockReasons.push('authentication');
   }
 

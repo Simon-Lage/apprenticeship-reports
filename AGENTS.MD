@@ -108,7 +108,10 @@ Bitte beachte folgende Punkte:
   - Dabei gibt es mehrere Abschnitte, teils mit optionalen Angaben. Alle diese Angaben kann man später noch in den Settings umstellen.
   - Falls das Onboarding gestoppt wird, soll beim nächsten Start der Anwendung wieder dort weitergemacht werden und auf den vorherigen Teilen ist alles vom letzten Mal vorausgefüllt.
   - Jegliche eingabe auch optionale muss validiert werden, bevor weiter gedrückt weren kann und nur valide Eingaben werden gespeichert.
-  - Nach erfolgreicher Authentifizierung ist die App bis zum Abschluss aller Pflicht-Onboardinginformationen vollständig gesperrt.
+  - Register ist kein separater Bereich, sondern Teil des Onboardings.
+  - Wenn noch kein lokales Passwort eingerichtet ist, muss das Onboarding auch ohne bestehende Authentifizierung startbar sein.
+  - Reihenfolge im Onboarding: zuerst lokales Passwort (Pflicht), danach Google (optional), danach weitere Onboardingdaten.
+  - Sobald ein lokales Passwort eingerichtet ist, bleibt die App bis zum Abschluss aller Pflicht-Onboardinginformationen vollständig gesperrt.
   - Bereits vorhandene gültige Onboardinginformationen überspringen die zugehörigen Schritte automatisch; angezeigt werden nur tatsächlich fehlende Schritte.
   - Fehlt später eine zuvor vorhandene Pflichtinformation, muss das Onboarding beim nächsten Appstart nach der Authentifizierung genau für diese fehlende Information erneut starten und die App bis zur Ergänzung gesperrt bleiben.
 - Bei jedem Wochenbericht der fertig ist, soll mit dem Wochenbericht ein Hash dieses Wochenberichtes gespeichert werden.
