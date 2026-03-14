@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
-import { DatabaseBackupEnvelope, DatabaseBackupImportPreview } from '@/shared/app/backup-archive';
+import {
+  DatabaseBackupEnvelope,
+  DatabaseBackupImportPreview,
+} from '@/shared/app/backup-archive';
 import { AppBootstrapState } from '@/shared/app/bootstrap';
 import { JsonObject, JsonObjectSchema } from '@/shared/common/json';
 import { DriveBackupFile } from '@/shared/drive/backups';
@@ -9,7 +12,10 @@ import {
   BackupConflictStrategySchema,
 } from '@/shared/reports/models';
 import { WeeklyReportHashRecord } from '@/shared/reports/stable';
-import { SettingsExportEnvelope, SettingsImportPreview } from '@/shared/settings/schema';
+import {
+  SettingsExportEnvelope,
+  SettingsImportPreview,
+} from '@/shared/settings/schema';
 
 export const AppIpcChannel = {
   getBootstrapState: 'app:get-bootstrap-state',
@@ -116,7 +122,8 @@ export const ApplySettingsImportInputSchema = z.object({
 
 export const ApplyBackupImportInputSchema = z.object({
   previewId: z.string().min(1),
-  conflictStrategy: BackupConflictStrategySchema.optional().default('latest-timestamp'),
+  conflictStrategy:
+    BackupConflictStrategySchema.optional().default('latest-timestamp'),
 });
 
 export const PrepareDriveBackupImportInputSchema = z.object({
@@ -128,48 +135,90 @@ export const RegisterWeeklyReportHashInputSchema = z.object({
   payload: JsonObjectSchema,
 });
 
-export type InitializePasswordAuthInput = z.input<typeof InitializePasswordAuthInputSchema>;
-export type AuthenticateWithPasswordInput = z.input<typeof AuthenticateWithPasswordInputSchema>;
+export type InitializePasswordAuthInput = z.input<
+  typeof InitializePasswordAuthInputSchema
+>;
+export type AuthenticateWithPasswordInput = z.input<
+  typeof AuthenticateWithPasswordInputSchema
+>;
 export type ChangePasswordInput = z.input<typeof ChangePasswordInputSchema>;
-export type AuthenticateWithGoogleInput = z.input<typeof AuthenticateWithGoogleInputSchema>;
-export type SavePasswordSessionInput = z.input<typeof SavePasswordSessionInputSchema>;
-export type SaveGoogleSessionInput = z.input<typeof SaveGoogleSessionInputSchema>;
+export type AuthenticateWithGoogleInput = z.input<
+  typeof AuthenticateWithGoogleInputSchema
+>;
+export type SavePasswordSessionInput = z.input<
+  typeof SavePasswordSessionInputSchema
+>;
+export type SaveGoogleSessionInput = z.input<
+  typeof SaveGoogleSessionInputSchema
+>;
 export type SetDriveScopesInput = z.infer<typeof SetDriveScopesInputSchema>;
 export type GrantDriveScopesInput = z.infer<typeof GrantDriveScopesInputSchema>;
-export type SaveOnboardingDraftInput = z.infer<typeof SaveOnboardingDraftInputSchema>;
-export type ApplySettingsImportInput = z.infer<typeof ApplySettingsImportInputSchema>;
-export type ApplyBackupImportInput = z.input<typeof ApplyBackupImportInputSchema>;
-export type PrepareDriveBackupImportInput = z.infer<typeof PrepareDriveBackupImportInputSchema>;
-export type RegisterWeeklyReportHashInput = z.infer<typeof RegisterWeeklyReportHashInputSchema>;
+export type SaveOnboardingDraftInput = z.infer<
+  typeof SaveOnboardingDraftInputSchema
+>;
+export type ApplySettingsImportInput = z.infer<
+  typeof ApplySettingsImportInputSchema
+>;
+export type ApplyBackupImportInput = z.input<
+  typeof ApplyBackupImportInputSchema
+>;
+export type PrepareDriveBackupImportInput = z.infer<
+  typeof PrepareDriveBackupImportInputSchema
+>;
+export type RegisterWeeklyReportHashInput = z.infer<
+  typeof RegisterWeeklyReportHashInputSchema
+>;
 
 export type AppApi = {
   getBootstrapState: () => Promise<AppBootstrapState>;
-  initializePasswordAuth: (input: InitializePasswordAuthInput) => Promise<AppBootstrapState>;
-  authenticateWithPassword: (input: AuthenticateWithPasswordInput) => Promise<AppBootstrapState>;
+  initializePasswordAuth: (
+    input: InitializePasswordAuthInput,
+  ) => Promise<AppBootstrapState>;
+  authenticateWithPassword: (
+    input: AuthenticateWithPasswordInput,
+  ) => Promise<AppBootstrapState>;
   changePassword: (input: ChangePasswordInput) => Promise<AppBootstrapState>;
-  savePasswordSession: (input: SavePasswordSessionInput) => Promise<AppBootstrapState>;
-  saveGoogleSession: (input: SaveGoogleSessionInput) => Promise<AppBootstrapState>;
-  authenticateWithGoogle: (input: AuthenticateWithGoogleInput) => Promise<AppBootstrapState>;
+  savePasswordSession: (
+    input: SavePasswordSessionInput,
+  ) => Promise<AppBootstrapState>;
+  saveGoogleSession: (
+    input: SaveGoogleSessionInput,
+  ) => Promise<AppBootstrapState>;
+  authenticateWithGoogle: (
+    input: AuthenticateWithGoogleInput,
+  ) => Promise<AppBootstrapState>;
   clearGoogleSession: () => Promise<AppBootstrapState>;
   setDriveScopes: (input: SetDriveScopesInput) => Promise<AppBootstrapState>;
-  grantDriveScopes: (input: GrantDriveScopesInput) => Promise<AppBootstrapState>;
+  grantDriveScopes: (
+    input: GrantDriveScopesInput,
+  ) => Promise<AppBootstrapState>;
   connectGoogleDrive: () => Promise<AppBootstrapState>;
   uploadBackupToDrive: () => Promise<DriveBackupFile>;
   listDriveBackups: () => Promise<DriveBackupFile[]>;
-  prepareDriveBackupImport: (input: PrepareDriveBackupImportInput) => Promise<DatabaseBackupImportPreview>;
+  prepareDriveBackupImport: (
+    input: PrepareDriveBackupImportInput,
+  ) => Promise<DatabaseBackupImportPreview>;
   requestManualBackup: () => Promise<AppBootstrapState>;
   recordDailyReport: () => Promise<AppBootstrapState>;
   registerBackupSuccess: () => Promise<AppBootstrapState>;
   exportSettings: () => Promise<SettingsExportEnvelope>;
   prepareSettingsImport: (serialized: string) => Promise<SettingsImportPreview>;
   cancelSettingsImport: () => Promise<AppBootstrapState>;
-  applySettingsImport: (input: ApplySettingsImportInput) => Promise<AppBootstrapState>;
+  applySettingsImport: (
+    input: ApplySettingsImportInput,
+  ) => Promise<AppBootstrapState>;
   exportBackupArchive: () => Promise<DatabaseBackupEnvelope>;
-  prepareBackupImport: (serialized: string) => Promise<DatabaseBackupImportPreview>;
+  prepareBackupImport: (
+    serialized: string,
+  ) => Promise<DatabaseBackupImportPreview>;
   cancelBackupImport: () => Promise<AppBootstrapState>;
-  applyBackupImport: (input: ApplyBackupImportInput) => Promise<AppBootstrapState>;
+  applyBackupImport: (
+    input: ApplyBackupImportInput,
+  ) => Promise<AppBootstrapState>;
   setSettingsValues: (values: JsonObject) => Promise<AppBootstrapState>;
-  saveOnboardingDraft: (input: SaveOnboardingDraftInput) => Promise<AppBootstrapState>;
+  saveOnboardingDraft: (
+    input: SaveOnboardingDraftInput,
+  ) => Promise<AppBootstrapState>;
   completeOnboardingStep: (stepId: string) => Promise<AppBootstrapState>;
   skipOnboardingStep: (stepId: string) => Promise<AppBootstrapState>;
   registerWeeklyReportHash: (

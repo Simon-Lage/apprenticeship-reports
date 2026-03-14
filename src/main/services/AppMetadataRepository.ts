@@ -1,10 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 
-import {
-  AppMetadata,
-  AppMetadataSchema,
-} from '@/shared/app/state';
+import { AppMetadata, AppMetadataSchema } from '@/shared/app/state';
 import {
   AppMetadataSqliteStore,
   StoredPasswordCredential,
@@ -55,7 +52,9 @@ export class AppMetadataRepository {
     return this.enqueue(() => this.store.readPasswordCredential());
   }
 
-  writePasswordCredential(value: StoredPasswordCredential): Promise<StoredPasswordCredential> {
+  writePasswordCredential(
+    value: StoredPasswordCredential,
+  ): Promise<StoredPasswordCredential> {
     return this.enqueue(() => this.store.writePasswordCredential(value));
   }
 

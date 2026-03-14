@@ -26,7 +26,9 @@ describe('onboarding progress', () => {
   ];
 
   it('stores validated drafts and derives the next required step', () => {
-    const initialProgress = createOnboardingProgress('2026-03-13T10:00:00.000Z');
+    const initialProgress = createOnboardingProgress(
+      '2026-03-13T10:00:00.000Z',
+    );
     const draftProgress = saveOnboardingStepDraft(
       definitions,
       initialProgress,
@@ -48,7 +50,9 @@ describe('onboarding progress', () => {
   });
 
   it('rejects invalid drafts', () => {
-    const initialProgress = createOnboardingProgress('2026-03-13T10:00:00.000Z');
+    const initialProgress = createOnboardingProgress(
+      '2026-03-13T10:00:00.000Z',
+    );
 
     expect(() =>
       saveOnboardingStepDraft(

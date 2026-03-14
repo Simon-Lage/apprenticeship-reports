@@ -25,7 +25,9 @@ export class PasswordAuthService {
       throw new Error('Ein Passwort ist bereits eingerichtet.');
     }
 
-    await this.repository.writePasswordCredential(this.createCredential(password));
+    await this.repository.writePasswordCredential(
+      this.createCredential(password),
+    );
   }
 
   async verify(password: PasswordAuthInput): Promise<boolean> {
@@ -37,7 +39,11 @@ export class PasswordAuthService {
     }
 
     const expectedHash = Buffer.from(credential.hash, 'hex');
-    const actualHash = scryptSync(parsedPassword, Buffer.from(credential.salt, 'hex'), PASSWORD_KEY_LENGTH);
+    const actualHash = scryptSync(
+      parsedPassword,
+      Buffer.from(credential.salt, 'hex'),
+      PASSWORD_KEY_LENGTH,
+    );
 
     if (expectedHash.length !== actualHash.length) {
       return false;
@@ -58,7 +64,9 @@ export class PasswordAuthService {
       throw new Error('Das aktuelle Passwort ist ungueltig.');
     }
 
-    await this.repository.writePasswordCredential(this.createCredential(nextPassword));
+    await this.repository.writePasswordCredential(
+      this.createCredential(nextPassword),
+    );
   }
 
   private createCredential(password: PasswordAuthInput) {

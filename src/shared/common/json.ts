@@ -38,7 +38,9 @@ export function stableStringifyJson(value: JsonValue): string {
     return `[${value.map((item) => stableStringifyJson(item)).join(',')}]`;
   }
 
-  const keys = Object.keys(value).sort((left, right) => left.localeCompare(right));
+  const keys = Object.keys(value).sort((left, right) =>
+    left.localeCompare(right),
+  );
   return `{${keys
     .map((key) => `${JSON.stringify(key)}:${stableStringifyJson(value[key])}`)
     .join(',')}}`;

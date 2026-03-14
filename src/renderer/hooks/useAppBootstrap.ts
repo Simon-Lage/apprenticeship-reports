@@ -69,7 +69,9 @@ function createFallbackBootstrapState(): AppBootstrapState {
 }
 
 export function useAppBootstrap() {
-  const [state, setState] = useState<AppBootstrapState>(createFallbackBootstrapState);
+  const [state, setState] = useState<AppBootstrapState>(
+    createFallbackBootstrapState,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,7 +89,11 @@ export function useAppBootstrap() {
       const nextState = await window.electron.app.getBootstrapState();
       startTransition(() => setState(nextState));
     } catch (refreshError) {
-      setError(refreshError instanceof Error ? refreshError.message : 'Unknown bootstrap error.');
+      setError(
+        refreshError instanceof Error
+          ? refreshError.message
+          : 'Unknown bootstrap error.',
+      );
     } finally {
       setIsLoading(false);
     }

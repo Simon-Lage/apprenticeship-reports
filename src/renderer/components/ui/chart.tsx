@@ -85,7 +85,8 @@ function ChartStyle({ id, config }: { id: string; config: ChartConfig }) {
 ${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
-    const color = itemConfig.theme?.[theme as keyof typeof THEMES] || itemConfig.color;
+    const color =
+      itemConfig.theme?.[theme as keyof typeof THEMES] || itemConfig.color;
     return color ? `  --color-${key}: ${color};` : null;
   })
   .filter(Boolean)
@@ -208,10 +209,12 @@ function ChartTooltipContent({
                             'my-0.5': nestLabel && indicator === 'dashed',
                           },
                         )}
-                        style={{
-                          '--color-bg': indicatorColor,
-                          '--color-border': indicatorColor,
-                        } as React.CSSProperties}
+                        style={
+                          {
+                            '--color-bg': indicatorColor,
+                            '--color-border': indicatorColor,
+                          } as React.CSSProperties
+                        }
                       />
                     )
                   )}
@@ -316,7 +319,9 @@ function getPayloadConfigFromPayload(
       : undefined;
 
   const payloadRecord = payload as Record<string, unknown>;
-  const chartPayloadRecord = chartPayload as Record<string, unknown> | undefined;
+  const chartPayloadRecord = chartPayload as
+    | Record<string, unknown>
+    | undefined;
   let configLabelKey = key;
 
   if (typeof payloadRecord[key] === 'string') {

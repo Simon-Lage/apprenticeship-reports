@@ -41,9 +41,13 @@ export const DatabaseBackupImportPreviewSchema = z.object({
   warning: z.string().min(1),
 });
 
-export type DatabaseBackupEnvelope = z.infer<typeof DatabaseBackupEnvelopeSchema>;
+export type DatabaseBackupEnvelope = z.infer<
+  typeof DatabaseBackupEnvelopeSchema
+>;
 export type DatabaseBackupSummary = z.infer<typeof DatabaseBackupSummarySchema>;
-export type DatabaseBackupImportPreview = z.infer<typeof DatabaseBackupImportPreviewSchema>;
+export type DatabaseBackupImportPreview = z.infer<
+  typeof DatabaseBackupImportPreviewSchema
+>;
 
 export function sanitizeMetadataForBackup(snapshot: AppMetadata): AppMetadata {
   return AppMetadataSchema.parse({
@@ -79,7 +83,9 @@ export function parseDatabaseBackupEnvelope(
   return DatabaseBackupEnvelopeSchema.parse(parsedValue);
 }
 
-export function summarizeDatabaseBackup(snapshot: AppMetadata): DatabaseBackupSummary {
+export function summarizeDatabaseBackup(
+  snapshot: AppMetadata,
+): DatabaseBackupSummary {
   return DatabaseBackupSummarySchema.parse({
     lastSuccessfulBackupAt: snapshot.backup.lastSuccessfulBackupAt,
     dailyReportsSinceLastBackup: snapshot.backup.dailyReportsSinceLastBackup,

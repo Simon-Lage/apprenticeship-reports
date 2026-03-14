@@ -13,7 +13,9 @@ export const WeeklyReportHashRecordSchema = z.object({
   createdAt: z.string().datetime(),
 });
 
-export type WeeklyReportHashRecord = z.infer<typeof WeeklyReportHashRecordSchema>;
+export type WeeklyReportHashRecord = z.infer<
+  typeof WeeklyReportHashRecordSchema
+>;
 
 export function normalizeWeeklyReportPayload(payload: JsonObject): JsonObject {
   return JsonObjectSchema.parse(deepCloneJson(payload));

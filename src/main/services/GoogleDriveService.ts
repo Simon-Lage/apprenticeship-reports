@@ -58,7 +58,11 @@ export class GoogleDriveService {
     permissionState: DrivePermissionState;
     exportedAt: string;
     serializedBackup: string;
-  }): Promise<{ file: DriveBackupFile; accessToken: string; grantedScopes: string[] }> {
+  }): Promise<{
+    file: DriveBackupFile;
+    accessToken: string;
+    grantedScopes: string[];
+  }> {
     const connection = await this.authorizeConnection(input.permissionState);
     const folderId = await this.ensureAppFolder(connection.accessToken);
     const fileName = createDriveBackupFileName(input.exportedAt);
@@ -101,13 +105,20 @@ export class GoogleDriveService {
 
   async listBackups(
     permissionState: DrivePermissionState,
-  ): Promise<{ files: DriveBackupFile[]; accessToken: string; grantedScopes: string[] }> {
+  ): Promise<{
+    files: DriveBackupFile[];
+    accessToken: string;
+    grantedScopes: string[];
+  }> {
     const connection = await this.authorizeConnection(permissionState);
     const folderId = await this.ensureAppFolder(connection.accessToken);
     const query = `'${folderId}' in parents and trashed = false and mimeType = 'application/json'`;
     const url = new URL('https://www.googleapis.com/drive/v3/files');
 
-    url.searchParams.set('fields', 'files(id,name,mimeType,createdTime,modifiedTime,size)');
+    url.searchParams.set(
+      'fields',
+      'files(id,name,mimeType,createdTime,modifiedTime,size)',
+    );
     url.searchParams.set('orderBy', 'modifiedTime desc');
     url.searchParams.set('q', query);
     const response = await fetch(url, {
@@ -117,13 +128,17 @@ export class GoogleDriveService {
     });
 
     if (!response.ok) {
-      throw new Error(`Google Drive Backup-Liste fehlgeschlagen: ${response.status}`);
+      throw new Error(
+        `Google Drive Backup-Liste fehlgeschlagen: ${response.status}`,
+      );
     }
 
     const payload = (await response.json()) as { files?: unknown[] };
 
     return {
-      files: (payload.files ?? []).map((file) => DriveBackupFileSchema.parse(file)),
+      files: (payload.files ?? []).map((file) =>
+        DriveBackupFileSchema.parse(file),
+      ),
       accessToken: connection.accessToken,
       grantedScopes: connection.grantedScopes,
     };
@@ -132,7 +147,11 @@ export class GoogleDriveService {
   async downloadBackup(input: {
     permissionState: DrivePermissionState;
     fileId: string;
-  }): Promise<{ serializedBackup: string; accessToken: string; grantedScopes: string[] }> {
+  }): Promise<{
+    serializedBackup: string;
+    accessToken: string;
+    grantedScopes: string[];
+  }> {
     const connection = await this.authorizeConnection(input.permissionState);
     const response = await fetch(
       `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(input.fileId)}?alt=media`,
@@ -144,7 +163,9 @@ export class GoogleDriveService {
     );
 
     if (!response.ok) {
-      throw new Error(`Google Drive Backup-Download fehlgeschlagen: ${response.status}`);
+      throw new Error(
+        `Google Drive Backup-Download fehlgeschlagen: ${response.status}`,
+      );
     }
 
     return {
@@ -158,7 +179,10 @@ export class GoogleDriveService {
     const query = `name = '${this.appFolderName.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
     const url = new URL('https://www.googleapis.com/drive/v3/files');
 
-    url.searchParams.set('fields', 'files(id,name,mimeType,createdTime,modifiedTime,size)');
+    url.searchParams.set(
+      'fields',
+      'files(id,name,mimeType,createdTime,modifiedTime,size)',
+    );
     url.searchParams.set('pageSize', '1');
     url.searchParams.set('orderBy', 'createdTime desc');
     url.searchParams.set('q', query);
@@ -169,30 +193,39 @@ export class GoogleDriveService {
     });
 
     if (!lookupResponse.ok) {
-      throw new Error(`Google Drive Ordnersuche fehlgeschlagen: ${lookupResponse.status}`);
+      throw new Error(
+        `Google Drive Ordnersuche fehlgeschlagen: ${lookupResponse.status}`,
+      );
     }
 
-    const lookupPayload = (await lookupResponse.json()) as { files?: Array<{ id?: string }> };
+    const lookupPayload = (await lookupResponse.json()) as {
+      files?: Array<{ id?: string }>;
+    };
     const existingFolderId = lookupPayload.files?.[0]?.id;
 
     if (existingFolderId) {
       return existingFolderId;
     }
 
-    const createResponse = await fetch('https://www.googleapis.com/drive/v3/files?fields=id', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json; charset=UTF-8',
+    const createResponse = await fetch(
+      'https://www.googleapis.com/drive/v3/files?fields=id',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: JSON.stringify({
+          name: this.appFolderName,
+          mimeType: 'application/vnd.google-apps.folder',
+        }),
       },
-      body: JSON.stringify({
-        name: this.appFolderName,
-        mimeType: 'application/vnd.google-apps.folder',
-      }),
-    });
+    );
 
     if (!createResponse.ok) {
-      throw new Error(`Google Drive Ordnererstellung fehlgeschlagen: ${createResponse.status}`);
+      throw new Error(
+        `Google Drive Ordnererstellung fehlgeschlagen: ${createResponse.status}`,
+      );
     }
 
     const payload = (await createResponse.json()) as { id?: string };

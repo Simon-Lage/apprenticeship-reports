@@ -17,7 +17,9 @@ describe('app kernel', () => {
   let currentTime = '2026-03-13T10:00:00.000Z';
 
   beforeEach(async () => {
-    rootDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'apprenticeship-reports-'));
+    rootDirectory = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'apprenticeship-reports-'),
+    );
   });
 
   afterEach(async () => {
@@ -79,7 +81,10 @@ describe('app kernel', () => {
     };
   }
 
-  async function signIn(kernel: AppKernel, grantedScopes: string[] = ['scope:drive']) {
+  async function signIn(
+    kernel: AppKernel,
+    grantedScopes: string[] = ['scope:drive'],
+  ) {
     return kernel.saveGoogleSession({
       account: {
         id: 'user-1',
@@ -110,7 +115,9 @@ describe('app kernel', () => {
       }>;
     },
   ) {
-    const persistedState = await repository.read().catch(() => createDefaultAppMetadata(currentTime));
+    const persistedState = await repository
+      .read()
+      .catch(() => createDefaultAppMetadata(currentTime));
     const state = createDefaultAppMetadata(currentTime);
 
     state.auth = persistedState.auth;
@@ -126,7 +133,9 @@ describe('app kernel', () => {
         weekStart: weeklyReport.weekStart,
         weekEnd: weeklyReport.weekEnd,
         values: weeklyReport.values ?? {},
-        dailyReportIds: weeklyReport.dailyReports.map((dailyReport) => dailyReport.id),
+        dailyReportIds: weeklyReport.dailyReports.map(
+          (dailyReport) => dailyReport.id,
+        ),
         createdAt: weeklyReport.updatedAt,
         updatedAt: weeklyReport.updatedAt,
       };
@@ -158,7 +167,10 @@ describe('app kernel', () => {
 
   it('creates a sqlite database and migrates legacy json metadata', async () => {
     const legacyFilePath = path.join(rootDirectory, 'app-metadata.json');
-    const repository = new AppMetadataRepository(legacyFilePath, () => currentTime);
+    const repository = new AppMetadataRepository(
+      legacyFilePath,
+      () => currentTime,
+    );
     const legacyState = createDefaultAppMetadata(currentTime);
 
     legacyState.settings.current.values = {
@@ -167,7 +179,11 @@ describe('app kernel', () => {
       },
     };
 
-    await fs.writeFile(legacyFilePath, JSON.stringify(legacyState, null, 2), 'utf-8');
+    await fs.writeFile(
+      legacyFilePath,
+      JSON.stringify(legacyState, null, 2),
+      'utf-8',
+    );
 
     const migratedState = await repository.read();
     const databaseStats = await fs.stat(repository.getDatabasePath());
@@ -504,13 +520,17 @@ describe('app kernel', () => {
 
     const persistedState = await repository.read();
 
-    expect(persistedState.reports.weeklyReports['local-week-1'].values).toEqual({
-      source: 'local',
-    });
+    expect(persistedState.reports.weeklyReports['local-week-1'].values).toEqual(
+      {
+        source: 'local',
+      },
+    );
     expect(persistedState.reports.dailyReports['local-day-1'].values).toEqual({
       source: 'local',
     });
-    expect(persistedState.reports.weeklyReports['backup-week-2'].values).toEqual({
+    expect(
+      persistedState.reports.weeklyReports['backup-week-2'].values,
+    ).toEqual({
       source: 'backup',
     });
   });
@@ -572,13 +592,17 @@ describe('app kernel', () => {
 
     const persistedState = await repository.read();
 
-    expect(persistedState.reports.weeklyReports['backup-week-1'].values).toEqual({
+    expect(
+      persistedState.reports.weeklyReports['backup-week-1'].values,
+    ).toEqual({
       source: 'backup',
     });
     expect(persistedState.reports.dailyReports['backup-day-1'].values).toEqual({
       source: 'backup',
     });
-    expect(persistedState.reports.weeklyReports['local-week-1']).toBeUndefined();
+    expect(
+      persistedState.reports.weeklyReports['local-week-1'],
+    ).toBeUndefined();
   });
 
   it('uses the newest timestamp by default for conflicting daily reports after a restart', async () => {
@@ -676,12 +700,10 @@ describe('app kernel', () => {
     expect(restoredState.reports.dailyReports['local-day-2'].values).toEqual({
       source: 'local-newer',
     });
-    expect(restoredState.reports.weeklyReports['backup-week-1'].dailyReportIds).toEqual([
-      'backup-day-1',
-      'local-day-2',
-    ]);
+    expect(
+      restoredState.reports.weeklyReports['backup-week-1'].dailyReportIds,
+    ).toEqual(['backup-day-1', 'local-day-2']);
   });
-
 
   it('uploads a pending backup on app start when the persisted session and drive access are ready', async () => {
     const driveService = {
@@ -713,15 +735,21 @@ describe('app kernel', () => {
 
     currentTime = '2026-03-13T10:30:00.000Z';
 
-    const { kernel: restartedKernel, repository } = createKernel({ googleDriveService: driveService });
+    const { kernel: restartedKernel, repository } = createKernel({
+      googleDriveService: driveService,
+    });
     const bootstrap = await restartedKernel.boot();
     const persistedState = await repository.read();
 
     expect(driveService.uploadBackup).toHaveBeenCalledTimes(1);
     expect(bootstrap.backup.hasUnsavedChanges).toBe(false);
     expect(bootstrap.backup.pendingReasons).toEqual([]);
-    expect(bootstrap.backup.lastSuccessfulBackupAt).toBe('2026-03-13T10:30:00.000Z');
-    expect(persistedState.backup.lastSuccessfulBackupAt).toBe('2026-03-13T10:30:00.000Z');
+    expect(bootstrap.backup.lastSuccessfulBackupAt).toBe(
+      '2026-03-13T10:30:00.000Z',
+    );
+    expect(persistedState.backup.lastSuccessfulBackupAt).toBe(
+      '2026-03-13T10:30:00.000Z',
+    );
   });
 
   it('uploads a pending backup on app close when drive access is already available', async () => {
@@ -743,7 +771,9 @@ describe('app kernel', () => {
         grantedScopes: ['scope:drive'],
       })),
     };
-    const { kernel, repository } = createKernel({ googleDriveService: driveService });
+    const { kernel, repository } = createKernel({
+      googleDriveService: driveService,
+    });
     await kernel.boot();
     await signIn(kernel);
     await kernel.setSettingsValues({
@@ -761,7 +791,9 @@ describe('app kernel', () => {
     expect(driveService.uploadBackup).toHaveBeenCalledTimes(1);
     expect(persistedState.backup.hasUnsavedChanges).toBe(false);
     expect(persistedState.backup.pendingReasons).toEqual([]);
-    expect(persistedState.backup.lastSuccessfulBackupAt).toBe('2026-03-13T10:45:00.000Z');
+    expect(persistedState.backup.lastSuccessfulBackupAt).toBe(
+      '2026-03-13T10:45:00.000Z',
+    );
   });
 
   it('uploads a backup automatically after the tenth daily report since the last backup', async () => {
@@ -783,7 +815,9 @@ describe('app kernel', () => {
         grantedScopes: ['scope:drive'],
       })),
     };
-    const { kernel, repository } = createKernel({ googleDriveService: driveService });
+    const { kernel, repository } = createKernel({
+      googleDriveService: driveService,
+    });
     await kernel.boot();
     await signIn(kernel);
 
@@ -806,9 +840,10 @@ describe('app kernel', () => {
     expect(bootstrap.backup.dailyReportsSinceLastBackup).toBe(0);
     expect(bootstrap.backup.hasUnsavedChanges).toBe(false);
     expect(persistedState.backup.pendingReasons).toEqual([]);
-    expect(persistedState.backup.lastSuccessfulBackupAt).toBe('2026-03-13T11:00:00.000Z');
+    expect(persistedState.backup.lastSuccessfulBackupAt).toBe(
+      '2026-03-13T11:00:00.000Z',
+    );
   });
-
 
   it('initializes a local password and allows password login after a restart', async () => {
     const { kernel } = createKernel();

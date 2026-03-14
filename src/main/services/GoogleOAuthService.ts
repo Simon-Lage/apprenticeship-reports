@@ -48,7 +48,9 @@ function createStateToken(): string {
 }
 
 function normalizeScopes(scopes: string[]): string[] {
-  return Array.from(new Set(scopes)).sort((left, right) => left.localeCompare(right));
+  return Array.from(new Set(scopes)).sort((left, right) =>
+    left.localeCompare(right),
+  );
 }
 
 export class GoogleOAuthService {
@@ -69,10 +71,13 @@ export class GoogleOAuthService {
     this.clientSecret = options.clientSecret?.trim() ?? null;
     this.openExternal = options.openExternal;
     this.authorizationEndpoint =
-      options.authorizationEndpoint ?? 'https://accounts.google.com/o/oauth2/v2/auth';
-    this.tokenEndpoint = options.tokenEndpoint ?? 'https://oauth2.googleapis.com/token';
+      options.authorizationEndpoint ??
+      'https://accounts.google.com/o/oauth2/v2/auth';
+    this.tokenEndpoint =
+      options.tokenEndpoint ?? 'https://oauth2.googleapis.com/token';
     this.userInfoEndpoint =
-      options.userInfoEndpoint ?? 'https://openidconnect.googleapis.com/v1/userinfo';
+      options.userInfoEndpoint ??
+      'https://openidconnect.googleapis.com/v1/userinfo';
   }
 
   isConfigured(): boolean {
@@ -83,9 +88,13 @@ export class GoogleOAuthService {
     return [...GOOGLE_PROFILE_SCOPES];
   }
 
-  async authorize(input: GoogleAuthorizationInput = {}): Promise<GoogleAuthorizationResult> {
+  async authorize(
+    input: GoogleAuthorizationInput = {},
+  ): Promise<GoogleAuthorizationResult> {
     if (!this.clientId) {
-      throw new Error('Google OAuth ist nicht konfiguriert. GOOGLE_OAUTH_CLIENT_ID fehlt.');
+      throw new Error(
+        'Google OAuth ist nicht konfiguriert. GOOGLE_OAUTH_CLIENT_ID fehlt.',
+      );
     }
 
     const scopes = normalizeScopes([
@@ -107,7 +116,10 @@ export class GoogleOAuthService {
     authorizationUrl.searchParams.set('access_type', 'offline');
     authorizationUrl.searchParams.set('include_granted_scopes', 'true');
     authorizationUrl.searchParams.set('state', state);
-    authorizationUrl.searchParams.set('prompt', input.prompt ?? 'consent select_account');
+    authorizationUrl.searchParams.set(
+      'prompt',
+      input.prompt ?? 'consent select_account',
+    );
 
     if (input.loginHint) {
       authorizationUrl.searchParams.set('login_hint', input.loginHint);
@@ -137,13 +149,18 @@ export class GoogleOAuthService {
     }
   }
 
-  async refreshAccessToken(refreshToken: string, scopes?: string[]): Promise<{
+  async refreshAccessToken(
+    refreshToken: string,
+    scopes?: string[],
+  ): Promise<{
     accessToken: string;
     grantedScopes: string[];
     expiresIn: number | null;
   }> {
     if (!this.clientId) {
-      throw new Error('Google OAuth ist nicht konfiguriert. GOOGLE_OAUTH_CLIENT_ID fehlt.');
+      throw new Error(
+        'Google OAuth ist nicht konfiguriert. GOOGLE_OAUTH_CLIENT_ID fehlt.',
+      );
     }
 
     const body = new URLSearchParams({
@@ -169,7 +186,9 @@ export class GoogleOAuthService {
     });
 
     if (!response.ok) {
-      throw new Error(`Google Token Refresh fehlgeschlagen: ${response.status}`);
+      throw new Error(
+        `Google Token Refresh fehlgeschlagen: ${response.status}`,
+      );
     }
 
     const tokenResponse = (await response.json()) as GoogleTokenResponse;
@@ -181,7 +200,7 @@ export class GoogleOAuthService {
     return {
       accessToken: tokenResponse.access_token,
       grantedScopes: normalizeScopes(
-        tokenResponse.scope ? tokenResponse.scope.split(' ') : scopes ?? [],
+        tokenResponse.scope ? tokenResponse.scope.split(' ') : (scopes ?? []),
       ),
       expiresIn: tokenResponse.expires_in ?? null,
     };
@@ -217,7 +236,9 @@ export class GoogleOAuthService {
     });
 
     if (!response.ok) {
-      throw new Error(`Google Token-Austausch fehlgeschlagen: ${response.status}`);
+      throw new Error(
+        `Google Token-Austausch fehlgeschlagen: ${response.status}`,
+      );
     }
 
     const tokenResponse = (await response.json()) as GoogleTokenResponse;
@@ -229,7 +250,9 @@ export class GoogleOAuthService {
     return tokenResponse;
   }
 
-  private async fetchAccount(accessToken: string): Promise<typeof UserAccountSchema._type> {
+  private async fetchAccount(
+    accessToken: string,
+  ): Promise<typeof UserAccountSchema._type> {
     const response = await fetch(this.userInfoEndpoint, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -302,12 +325,16 @@ export class GoogleOAuthService {
         response.end('<html><body>Authorization code missing.</body></html>');
         if (!settled && rejectCode) {
           settled = true;
-          rejectCode(new Error('Google OAuth Callback ohne Authorization Code.'));
+          rejectCode(
+            new Error('Google OAuth Callback ohne Authorization Code.'),
+          );
         }
         return;
       }
 
-      response.end('<html><body>Authentication completed. You can close this window.</body></html>');
+      response.end(
+        '<html><body>Authentication completed. You can close this window.</body></html>',
+      );
 
       if (!settled && resolveCode) {
         settled = true;
@@ -316,14 +343,18 @@ export class GoogleOAuthService {
     });
 
     await new Promise<void>((resolve, reject) => {
-      server.once('error', (error) => reject(error instanceof Error ? error : new Error(String(error))));
+      server.once('error', (error) =>
+        reject(error instanceof Error ? error : new Error(String(error))),
+      );
       server.listen(0, '127.0.0.1', () => resolve());
     });
 
     const address = server.address();
 
     if (!address || typeof address === 'string') {
-      throw new Error('Google OAuth Callback-Port konnte nicht geoeffnet werden.');
+      throw new Error(
+        'Google OAuth Callback-Port konnte nicht geoeffnet werden.',
+      );
     }
 
     const timeout = setTimeout(() => {

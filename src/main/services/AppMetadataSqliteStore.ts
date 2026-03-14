@@ -28,7 +28,9 @@ export const StoredPasswordCredentialSchema = z.object({
   updatedAt: z.string().datetime(),
 });
 
-export type StoredPasswordCredential = z.infer<typeof StoredPasswordCredentialSchema>;
+export type StoredPasswordCredential = z.infer<
+  typeof StoredPasswordCredentialSchema
+>;
 
 type Migration = {
   version: number;
@@ -109,7 +111,9 @@ export class AppMetadataSqliteStore {
 
   private getCurrentVersion(database: DatabaseSync): number {
     const row = database
-      .prepare('SELECT COALESCE(MAX(version), 0) AS version FROM schema_migrations')
+      .prepare(
+        'SELECT COALESCE(MAX(version), 0) AS version FROM schema_migrations',
+      )
       .get() as { version: number };
 
     return row.version;
@@ -122,7 +126,9 @@ export class AppMetadataSqliteStore {
         database.exec(statement);
       });
       database
-        .prepare('INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)')
+        .prepare(
+          'INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)',
+        )
         .run(migration.version, this.now());
       database.exec('COMMIT');
     } catch (error) {
@@ -152,9 +158,13 @@ export class AppMetadataSqliteStore {
     return row ?? null;
   }
 
-  private readPasswordCredentialRow(database: DatabaseSync): PasswordCredentialRow | null {
+  private readPasswordCredentialRow(
+    database: DatabaseSync,
+  ): PasswordCredentialRow | null {
     const row = database
-      .prepare('SELECT salt, hash, created_at, updated_at FROM password_credentials WHERE id = 1')
+      .prepare(
+        'SELECT salt, hash, created_at, updated_at FROM password_credentials WHERE id = 1',
+      )
       .get() as PasswordCredentialRow | undefined;
 
     return row ?? null;
@@ -229,7 +239,9 @@ export class AppMetadataSqliteStore {
     this.writeStoredMetadata(database, nextState, this.now());
   }
 
-  private async withDatabase<T>(task: (database: DatabaseSync) => Promise<T> | T): Promise<T> {
+  private async withDatabase<T>(
+    task: (database: DatabaseSync) => Promise<T> | T,
+  ): Promise<T> {
     await this.ensureDatabaseDirectory();
 
     const database = new DatabaseSync(this.databasePath);
@@ -263,7 +275,9 @@ export class AppMetadataSqliteStore {
   }
 
   async hasPasswordCredential(): Promise<boolean> {
-    return this.withDatabase((database) => Boolean(this.readPasswordCredentialRow(database)));
+    return this.withDatabase((database) =>
+      Boolean(this.readPasswordCredentialRow(database)),
+    );
   }
 
   async readPasswordCredential(): Promise<StoredPasswordCredential | null> {
@@ -283,7 +297,11 @@ export class AppMetadataSqliteStore {
     });
   }
 
-  async writePasswordCredential(value: StoredPasswordCredential): Promise<StoredPasswordCredential> {
-    return this.withDatabase((database) => this.writePasswordCredentialRow(database, value));
+  async writePasswordCredential(
+    value: StoredPasswordCredential,
+  ): Promise<StoredPasswordCredential> {
+    return this.withDatabase((database) =>
+      this.writePasswordCredentialRow(database, value),
+    );
   }
 }

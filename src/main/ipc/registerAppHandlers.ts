@@ -20,14 +20,20 @@ import {
 } from '@/shared/ipc/app-api';
 
 export function registerAppHandlers(appKernel: AppKernel): void {
-  ipcMain.handle(AppIpcChannel.getBootstrapState, () => appKernel.getBootstrapState());
+  ipcMain.handle(AppIpcChannel.getBootstrapState, () =>
+    appKernel.getBootstrapState(),
+  );
 
   ipcMain.handle(AppIpcChannel.initializePasswordAuth, (_event, input) =>
-    appKernel.initializePasswordAuth(InitializePasswordAuthInputSchema.parse(input)),
+    appKernel.initializePasswordAuth(
+      InitializePasswordAuthInputSchema.parse(input),
+    ),
   );
 
   ipcMain.handle(AppIpcChannel.authenticateWithPassword, (_event, input) =>
-    appKernel.authenticateWithPassword(AuthenticateWithPasswordInputSchema.parse(input)),
+    appKernel.authenticateWithPassword(
+      AuthenticateWithPasswordInputSchema.parse(input),
+    ),
   );
 
   ipcMain.handle(AppIpcChannel.changePassword, (_event, input) =>
@@ -43,10 +49,14 @@ export function registerAppHandlers(appKernel: AppKernel): void {
   );
 
   ipcMain.handle(AppIpcChannel.authenticateWithGoogle, (_event, input) =>
-    appKernel.authenticateWithGoogle(AuthenticateWithGoogleInputSchema.parse(input)),
+    appKernel.authenticateWithGoogle(
+      AuthenticateWithGoogleInputSchema.parse(input),
+    ),
   );
 
-  ipcMain.handle(AppIpcChannel.clearGoogleSession, () => appKernel.clearGoogleSession());
+  ipcMain.handle(AppIpcChannel.clearGoogleSession, () =>
+    appKernel.clearGoogleSession(),
+  );
 
   ipcMain.handle(AppIpcChannel.setDriveScopes, (_event, input) =>
     appKernel.setDriveScopes(SetDriveScopesInputSchema.parse(input)),
@@ -56,25 +66,39 @@ export function registerAppHandlers(appKernel: AppKernel): void {
     appKernel.grantDriveScopes(GrantDriveScopesInputSchema.parse(input)),
   );
 
-  ipcMain.handle(AppIpcChannel.connectGoogleDrive, () => appKernel.connectGoogleDrive());
-
-  ipcMain.handle(AppIpcChannel.uploadBackupToDrive, () => appKernel.uploadBackupToDrive());
-
-  ipcMain.handle(AppIpcChannel.listDriveBackups, () => appKernel.listDriveBackups());
-
-  ipcMain.handle(AppIpcChannel.prepareDriveBackupImport, (_event, input) =>
-    appKernel.prepareDriveBackupImport(PrepareDriveBackupImportInputSchema.parse(input)),
+  ipcMain.handle(AppIpcChannel.connectGoogleDrive, () =>
+    appKernel.connectGoogleDrive(),
   );
 
-  ipcMain.handle(AppIpcChannel.requestManualBackup, () => appKernel.requestManualBackup());
+  ipcMain.handle(AppIpcChannel.uploadBackupToDrive, () =>
+    appKernel.uploadBackupToDrive(),
+  );
 
-  ipcMain.handle(AppIpcChannel.recordDailyReport, () => appKernel.recordDailyReport());
+  ipcMain.handle(AppIpcChannel.listDriveBackups, () =>
+    appKernel.listDriveBackups(),
+  );
+
+  ipcMain.handle(AppIpcChannel.prepareDriveBackupImport, (_event, input) =>
+    appKernel.prepareDriveBackupImport(
+      PrepareDriveBackupImportInputSchema.parse(input),
+    ),
+  );
+
+  ipcMain.handle(AppIpcChannel.requestManualBackup, () =>
+    appKernel.requestManualBackup(),
+  );
+
+  ipcMain.handle(AppIpcChannel.recordDailyReport, () =>
+    appKernel.recordDailyReport(),
+  );
 
   ipcMain.handle(AppIpcChannel.registerBackupSuccess, () =>
     appKernel.registerBackupSuccess(),
   );
 
-  ipcMain.handle(AppIpcChannel.exportSettings, () => appKernel.exportSettings());
+  ipcMain.handle(AppIpcChannel.exportSettings, () =>
+    appKernel.exportSettings(),
+  );
 
   ipcMain.handle(AppIpcChannel.prepareSettingsImport, (_event, serialized) =>
     appKernel.prepareSettingsImport(String(serialized)),
@@ -121,6 +145,8 @@ export function registerAppHandlers(appKernel: AppKernel): void {
   );
 
   ipcMain.handle(AppIpcChannel.registerWeeklyReportHash, (_event, input) =>
-    appKernel.registerWeeklyReportHash(RegisterWeeklyReportHashInputSchema.parse(input)),
+    appKernel.registerWeeklyReportHash(
+      RegisterWeeklyReportHashInputSchema.parse(input),
+    ),
   );
 }

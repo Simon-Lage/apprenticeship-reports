@@ -1,10 +1,6 @@
 import { z } from 'zod';
 
-export const GOOGLE_PROFILE_SCOPES = [
-  'openid',
-  'email',
-  'profile',
-] as const;
+export const GOOGLE_PROFILE_SCOPES = ['openid', 'email', 'profile'] as const;
 
 export const GOOGLE_DRIVE_APP_FOLDER_NAME = 'AppRep';
 

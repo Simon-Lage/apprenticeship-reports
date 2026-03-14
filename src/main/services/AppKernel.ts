@@ -27,7 +27,12 @@ import {
   registerLaunchBackupCheck,
   requestManualBackup,
 } from '@/shared/backup/policy';
-import { ensureJsonObject, isJsonObject, JsonObject, JsonObjectSchema } from '@/shared/common/json';
+import {
+  ensureJsonObject,
+  isJsonObject,
+  JsonObject,
+  JsonObjectSchema,
+} from '@/shared/common/json';
 import { deriveDriveAccessState } from '@/shared/drive/permissions';
 import { DriveBackupFile } from '@/shared/drive/backups';
 import {
@@ -124,7 +129,8 @@ export class AppKernel {
       options.onboardingStepIds ?? this.onboardingSteps.map((step) => step.id);
     this.settingsSchemaVersion = options.settingsSchemaVersion ?? 1;
     this.normalizeSettingsValues =
-      options.normalizeSettingsValues ?? ((values) => JsonObjectSchema.parse(values));
+      options.normalizeSettingsValues ??
+      ((values) => JsonObjectSchema.parse(values));
     this.passwordAuthService = options.passwordAuthService ?? null;
     this.googleOAuthService = options.googleOAuthService ?? null;
     this.googleDriveService = options.googleDriveService ?? null;
@@ -134,7 +140,10 @@ export class AppKernel {
     return currentState.settings.current.id || 'settings-current';
   }
 
-  private createImportPreviewId(now: string, scope: 'settings' | 'backup'): string {
+  private createImportPreviewId(
+    now: string,
+    scope: 'settings' | 'backup',
+  ): string {
     return `${scope}-import-${now.replace(/[^0-9]/g, '')}`;
   }
 
@@ -169,7 +178,9 @@ export class AppKernel {
     stepId: string,
     value: JsonObject,
   ): JsonObject {
-    const currentOnboardingValues = ensureJsonObject(currentSettingsValues.onboarding ?? {});
+    const currentOnboardingValues = ensureJsonObject(
+      currentSettingsValues.onboarding ?? {},
+    );
 
     return ensureJsonObject({
       ...currentSettingsValues,
@@ -240,14 +251,19 @@ export class AppKernel {
     );
   }
 
-  private async refreshDriveAccessState(currentState?: AppMetadata): Promise<AppMetadata> {
+  private async refreshDriveAccessState(
+    currentState?: AppMetadata,
+  ): Promise<AppMetadata> {
     const resolvedState = currentState ?? (await this.repository.read());
     this.assertDatabaseUnlocked(resolvedState);
-    const connection = await this.getGoogleDriveService().authorizeConnection(resolvedState.drive);
+    const connection = await this.getGoogleDriveService().authorizeConnection(
+      resolvedState.drive,
+    );
 
     if (
       connection.accessToken === resolvedState.drive.accessToken &&
-      JSON.stringify(connection.grantedScopes) === JSON.stringify(resolvedState.drive.grantedScopes)
+      JSON.stringify(connection.grantedScopes) ===
+        JSON.stringify(resolvedState.drive.grantedScopes)
     ) {
       return resolvedState;
     }
@@ -342,10 +358,15 @@ export class AppKernel {
     }
   }
 
-  private async tryProcessPendingBackup(currentState?: AppMetadata): Promise<AppMetadata> {
+  private async tryProcessPendingBackup(
+    currentState?: AppMetadata,
+  ): Promise<AppMetadata> {
     const resolvedState = currentState ?? (await this.repository.read());
 
-    if (!resolvedState.backup.pendingReasons.length || !this.canAttemptDriveBackup(resolvedState)) {
+    if (
+      !resolvedState.backup.pendingReasons.length ||
+      !this.canAttemptDriveBackup(resolvedState)
+    ) {
       return resolvedState;
     }
 
@@ -373,10 +394,7 @@ export class AppKernel {
   private assertDatabaseUnlocked(currentState: AppMetadata): void {
     this.assertAuthenticated(currentState);
 
-    const driveState = deriveDriveAccessState(
-      currentState.drive,
-      true,
-    );
+    const driveState = deriveDriveAccessState(currentState.drive, true);
 
     if (driveState.isLocked) {
       throw new Error(
@@ -386,13 +404,22 @@ export class AppKernel {
   }
 
   private createPasswordAccount(currentState: AppMetadata) {
-    const onboardingValues = ensureJsonObject(currentState.settings.current.values.onboarding ?? {});
+    const onboardingValues = ensureJsonObject(
+      currentState.settings.current.values.onboarding ?? {},
+    );
     const identityValues = isJsonObject(onboardingValues.identity)
       ? onboardingValues.identity
       : {};
-    const firstName = typeof identityValues.firstName === 'string' ? identityValues.firstName.trim() : '';
-    const lastName = typeof identityValues.lastName === 'string' ? identityValues.lastName.trim() : '';
-    const displayName = [firstName, lastName].filter(Boolean).join(' ') || 'Lokaler Zugriff';
+    const firstName =
+      typeof identityValues.firstName === 'string'
+        ? identityValues.firstName.trim()
+        : '';
+    const lastName =
+      typeof identityValues.lastName === 'string'
+        ? identityValues.lastName.trim()
+        : '';
+    const displayName =
+      [firstName, lastName].filter(Boolean).join(' ') || 'Lokaler Zugriff';
 
     return {
       id: 'local-password-user',
@@ -402,7 +429,10 @@ export class AppKernel {
   }
 
   private assertOnboardingStepIsKnown(stepId: string): void {
-    if (this.onboardingStepIds.length && !this.onboardingStepIds.includes(stepId)) {
+    if (
+      this.onboardingStepIds.length &&
+      !this.onboardingStepIds.includes(stepId)
+    ) {
       throw new Error(`Unknown onboarding step: ${stepId}`);
     }
   }
@@ -416,7 +446,8 @@ export class AppKernel {
       passwordConfigured: this.passwordConfigured,
       drive: currentState.drive,
       backup: currentState.backup,
-      pendingBackupImportId: currentState.recovery.pendingBackupImport?.id ?? null,
+      pendingBackupImportId:
+        currentState.recovery.pendingBackupImport?.id ?? null,
       pendingBackupImportCreatedAt:
         currentState.recovery.pendingBackupImport?.createdAt ?? null,
       lastRecoverySnapshotPath: currentState.recovery.lastRecoverySnapshotPath,
@@ -499,9 +530,7 @@ export class AppKernel {
     });
   }
 
-  async changePassword(
-    input: ChangePasswordInput,
-  ): Promise<AppBootstrapState> {
+  async changePassword(input: ChangePasswordInput): Promise<AppBootstrapState> {
     await this.getPasswordAuthService().changePassword({
       currentPassword: input.currentPassword,
       nextPassword: input.nextPassword,
@@ -546,7 +575,9 @@ export class AppKernel {
       refreshToken: result.refreshToken ?? undefined,
       grantedScopes: result.grantedScopes,
     });
-    const processedState = await this.tryProcessPendingBackup(await this.repository.read());
+    const processedState = await this.tryProcessPendingBackup(
+      await this.repository.read(),
+    );
 
     return this.buildBootstrapState(processedState);
   }
@@ -558,7 +589,9 @@ export class AppKernel {
 
   async listDriveBackups(): Promise<DriveBackupFile[]> {
     const currentState = await this.refreshDriveAccessState();
-    const result = await this.getGoogleDriveService().listBackups(currentState.drive);
+    const result = await this.getGoogleDriveService().listBackups(
+      currentState.drive,
+    );
 
     await this.persistDriveAccessState({
       accessToken: result.accessToken,
@@ -595,7 +628,8 @@ export class AppKernel {
 
     const nextState = await this.repository.update((currentState) => {
       const configuredState = this.applyConfiguredDriveState(currentState);
-      const currentSession = previousSession ?? configuredState.auth.persistedSession;
+      const currentSession =
+        previousSession ?? configuredState.auth.persistedSession;
       const isSameAccount = this.hasSameAccount(currentSession, nextSession);
 
       return AppMetadataSchema.parse({
@@ -629,25 +663,27 @@ export class AppKernel {
 
     const nextState = await this.repository.update((currentState) => {
       const configuredState = this.applyConfiguredDriveState(currentState);
-      const currentSession = previousSession ?? configuredState.auth.persistedSession;
+      const currentSession =
+        previousSession ?? configuredState.auth.persistedSession;
       const isSameAccount = this.hasSameAccount(currentSession, nextSession);
       const baseDriveState = isSameAccount
         ? configuredState.drive
         : this.createDisconnectedDriveState(configuredState);
-      const nextDriveState = input.accessToken || input.refreshToken || grantedScopes.length
-        ? {
-            ...baseDriveState,
-            account: nextSession.account,
-            accessToken: input.accessToken ?? baseDriveState.accessToken,
-            refreshToken: input.refreshToken ?? baseDriveState.refreshToken,
-            connectedAt: baseDriveState.connectedAt ?? now,
-            lastValidatedAt: now,
-            grantedScopes: Array.from(
-              new Set([...baseDriveState.grantedScopes, ...grantedScopes]),
-            ).sort((left, right) => left.localeCompare(right)),
-            lastPromptedAt: null,
-          }
-        : baseDriveState;
+      const nextDriveState =
+        input.accessToken || input.refreshToken || grantedScopes.length
+          ? {
+              ...baseDriveState,
+              account: nextSession.account,
+              accessToken: input.accessToken ?? baseDriveState.accessToken,
+              refreshToken: input.refreshToken ?? baseDriveState.refreshToken,
+              connectedAt: baseDriveState.connectedAt ?? now,
+              lastValidatedAt: now,
+              grantedScopes: Array.from(
+                new Set([...baseDriveState.grantedScopes, ...grantedScopes]),
+              ).sort((left, right) => left.localeCompare(right)),
+              lastPromptedAt: null,
+            }
+          : baseDriveState;
 
       return AppMetadataSchema.parse({
         ...configuredState,
@@ -687,9 +723,7 @@ export class AppKernel {
     return this.buildBootstrapState(nextState);
   }
 
-  async setDriveScopes(
-    input: SetDriveScopesInput,
-  ): Promise<AppBootstrapState> {
+  async setDriveScopes(input: SetDriveScopesInput): Promise<AppBootstrapState> {
     const nextState = await this.repository.update((currentState) =>
       AppMetadataSchema.parse({
         ...currentState,
@@ -722,7 +756,10 @@ export class AppKernel {
           connectedAt: currentState.drive.connectedAt ?? now,
           lastValidatedAt: now,
           grantedScopes: Array.from(
-            new Set([...currentState.drive.grantedScopes, ...input.grantedScopes]),
+            new Set([
+              ...currentState.drive.grantedScopes,
+              ...input.grantedScopes,
+            ]),
           ).sort((left, right) => left.localeCompare(right)),
           lastPromptedAt: now,
           explanation: this.driveExplanation,
@@ -1043,7 +1080,8 @@ export class AppKernel {
             lastActiveStepId: input.stepId,
             updatedAt: now,
           });
-      const draftValues = onboarding.drafts[input.stepId] ?? JsonObjectSchema.parse(input.values);
+      const draftValues =
+        onboarding.drafts[input.stepId] ?? JsonObjectSchema.parse(input.values);
       const nextSettingsValues = this.mergeOnboardingDraftIntoSettings(
         currentState.settings.current.values,
         input.stepId,
@@ -1113,7 +1151,9 @@ export class AppKernel {
             now,
           )
         : (() => {
-            throw new Error('Optional onboarding steps require explicit definitions.');
+            throw new Error(
+              'Optional onboarding steps require explicit definitions.',
+            );
           })();
 
       return AppMetadataSchema.parse({

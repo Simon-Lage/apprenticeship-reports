@@ -12,7 +12,10 @@ export function useSettingsComparison(
 ) {
   const deferredCurrentValues = useDeferredValue(currentValues);
   const deferredIncomingValues = useDeferredValue(incomingValues);
-  const differences = diffJsonValues(deferredCurrentValues, deferredIncomingValues);
+  const differences = diffJsonValues(
+    deferredCurrentValues,
+    deferredIncomingValues,
+  );
   const differenceMap = createSettingsDifferenceMap(differences);
 
   return {

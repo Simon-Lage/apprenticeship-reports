@@ -37,7 +37,9 @@ export const SettingsImportPreviewSchema = z.object({
 });
 
 export type SettingsSnapshot = z.infer<typeof SettingsSnapshotSchema>;
-export type SettingsExportEnvelope = z.infer<typeof SettingsExportEnvelopeSchema>;
+export type SettingsExportEnvelope = z.infer<
+  typeof SettingsExportEnvelopeSchema
+>;
 export type SettingsImportPreview = z.infer<typeof SettingsImportPreviewSchema>;
 export type SettingsValues = JsonObject;
 
@@ -77,7 +79,10 @@ export function createSettingsImportPreview(input: {
   incoming: SettingsSnapshot;
   warning?: string;
 }): SettingsImportPreview {
-  const differences = diffJsonValues(input.current.values, input.incoming.values) as SettingsDifference[];
+  const differences = diffJsonValues(
+    input.current.values,
+    input.incoming.values,
+  ) as SettingsDifference[];
 
   return SettingsImportPreviewSchema.parse({
     id: input.id,

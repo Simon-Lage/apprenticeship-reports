@@ -31,7 +31,8 @@ export const AppMetadataSchema = z.object({
   drive: DrivePermissionStateSchema,
   backup: BackupStateSchema,
   recovery: z.object({
-    pendingBackupImport: PendingBackupImportStateSchema.nullable().default(null),
+    pendingBackupImport:
+      PendingBackupImportStateSchema.nullable().default(null),
     lastRecoverySnapshotPath: z.string().min(1).nullable().default(null),
     lastRestoredAt: z.string().datetime().nullable().default(null),
   }),
@@ -45,7 +46,9 @@ export const AppMetadataSchema = z.object({
 });
 
 export type AppMetadata = z.infer<typeof AppMetadataSchema>;
-export type PendingBackupImportState = z.infer<typeof PendingBackupImportStateSchema>;
+export type PendingBackupImportState = z.infer<
+  typeof PendingBackupImportStateSchema
+>;
 
 export function createDefaultAppMetadata(now: string): AppMetadata {
   return AppMetadataSchema.parse({

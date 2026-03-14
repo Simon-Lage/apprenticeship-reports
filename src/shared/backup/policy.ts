@@ -58,9 +58,7 @@ export function requestManualBackup(state: BackupState): BackupState {
   return withPendingReason(markBackupDirty(state), 'manual');
 }
 
-export function registerDailyReportForBackup(
-  state: BackupState,
-): BackupState {
+export function registerDailyReportForBackup(state: BackupState): BackupState {
   const nextState = BackupStateSchema.parse({
     ...state,
     hasUnsavedChanges: true,
@@ -74,9 +72,7 @@ export function registerDailyReportForBackup(
   return withPendingReason(nextState, 'daily-report-threshold');
 }
 
-export function registerLaunchBackupCheck(
-  state: BackupState,
-): BackupState {
+export function registerLaunchBackupCheck(state: BackupState): BackupState {
   if (!state.hasUnsavedChanges) {
     return BackupStateSchema.parse(state);
   }
@@ -84,9 +80,7 @@ export function registerLaunchBackupCheck(
   return withPendingReason(state, 'app-start-dirty');
 }
 
-export function registerCloseBackupCheck(
-  state: BackupState,
-): BackupState {
+export function registerCloseBackupCheck(state: BackupState): BackupState {
   if (!state.hasUnsavedChanges) {
     return BackupStateSchema.parse(state);
   }

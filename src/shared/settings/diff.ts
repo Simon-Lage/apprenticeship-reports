@@ -139,7 +139,9 @@ export function diffJsonValues(
     return diffObjects(currentValue, incomingValue, basePath);
   }
 
-  if (stableStringifyJson(currentValue) === stableStringifyJson(incomingValue)) {
+  if (
+    stableStringifyJson(currentValue) === stableStringifyJson(incomingValue)
+  ) {
     return [];
   }
 
@@ -156,5 +158,7 @@ export function diffJsonValues(
 export function createSettingsDifferenceMap(
   differences: SettingsDifference[],
 ): Map<string, SettingsDifference> {
-  return new Map(differences.map((difference) => [difference.path, difference]));
+  return new Map(
+    differences.map((difference) => [difference.path, difference]),
+  );
 }

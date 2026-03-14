@@ -24,7 +24,9 @@ function getStepDefinition(
   definitions: OnboardingStepDefinition[],
   stepId: string,
 ): OnboardingStepDefinition {
-  const stepDefinition = definitions.find((definition) => definition.id === stepId);
+  const stepDefinition = definitions.find(
+    (definition) => definition.id === stepId,
+  );
 
   if (!stepDefinition) {
     throw new Error(`Unknown onboarding step: ${stepId}`);
@@ -40,7 +42,8 @@ function deriveCompletionState(
   now: string,
 ): string | null {
   const isComplete = definitions.every(
-    (definition) => definition.optional || completedStepIds.includes(definition.id),
+    (definition) =>
+      definition.optional || completedStepIds.includes(definition.id),
   );
 
   return isComplete ? now : progress.completedAt;
@@ -90,7 +93,9 @@ export function completeOnboardingStep(
     stepDefinition.schema.parse(draft ?? {});
   }
 
-  const completedStepIds = Array.from(new Set([...progress.completedStepIds, stepId]));
+  const completedStepIds = Array.from(
+    new Set([...progress.completedStepIds, stepId]),
+  );
 
   return OnboardingProgressSchema.parse({
     ...progress,
@@ -99,7 +104,12 @@ export function completeOnboardingStep(
       (skippedStepId) => skippedStepId !== stepId,
     ),
     lastActiveStepId: stepId,
-    completedAt: deriveCompletionState(definitions, completedStepIds, progress, now),
+    completedAt: deriveCompletionState(
+      definitions,
+      completedStepIds,
+      progress,
+      now,
+    ),
     updatedAt: now,
   });
 }
@@ -116,15 +126,24 @@ export function skipOnboardingStep(
     throw new Error(`Onboarding step is not optional: ${stepId}`);
   }
 
-  const completedStepIds = Array.from(new Set([...progress.completedStepIds, stepId]));
-  const skippedStepIds = Array.from(new Set([...progress.skippedStepIds, stepId]));
+  const completedStepIds = Array.from(
+    new Set([...progress.completedStepIds, stepId]),
+  );
+  const skippedStepIds = Array.from(
+    new Set([...progress.skippedStepIds, stepId]),
+  );
 
   return OnboardingProgressSchema.parse({
     ...progress,
     completedStepIds,
     skippedStepIds,
     lastActiveStepId: stepId,
-    completedAt: deriveCompletionState(definitions, completedStepIds, progress, now),
+    completedAt: deriveCompletionState(
+      definitions,
+      completedStepIds,
+      progress,
+      now,
+    ),
     updatedAt: now,
   });
 }
@@ -141,7 +160,9 @@ export function deriveOnboardingState(
   const nextStep = definitions.find(
     (definition) => !completedStepIdSet.has(definition.id),
   );
-  const isComplete = requiredStepIds.every((stepId) => completedStepIdSet.has(stepId));
+  const isComplete = requiredStepIds.every((stepId) =>
+    completedStepIdSet.has(stepId),
+  );
 
   return {
     isConfigured: definitions.length > 0,

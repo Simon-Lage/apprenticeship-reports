@@ -82,7 +82,8 @@ export function deriveAppBootstrapState(input: {
   const skippedStepIds = input.onboardingState.skippedStepIds ?? [];
   const onboarding = {
     isConfigured: onboardingStepIds.length > 0,
-    isComplete: onboardingStepIds.length > 0 ? remainingStepIds.length === 0 : false,
+    isComplete:
+      onboardingStepIds.length > 0 ? remainingStepIds.length === 0 : false,
     nextStepId: remainingStepIds[0] ?? null,
     remainingStepIds,
     skippedStepIds,
@@ -124,7 +125,8 @@ export function deriveAppBootstrapState(input: {
     settings: {
       lastExportedAt: input.lastExportedAt,
       pendingImport: Boolean(input.pendingImport),
-      pendingImportDifferenceCount: input.pendingImport?.differences.length ?? 0,
+      pendingImportDifferenceCount:
+        input.pendingImport?.differences.length ?? 0,
     },
     reports: {
       weeklyHashCount: input.weeklyHashCount,

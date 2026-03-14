@@ -1,4 +1,11 @@
-import { AlertTriangle, CheckCircle2, Database, FolderLock, RefreshCw, ShieldCheck } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Database,
+  FolderLock,
+  RefreshCw,
+  ShieldCheck,
+} from 'lucide-react';
 
 import { DefaultLayout } from '@/renderer/layouts/DefaultLayout';
 import { useAppBootstrap } from '@/hooks/useAppBootstrap';
@@ -15,7 +22,9 @@ import {
 import './globals.css';
 import './App.css';
 
-function statusVariant(status: 'ready' | 'blocked' | 'active' | 'signed-out' | 'reauth-required') {
+function statusVariant(
+  status: 'ready' | 'blocked' | 'active' | 'signed-out' | 'reauth-required',
+) {
   return status === 'ready' || status === 'active' ? 'default' : 'outline';
 }
 
@@ -34,8 +43,12 @@ export default function App() {
               <Badge variant={statusVariant(state.auth.status)}>
                 {state.auth.status}
               </Badge>
-              <Badge variant={state.backup.isBackupRequired ? 'outline' : 'default'}>
-                {state.backup.isBackupRequired ? 'Backup offen' : 'Backup sauber'}
+              <Badge
+                variant={state.backup.isBackupRequired ? 'outline' : 'default'}
+              >
+                {state.backup.isBackupRequired
+                  ? 'Backup offen'
+                  : 'Backup sauber'}
               </Badge>
             </div>
             <div className="space-y-2">
@@ -43,12 +56,17 @@ export default function App() {
                 Apprenticeship Reports Logic Shell
               </h1>
               <p className="max-w-3xl text-sm leading-6 text-slate-600">
-                Dieser Stand priorisiert die Anwendungslogik: Session-Policy, Drive-Gating,
-                Backup-Regeln, Settings-Import-Preview und Wochenbericht-Hashing.
+                Dieser Stand priorisiert die Anwendungslogik: Session-Policy,
+                Drive-Gating, Backup-Regeln, Settings-Import-Preview und
+                Wochenbericht-Hashing.
               </p>
             </div>
           </div>
-          <Button onClick={() => void refresh()} disabled={isLoading} className="self-start lg:self-auto">
+          <Button
+            onClick={() => void refresh()}
+            disabled={isLoading}
+            className="self-start lg:self-auto"
+          >
             <RefreshCw className={isLoading ? 'animate-spin' : undefined} />
             Status aktualisieren
           </Button>
@@ -94,13 +112,16 @@ export default function App() {
                 Authentifizierung
               </CardTitle>
               <CardDescription>
-                Passwort- oder Google-Session mit Remember-Me-Policy und 30-Tage-Reauth-Fenster.
+                Passwort- oder Google-Session mit Remember-Me-Policy und
+                30-Tage-Reauth-Fenster.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-slate-700">
               <div className="flex items-center justify-between gap-4">
                 <span>Status</span>
-                <Badge variant={statusVariant(state.auth.status)}>{state.auth.status}</Badge>
+                <Badge variant={statusVariant(state.auth.status)}>
+                  {state.auth.status}
+                </Badge>
               </div>
               <div className="flex items-center justify-between gap-4">
                 <span>Login-Methode</span>
@@ -134,7 +155,9 @@ export default function App() {
             <CardContent className="space-y-3 text-sm text-slate-700">
               <div className="flex items-center justify-between gap-4">
                 <span>Datenbankstatus</span>
-                <Badge variant={state.database.isLocked ? 'outline' : 'default'}>
+                <Badge
+                  variant={state.database.isLocked ? 'outline' : 'default'}
+                >
                   {state.database.status}
                 </Badge>
               </div>
@@ -146,7 +169,9 @@ export default function App() {
               </div>
               <div className="flex items-center justify-between gap-4">
                 <span>Drive-Konto</span>
-                <span>{state.drive.connectedAccountEmail ?? 'nicht verbunden'}</span>
+                <span>
+                  {state.drive.connectedAccountEmail ?? 'nicht verbunden'}
+                </span>
               </div>
               <div className="space-y-2">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
@@ -171,7 +196,8 @@ export default function App() {
             <CardHeader>
               <CardTitle className="text-slate-950">Backup-Policy</CardTitle>
               <CardDescription>
-                Dirty-State, 10-Tagesbericht-Schwelle und App-Start/App-Ende-Regeln.
+                Dirty-State, 10-Tagesbericht-Schwelle und
+                App-Start/App-Ende-Regeln.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-slate-700">
@@ -185,7 +211,9 @@ export default function App() {
               </div>
               <div className="flex items-center justify-between gap-4">
                 <span>Letztes erfolgreiches Backup</span>
-                <span>{state.backup.lastSuccessfulBackupAt ?? 'noch keines'}</span>
+                <span>
+                  {state.backup.lastSuccessfulBackupAt ?? 'noch keines'}
+                </span>
               </div>
               <div className="flex items-center justify-between gap-4">
                 <span>Backup-Import offen</span>
@@ -212,7 +240,9 @@ export default function App() {
 
           <Card className="border-slate-200/80 bg-white/85 shadow-lg shadow-slate-900/5">
             <CardHeader>
-              <CardTitle className="text-slate-950">Settings und Reports</CardTitle>
+              <CardTitle className="text-slate-950">
+                Settings und Reports
+              </CardTitle>
               <CardDescription>
                 Import-Preview, Compare-Diff und Wochenbericht-Integritaet.
               </CardDescription>

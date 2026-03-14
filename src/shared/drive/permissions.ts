@@ -71,7 +71,9 @@ export function deriveDriveAccessState(
   const missingScopes = parsedState.requiredScopes.filter(
     (scope) => !grantedScopes.has(scope),
   );
-  const hasValidConnection = Boolean(parsedState.account && parsedState.accessToken);
+  const hasValidConnection = Boolean(
+    parsedState.account && parsedState.accessToken,
+  );
 
   if (!missingScopes.length && hasValidConnection) {
     return {

@@ -31,8 +31,12 @@ export const CreateGoogleSessionInputSchema = z.object({
 
 export type AppSession = z.infer<typeof AppSessionSchema>;
 export type GoogleSession = AppSession;
-export type CreatePasswordSessionInput = z.input<typeof CreatePasswordSessionInputSchema>;
-export type CreateGoogleSessionInput = z.input<typeof CreateGoogleSessionInputSchema>;
+export type CreatePasswordSessionInput = z.input<
+  typeof CreatePasswordSessionInputSchema
+>;
+export type CreateGoogleSessionInput = z.input<
+  typeof CreateGoogleSessionInputSchema
+>;
 
 export type AppSessionState = {
   status: 'signed-out' | 'active' | 'reauth-required';
@@ -62,7 +66,12 @@ export function createPasswordSession(
   now: string,
 ): AppSession {
   const parsedInput = CreatePasswordSessionInputSchema.parse(input);
-  return createAppSession('password', parsedInput.account, parsedInput.rememberMe, now);
+  return createAppSession(
+    'password',
+    parsedInput.account,
+    parsedInput.rememberMe,
+    now,
+  );
 }
 
 export function createGoogleSession(
@@ -70,7 +79,12 @@ export function createGoogleSession(
   now: string,
 ): AppSession {
   const parsedInput = CreateGoogleSessionInputSchema.parse(input);
-  return createAppSession('google', parsedInput.account, parsedInput.rememberMe, now);
+  return createAppSession(
+    'google',
+    parsedInput.account,
+    parsedInput.rememberMe,
+    now,
+  );
 }
 
 export function touchSession(session: AppSession, now: string): AppSession {
