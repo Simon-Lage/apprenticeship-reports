@@ -1,3 +1,3 @@
 export default function DailyReportPage() {
-  return <p>Anforderungen: Eingabe und Bearbeitung eines Tagesberichts mit Validierung und sauberer Ruecknavigation in den Wochenkontext.</p>;
+  return <p>Anforderungen: UI richtet sich nach Tagestyp; Arbeitstag mit editierbarer Taetigkeitsliste ueber searchable Dropdown mit Vorschlaegen aus bisherigen gleichartigen Eintraegen, Schultag mit aus dem Stundenplan vorbefuellten und pro Stunde anpassbaren Lehrer/Fach-Werten, freier Tag ohne Inhaltserfassung mit Anzeige des Freigrunds; Eintraege sind pro Tag speicherbar, bearbeitbar und loeschbar, Unterweisungen/betrieblicher Unterricht/sonstige Schulungen muessen zusaetzlich getrennt erfassbar sein und bei Schultagen sind optionale Arbeitseintraege moeglich.</p>;
 }

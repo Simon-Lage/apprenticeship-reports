@@ -1,3 +1,3 @@
 export default function SettingsPage() {
-  return <p>Anforderungen: Bearbeiten aller Einstellungen inklusive Onboarding-Werte sowie separater Settings-Import und Settings-Export als JSON mit Vergleichsansicht.</p>;
+  return <p>Anforderungen: Zentrale Verwaltung aller Einstellungen inklusive Onboarding-relevanter Standardwerte und Felder fuer spaetere Erweiterungen, mit separatem JSON-Import und JSON-Export der Settings sowie Vergleichsansicht vor dem Ueberschreiben bestehender Werte.</p>;
 }

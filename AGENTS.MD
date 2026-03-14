@@ -14,6 +14,7 @@ Bitte beachte folgende Punkte:
 - Unter apprenticeship-reports\src\renderer\components\ui habe ich bereits alle shadcn-compoents importiert, die ich für nötig halte.
 - Wir gehen Schritt für Schritt vor.
 - Nutzerinputs müssen immer validiert werden.
+- Alle UI-Texte müssen aus i18n-Übersetzungen kommen.
 
 ---
 
@@ -53,7 +54,7 @@ Bitte beachte folgende Punkte:
 
 - Reports-JSON (Backup) ist verbindlich so strukturiert:
   - Root enthält `weeks` als Array.
-  - `weeks` darf als Array leer sein, aber jeder Week-Eintrag muss ein valides, nicht-leeres Week-Objekt sein.
+  - `weeks` darf als Array nicht leer sein; jeder Week-Eintrag muss ein valides, nicht-leeres Week-Objekt sein.
   - Eine Week darf keine Days enthalten (leeres `days`-Array ist erlaubt).
   - Eine Week enthält mindestens:
   - `weekStart` (YYYY-MM-DD), `weekEnd` (YYYY-MM-DD)
@@ -115,3 +116,19 @@ Bitte beachte folgende Punkte:
   - Bereits vorhandene gültige Onboardinginformationen überspringen die zugehörigen Schritte automatisch; angezeigt werden nur tatsächlich fehlende Schritte.
   - Fehlt später eine zuvor vorhandene Pflichtinformation, muss das Onboarding beim nächsten Appstart nach der Authentifizierung genau für diese fehlende Information erneut starten und die App bis zur Ergänzung gesperrt bleiben.
 - Bei jedem Wochenbericht der fertig ist, soll mit dem Wochenbericht ein Hash dieses Wochenberichtes gespeichert werden.
+
+- UI-Seitenanforderungen (Planungsstand):
+  - Allgemein: Wenn kein lokales Passwort existiert, startet Onboarding direkt; sobald ein lokales Passwort existiert, ist ohne Authentifizierung immer Login vorgeschaltet und die App bis dahin gesperrt.
+  - Navigation: Topbar-Navigation ist im authentifizierten App-Bereich sichtbar und wird auf Login- sowie Onboarding-Seiten ausgeblendet.
+  - `ChangeAuthMethodsPage`: Nur authentifiziert erreichbar; lokales Passwort ändern sowie optionales Google-Konto verbinden, wechseln oder hinzufügen, ohne die Pflicht eines lokalen Passworts aufzuheben.
+  - `DailyReportPage`: UI strikt abhängig vom Tagestyp; Arbeitstag mit editierbarer Tätigkeitsliste aus searchable Dropdown mit Vorschlägen aus bisherigen gleichartigen Einträgen; freier Tag ohne Inhaltserfassung mit Anzeige des Freigrunds; Schultag mit Stundenplan-Preset und pro Stunde anpassbarem Lehrer/Fach. Wenn bei zwei Stunden gleiches Fach und gleicher Lehrer gelten und nur eine Stunde Inhalt hat, wird dieser für die andere Stunde übernommen. Unterweisungen/betrieblicher Unterricht/sonstige Schulungen sind getrennt von normalen Tätigkeiten erfassbar.
+  - `ExportPage`: Export von Settings oder Reports als JSON entweder lokal über Dateidialog oder nach Google Drive; wenn Google-Konto oder Drive-Rechte fehlen, klare Ursache anzeigen und direkte Möglichkeit zum Nachrüsten anbieten.
+  - `HomePage`: Als letzte Seite umsetzen; am Ende kompakte Startübersicht mit wichtigsten Einstiegen und Kennzahlen (z. B. Tagesbericht anlegen, letzter Tagesbericht, Anzahl Tagesberichte).
+  - `ImportPage`: Import von Settings oder Reports mit nachvollziehbaren Fehlermeldungen; bei überschreibenden Änderungen immer Git-Diff-artige Vergleichsansicht mit zwei Seiten, synchronem Scrolling und farblicher Differenzmarkierung, nur für tatsächlich unterschiedliche Daten.
+  - `LoginPage`: Passwort-Login oder Google-Login; Google-Option ist deaktiviert, wenn kein Google-Konto hinterlegt ist, inklusive Hover-Hinweis.
+  - `OnboardingPage`: Erster Schritt Passwort setzen, zweiter Schritt optional Google verknüpfen, weitere Schritte danach; unterbrochenes Onboarding wird fortgesetzt und zeigt nur noch fehlende Schritte.
+  - `ReportsOverviewPage`: Lange scrollbare Tagesliste ohne Pagination mit Such-/Filtermöglichkeiten; visuelle Wochenabgrenzung zwischen Sonntag und Montag; pro Woche zusätzliche Felder für gesendet-Status, Empfänger-E-Mail und Abteilung.
+  - `SettingsPage`: Anforderungen aus Settings-Spezifikation, erweiterbar um künftige Settings; Settings-Import/-Export bleibt getrennt von Reports-Backups.
+  - `TimeTablePage`: Stundenplan mit searchable Lehrer-/Fach-Auswahl; integrierte aufklappbare Konfiguration auf derselben Seite mit zwei getrennten Listen (Lehrer, Fächer) ohne Duplikate; neue Werte können direkt aus Stundenplan- oder Tagesreport-Eingaben übernommen werden und dienen als Presets.
+  - `WeeklyReportPage`: Felder für Zeitraum, Datum, Ausbildungsabschnitt/Abteilung und zwei Betreuer-E-Mail-Felder (Defaults aus Settings, überschreibbar); getrennte Erfassung von Arbeitstätigkeiten, Berufsschule-Unterrichtsthemen sowie Unterweisungen/betrieblichem Unterricht/sonstigen Schulungen; bei Schultagen sind optionale Arbeitseinträge möglich.
+  - `WeeklyReportPDFPage`: Vorschau eines einseitigen Weekly-Report-PDF und Export über Dateidialog.

@@ -1,3 +1,3 @@
 export default function OnboardingPage() {
-  return <p>Anforderungen: Onboarding startet auch ohne bestehende Authentifizierung, wenn noch kein lokales Passwort existiert; Reihenfolge ist Passwort (Pflicht), Google (optional), danach fachliche Daten mit Validierung, Resume und nur fehlenden Schritten.</p>;
+  return <p>Anforderungen: Wenn noch kein lokales Passwort existiert, darf Onboarding ohne vorherige Authentifizierung starten; Reihenfolge ist zuerst Passwort (Pflicht), danach optional Google-Verknuepfung und anschliessend weitere Pflichtdaten, wobei nur fehlende Schritte angezeigt, Eingaben strikt validiert, Zwischenstaende gespeichert und unterbrochene Onboardings beim naechsten Start exakt fortgesetzt werden.</p>;
 }
