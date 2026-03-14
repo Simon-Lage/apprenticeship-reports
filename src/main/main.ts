@@ -5,7 +5,6 @@ import log from 'electron-log';
 
 import { registerAppHandlers } from '@/main/ipc/registerAppHandlers';
 import { resolveHtmlPath } from '@/main/utils';
-import MenuBuilder from '@/main/menu';
 import { AppKernel } from '@/main/services/AppKernel';
 import { AppMetadataRepository } from '@/main/services/AppMetadataRepository';
 import { GoogleDriveService } from '@/main/services/GoogleDriveService';
@@ -128,6 +127,7 @@ async function createWindow(): Promise<void> {
     height: 860,
     minWidth: 1100,
     minHeight: 760,
+    autoHideMenuBar: true,
     icon: getAssetPath('apprenticeship-reports-logo-small.png'),
     webPreferences: {
       preload: app.isPackaged
@@ -136,6 +136,7 @@ async function createWindow(): Promise<void> {
     },
   });
 
+  mainWindow.removeMenu();
   mainWindow.loadURL(resolveHtmlPath('index.html'));
 
   mainWindow.on('ready-to-show', () => {
@@ -159,9 +160,6 @@ async function createWindow(): Promise<void> {
     shell.openExternal(url);
     return { action: 'deny' };
   });
-
-  const menuBuilder = new MenuBuilder(mainWindow);
-  menuBuilder.buildMenu();
   new AppUpdater(mainWindow);
 }
 
