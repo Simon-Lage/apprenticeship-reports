@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-import { JsonObjectSchema } from '@/shared/common/json';
+import {
+  JsonObject,
+  JsonObjectSchema,
+  stableStringifyJson,
+} from '@/shared/common/json';
 import { WeeklyReportHashRecordSchema } from '@/shared/reports/stable';
 
 export const BackupConflictStrategySchema = z.enum([
@@ -56,8 +60,100 @@ function dedupeIds(ids: string[]): string[] {
   return Array.from(new Set(ids));
 }
 
+export function createWeekIdentity(weekStart: string, weekEnd: string): string {
+  return `${weekStart}:${weekEnd}`;
+}
+
 function getWeekIdentity(report: WeeklyReportRecord): string {
-  return `${report.weekStart}:${report.weekEnd}`;
+  return createWeekIdentity(report.weekStart, report.weekEnd);
+}
+
+function createStableHash(serialized: string): string {
+  let hash = 0x811c9dc5;
+
+  for (let index = 0; index < serialized.length; index += 1) {
+    hash ^= serialized.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+
+  return `fnv1a32:${(hash >>> 0).toString(16).padStart(8, '0')}`;
+}
+
+function readWeekMetadata(values: JsonObject): {
+  submitted: boolean;
+  submittedToEmail: string | null;
+  area: string | null;
+} {
+  return {
+    submitted: typeof values.submitted === 'boolean' ? values.submitted : false,
+    submittedToEmail:
+      typeof values.submittedToEmail === 'string' &&
+      values.submittedToEmail.trim().length
+        ? values.submittedToEmail.trim()
+        : null,
+    area:
+      typeof values.area === 'string' && values.area.trim().length
+        ? values.area.trim()
+        : null,
+  };
+}
+
+export function createDailyReportContentHash(
+  dailyReport: DailyReportRecord,
+): string {
+  return createStableHash(
+    stableStringifyJson({
+      date: dailyReport.date,
+      content: dailyReport.values,
+    }),
+  );
+}
+
+export function createWeeklyReportContentHash(input: {
+  weeklyReport: WeeklyReportRecord;
+  dailyReports: DailyReportRecord[];
+}): string {
+  const sortedDailyReports = [...input.dailyReports].sort((left, right) => {
+    const byDate = left.date.localeCompare(right.date);
+
+    if (byDate !== 0) {
+      return byDate;
+    }
+
+    return left.id.localeCompare(right.id);
+  });
+  const weekValues = JsonObjectSchema.parse(input.weeklyReport.values);
+  const weekMetadata = readWeekMetadata(weekValues);
+  const weekValuesForHash = Object.entries(weekValues).reduce<JsonObject>(
+    (result, [key, value]) => {
+      if (
+        key === 'submitted' ||
+        key === 'submittedToEmail' ||
+        key === 'area'
+      ) {
+        return result;
+      }
+
+      result[key] = value;
+      return result;
+    },
+    {},
+  );
+
+  return createStableHash(
+    stableStringifyJson({
+      weekStart: input.weeklyReport.weekStart,
+      weekEnd: input.weeklyReport.weekEnd,
+      submitted: weekMetadata.submitted,
+      submittedToEmail: weekMetadata.submittedToEmail,
+      area: weekMetadata.area,
+      values: weekValuesForHash,
+      days: sortedDailyReports.map((dailyReport) => ({
+        date: dailyReport.date,
+        content: dailyReport.values,
+      })),
+    }),
+  );
 }
 
 function getLatestReport<T extends { updatedAt: string }>(
@@ -86,22 +182,34 @@ function selectReportByStrategy<T extends { updatedAt: string }>(input: {
 }
 
 function getDailyReportsForWeek(
-  reportsState: ReportsState,
+  dailyReportsById: ReportsState['dailyReports'],
   weeklyReport: WeeklyReportRecord,
-): Record<string, DailyReportRecord> {
-  const result: Record<string, DailyReportRecord> = {};
+): DailyReportRecord[] {
+  const result: DailyReportRecord[] = [];
 
   weeklyReport.dailyReportIds.forEach((dailyReportId) => {
-    const dailyReport = reportsState.dailyReports[dailyReportId];
+    const dailyReport = dailyReportsById[dailyReportId];
 
     if (!dailyReport) {
       return;
     }
 
-    result[dailyReport.date] = dailyReport;
+    result.push(dailyReport);
   });
 
   return result;
+}
+
+function mapDailyReportsByDate(
+  dailyReports: DailyReportRecord[],
+): Record<string, DailyReportRecord> {
+  return dailyReports.reduce<Record<string, DailyReportRecord>>(
+    (result, dailyReport) => {
+      result[dailyReport.date] = dailyReport;
+      return result;
+    },
+    {},
+  );
 }
 
 function mergeDailyReportsForWeek(input: {
@@ -113,20 +221,21 @@ function mergeDailyReportsForWeek(input: {
 }): {
   dailyReports: Record<string, DailyReportRecord>;
   dailyReportIds: string[];
-  conflictingDailyReportCount: number;
 } {
-  const currentDailyReports = getDailyReportsForWeek(
-    input.currentState,
-    input.currentWeeklyReport,
+  const currentDailyReports = mapDailyReportsByDate(
+    getDailyReportsForWeek(
+      input.currentState.dailyReports,
+      input.currentWeeklyReport,
+    ),
   );
-  const incomingDailyReports = getDailyReportsForWeek(
-    input.incomingState,
-    input.incomingWeeklyReport,
+  const incomingDailyReports = mapDailyReportsByDate(
+    getDailyReportsForWeek(
+      input.incomingState.dailyReports,
+      input.incomingWeeklyReport,
+    ),
   );
   const nextDailyReports: Record<string, DailyReportRecord> = {};
   const dailyReportIds: string[] = [];
-  let conflictingDailyReportCount = 0;
-
   const reportDates = Array.from(
     new Set([
       ...Object.keys(currentDailyReports),
@@ -139,7 +248,6 @@ function mergeDailyReportsForWeek(input: {
     const incomingDailyReport = incomingDailyReports[date];
 
     if (currentDailyReport && incomingDailyReport) {
-      conflictingDailyReportCount += 1;
       const selectedDailyReport = selectReportByStrategy({
         currentValue: currentDailyReport,
         incomingValue: incomingDailyReport,
@@ -164,7 +272,6 @@ function mergeDailyReportsForWeek(input: {
   return {
     dailyReports: nextDailyReports,
     dailyReportIds,
-    conflictingDailyReportCount,
   };
 }
 
@@ -201,18 +308,52 @@ export function summarizeReportConflicts(
       return;
     }
 
-    conflictingWeekCount += 1;
     const currentDailyReports = getDailyReportsForWeek(
-      currentState,
+      currentState.dailyReports,
       currentWeeklyReport,
     );
     const incomingDailyReports = getDailyReportsForWeek(
-      incomingState,
+      incomingState.dailyReports,
       incomingWeeklyReport,
     );
+    const currentWeekHash = createWeeklyReportContentHash({
+      weeklyReport: currentWeeklyReport,
+      dailyReports: currentDailyReports,
+    });
+    const incomingWeekHash = createWeeklyReportContentHash({
+      weeklyReport: incomingWeeklyReport,
+      dailyReports: incomingDailyReports,
+    });
 
-    Object.keys(incomingDailyReports).forEach((date) => {
-      if (currentDailyReports[date]) {
+    if (currentWeekHash === incomingWeekHash) {
+      return;
+    }
+
+    conflictingWeekCount += 1;
+    const currentDailyReportsByDate = mapDailyReportsByDate(currentDailyReports);
+    const incomingDailyReportsByDate = mapDailyReportsByDate(
+      incomingDailyReports,
+    );
+    const reportDates = Array.from(
+      new Set([
+        ...Object.keys(currentDailyReportsByDate),
+        ...Object.keys(incomingDailyReportsByDate),
+      ]),
+    );
+
+    reportDates.forEach((date) => {
+      const currentDailyReport = currentDailyReportsByDate[date];
+      const incomingDailyReport = incomingDailyReportsByDate[date];
+
+      if (!currentDailyReport || !incomingDailyReport) {
+        conflictingDailyReportCount += 1;
+        return;
+      }
+
+      if (
+        createDailyReportContentHash(currentDailyReport) !==
+        createDailyReportContentHash(incomingDailyReport)
+      ) {
         conflictingDailyReportCount += 1;
       }
     });
@@ -230,6 +371,7 @@ export function mergeReportsState(input: {
   currentState: ReportsState;
   incomingState: ReportsState;
   strategy?: BackupConflictStrategy;
+  weekConflictStrategies?: Record<string, BackupConflictStrategy>;
 }): ReportsState {
   const strategy = input.strategy ?? defaultBackupConflictStrategy;
   const currentState = ReportsStateSchema.parse(input.currentState);
@@ -238,8 +380,6 @@ export function mergeReportsState(input: {
   const nextDailyReports: Record<string, DailyReportRecord> = {};
   const currentWeeksByIdentity = new Map<string, WeeklyReportRecord>();
   const incomingWeeksByIdentity = new Map<string, WeeklyReportRecord>();
-  const nextWeeklyHashes: ReportsState['weeklyHashes'] = {};
-  const conflictedWeeklyReportIds = new Set<string>();
 
   Object.values(currentState.weeklyReports).forEach((weeklyReport) => {
     currentWeeksByIdentity.set(getWeekIdentity(weeklyReport), weeklyReport);
@@ -257,13 +397,10 @@ export function mergeReportsState(input: {
     }
 
     nextWeeklyReports[currentWeeklyReport.id] = currentWeeklyReport;
-    currentWeeklyReport.dailyReportIds.forEach((dailyReportId) => {
-      const dailyReport = currentState.dailyReports[dailyReportId];
-
-      if (!dailyReport) {
-        return;
-      }
-
+    getDailyReportsForWeek(
+      currentState.dailyReports,
+      currentWeeklyReport,
+    ).forEach((dailyReport) => {
       nextDailyReports[dailyReport.id] = dailyReport;
     });
   });
@@ -273,30 +410,53 @@ export function mergeReportsState(input: {
 
     if (!currentWeeklyReport) {
       nextWeeklyReports[incomingWeeklyReport.id] = incomingWeeklyReport;
-      incomingWeeklyReport.dailyReportIds.forEach((dailyReportId) => {
-        const dailyReport = incomingState.dailyReports[dailyReportId];
-
-        if (!dailyReport) {
-          return;
-        }
-
+      getDailyReportsForWeek(
+        incomingState.dailyReports,
+        incomingWeeklyReport,
+      ).forEach((dailyReport) => {
         nextDailyReports[dailyReport.id] = dailyReport;
       });
       return;
     }
 
+    const currentDailyReports = getDailyReportsForWeek(
+      currentState.dailyReports,
+      currentWeeklyReport,
+    );
+    const incomingDailyReports = getDailyReportsForWeek(
+      incomingState.dailyReports,
+      incomingWeeklyReport,
+    );
+    const currentWeekHash = createWeeklyReportContentHash({
+      weeklyReport: currentWeeklyReport,
+      dailyReports: currentDailyReports,
+    });
+    const incomingWeekHash = createWeeklyReportContentHash({
+      weeklyReport: incomingWeeklyReport,
+      dailyReports: incomingDailyReports,
+    });
+
+    if (currentWeekHash === incomingWeekHash) {
+      nextWeeklyReports[currentWeeklyReport.id] = currentWeeklyReport;
+      currentDailyReports.forEach((dailyReport) => {
+        nextDailyReports[dailyReport.id] = dailyReport;
+      });
+      return;
+    }
+
+    const strategyForWeek =
+      input.weekConflictStrategies?.[identity] ?? strategy;
     const selectedWeeklyReport = selectReportByStrategy({
       currentValue: currentWeeklyReport,
       incomingValue: incomingWeeklyReport,
-      strategy,
+      strategy: strategyForWeek,
     });
-    conflictedWeeklyReportIds.add(selectedWeeklyReport.id);
     const mergedDailyReports = mergeDailyReportsForWeek({
       currentState,
       incomingState,
       currentWeeklyReport,
       incomingWeeklyReport,
-      strategy,
+      strategy: strategyForWeek,
     });
     const latestDailyReportTimestamp = Object.values(
       mergedDailyReports.dailyReports,
@@ -319,26 +479,19 @@ export function mergeReportsState(input: {
     );
   });
 
-  const nextWeeklyReportIds = new Set(Object.keys(nextWeeklyReports));
-  const hashSources = [currentState.weeklyHashes, incomingState.weeklyHashes];
-
-  hashSources.forEach((hashSource) => {
-    Object.entries(hashSource).forEach(([weeklyReportId, record]) => {
-      if (
-        !nextWeeklyReportIds.has(weeklyReportId) ||
-        conflictedWeeklyReportIds.has(weeklyReportId)
-      ) {
-        return;
-      }
-
-      const previousRecord = nextWeeklyHashes[weeklyReportId];
-      nextWeeklyHashes[weeklyReportId] = previousRecord
-        ? record.createdAt > previousRecord.createdAt
-          ? record
-          : previousRecord
-        : record;
+  const nextWeeklyHashes = Object.values(nextWeeklyReports).reduce<
+    ReportsState['weeklyHashes']
+  >((result, weeklyReport) => {
+    result[weeklyReport.id] = WeeklyReportHashRecordSchema.parse({
+      weeklyReportId: weeklyReport.id,
+      hash: createWeeklyReportContentHash({
+        weeklyReport,
+        dailyReports: getDailyReportsForWeek(nextDailyReports, weeklyReport),
+      }),
+      createdAt: weeklyReport.updatedAt,
     });
-  });
+    return result;
+  }, {});
 
   return ReportsStateSchema.parse({
     weeklyHashes: nextWeeklyHashes,

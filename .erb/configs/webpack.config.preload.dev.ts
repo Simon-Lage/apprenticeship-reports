@@ -24,9 +24,6 @@ const configuration: webpack.Configuration = {
   output: {
     path: webpackPaths.dllPath,
     filename: 'preload.js',
-    library: {
-      type: 'umd',
-    },
   },
 
   plugins: [

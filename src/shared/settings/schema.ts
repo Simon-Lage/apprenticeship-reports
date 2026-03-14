@@ -13,12 +13,12 @@ export const SettingsSnapshotSchema = z.object({
   schemaVersion: z.number().int().positive(),
   capturedAt: z.string().datetime(),
   values: JsonObjectSchema,
-});
+}).strict();
 
 export const SettingsExportEnvelopeSchema = z.object({
   exportedAt: z.string().datetime(),
   snapshot: SettingsSnapshotSchema,
-});
+}).strict();
 
 export const SettingsImportPreviewSchema = z.object({
   id: z.string().min(1),

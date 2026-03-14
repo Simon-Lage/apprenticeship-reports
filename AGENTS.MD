@@ -41,11 +41,68 @@ Bitte beachte folgende Punkte:
   - Beim Öffnen der App, falls es noch vom letzten Verwenden ungespeicherte Änderungen gibt.
   - Er soll sich immer merken, wann das letzte Backup erfolgreich durchgeführt wurde.
   - Backups sollten auch manuell möglich sein.
-- Zusätzlich zu den Backups der Daten muss es Möglich sein, die Settings ganz einfach mit einem Klick zu exportieren und zu importieren.
 
-  - Beim Importieren soll gewarnt werden, dass die aktuellen Settings überschrieben werden und dann kommt man in das CompareLayout.tsx, was nichts anderes ist,als ein Layout, dass 2 Seiten ldädt und scrolling Synchronisiert, sodass man die Unterschiede sehen kann. Außerdem soll es den Seiten mitgeben, dass sie im compare mode sind. Die Settings Seite braucht dann eine externe Logik in einem Hook uä, wo dann die beidenb Stände verglichen werden, sodass der hook dann genau zurückgibt, wo es unterschiede gibt, sodass diese settings dann mit einer border markiert werden. desweiteren sollte im compare layout noch immer eien überschrift über jede der beiden seiten sthene, in dem fall das datum.
+- Verbindliche Import-/Export-Spezifikation (Reports und Settings):
+  - Detailreferenz: `docs/import-export-spec.md` (verbindlich fuer Implementierung und UI).
+  - Akzeptiertes Dateiformat ist ausschließlich JSON.
+  - Import von nicht-JSON ist immer ein harter Fehler und wird abgelehnt.
+  - Es gibt genau zwei Datenbereiche für Import/Export:
+  - `reports` mit `weeks` und darin `days`
+  - `settings`
+  - Andere Bereiche werden nicht importiert/exportiert (keine Auth-, Drive-, Onboarding-, Backup-Metadaten).
 
-- Es braucht natürlich auch die Möglichkeit Backups zu importieren. Dabei soll dann nach einem umständlichen aber wichtigen Procedere vorgegangen werden, damit keine Daten verloren gehen.
+- Reports-JSON (Backup) ist verbindlich so strukturiert:
+  - Root enthält `weeks` als Array.
+  - `weeks` darf als Array leer sein, aber jeder Week-Eintrag muss ein valides, nicht-leeres Week-Objekt sein.
+  - Eine Week darf keine Days enthalten (leeres `days`-Array ist erlaubt).
+  - Eine Week enthält mindestens:
+  - `weekStart` (YYYY-MM-DD), `weekEnd` (YYYY-MM-DD)
+  - `updatedAt` (ISO-8601)
+  - `hash` (deterministisch berechnet)
+  - `submitted` (boolean)
+  - `submittedToEmail` (string oder null)
+  - `area` (string oder null)
+  - `days` (Array)
+  - Jeder Day enthält mindestens:
+  - `date` (YYYY-MM-DD)
+  - `content`/Werte der Tagesinhalte
+  - `updatedAt` (ISO-8601)
+
+- Hash-Regeln für Weeks:
+  - Es gibt eine zentrale Helper-Funktion, die aus einer Week immer deterministisch denselben Hash erzeugt.
+  - Grundlage für den Hash sind die fachlichen Week-Daten inklusive Days, aber ohne das Feld `hash` selbst.
+  - Serialisierung für die Hash-Bildung ist stabil (gleiche Datenreihenfolge ergibt denselben Hash).
+  - Bei Import-Vergleich gilt:
+  - Gleicher Hash => Week wird als unverändert behandelt.
+  - Unterschiedlicher Hash => Week gilt als geändert und erscheint in der Vergleichsansicht.
+
+- Timestamp-Regeln für Weeks:
+  - `updatedAt` wird nicht beim Export/Import neu erzeugt.
+  - `updatedAt` wird immer dann aktualisiert, wenn sich in der App fachliche Week-Daten ändern:
+  - Day-Inhalt geändert
+  - Day hinzugefügt/entfernt
+  - Week-Metadaten geändert (z. B. `submitted`, `submittedToEmail`, `area`)
+  - Für automatische Konfliktauflösung ohne manuelle Auswahl gilt:
+  - Neuere `updatedAt` gewinnt.
+
+- Reports-Import-Procedere (verlustsicher):
+  - 1) JSON parsen und strikt validieren.
+  - 2) Import-Preview erzeugen (Diff/Konflikte).
+  - 3) Vor Anwendung einen lokalen Recovery-Snapshot erstellen.
+  - 4) Compare-Ansicht anbieten (Git-Diff-artig, nebeneinander, synchrones Scrolling).
+  - 5) Übernahme anwenden (pro Konflikt manuell oder automatisch per Timestamp-Regel).
+  - 6) Bei Fehlern vollständiger Rollback auf Recovery-Snapshot.
+  - In der Compare-Ansicht werden nur Weeks angezeigt, deren Hash unterschiedlich ist.
+  - Nutzer kann pro konfliktbehafteter Week zwischen lokal und importiert wählen.
+  - Wenn Nutzer ohne manuelle Auswahl fortfährt, gilt standardmäßig `latest-timestamp`.
+
+- Settings-Import/-Export:
+  - Settings haben eigenes JSON-Format (separat von Reports).
+  - Settings-Export enthält einen Export-Zeitpunkt (`exportedAt`) und die Settings-Werte.
+  - Keine App-Version im Export erzwingen (vorerst bewusst nicht Teil der Spezifikation).
+  - Vor Settings-Import immer Warnung, dass aktuelle Settings überschrieben werden können.
+  - Danach CompareLayout mit zwei Seiten, synchronem Scrolling und Datum/Zeiten als Überschrift je Seite.
+  - Die Settings-Seite bekommt Compare-Mode-Information und nutzt externe Diff-Logik (Hook), um Unterschiede zu markieren.
 
 - Diese Anwendung braucht ein Onboarding:
   - Dabei gibt es mehrere Abschnitte, teils mit optionalen Angaben. Alle diese Angaben kann man später noch in den Settings umstellen.

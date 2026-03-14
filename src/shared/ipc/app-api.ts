@@ -124,6 +124,16 @@ export const ApplyBackupImportInputSchema = z.object({
   previewId: z.string().min(1),
   conflictStrategy:
     BackupConflictStrategySchema.optional().default('latest-timestamp'),
+  weekConflictResolutions: z
+    .array(
+      z.object({
+        weekStart: z.string().date(),
+        weekEnd: z.string().date(),
+        strategy: BackupConflictStrategySchema,
+      }),
+    )
+    .optional()
+    .default([]),
 });
 
 export const PrepareDriveBackupImportInputSchema = z.object({
