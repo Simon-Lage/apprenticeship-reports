@@ -173,3 +173,9 @@ Bitte beachte folgende Punkte:
   - `WeeklyReportPage`: Beim Öffnen wird automatisch die nächste offene Woche vorausgewählt (ab Ausbildungsstart oder optionalem Berichtsstartdatum), deren Wochenbericht noch nicht abgeschickt ist. Oberhalb sind nur Ausbildungsabschnitt/Abteilung und eine Betreuer-E-Mail editierbar; Versandstatus wird angezeigt, aber nicht per Switch bearbeitet. Die drei Inhaltsblöcke sind read-only und werden ausschließlich aus den Tagesberichten aggregiert in folgender Reihenfolge: 1) Betriebliche Tätigkeiten 2) Unterweisungen/betrieblicher Unterricht/sonstige Schulungen 3) Berufsschule (Unterrichtsthemen).
   - `SendWeeklyReportPage`: Separate Seite für den Versandfluss eines Wochenberichts; WeeklyReport-Seite verlinkt dorthin per "Wochenbericht senden". Detaillierte UI wird später finalisiert.
   - `WeeklyReportPDFPage`: Vorschau eines einseitigen Weekly-Report-PDF und Export über Dateidialog.
+
+
+
+
+We will always use this password: 1!aA1234
+So you can authenticate yourself.

@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { BrowserWindow, ipcMain } from 'electron';
 
 import { AppKernel } from '@/main/services/AppKernel';
 import { DesktopFileDialogService } from '@/main/services/DesktopFileDialogService';
@@ -26,10 +26,21 @@ import {
   UpsertWeeklyReportInputSchema,
 } from '@/shared/ipc/app-api';
 
-export function registerAppHandlers(
+export default function registerAppHandlers(
   appKernel: AppKernel,
   desktopFileDialogService: DesktopFileDialogService,
+  resolveMainWindow: () => BrowserWindow | null,
 ): void {
+  const requireMainWindow = (): BrowserWindow => {
+    const mainWindow = resolveMainWindow();
+
+    if (!mainWindow) {
+      throw new Error('Main window is not available.');
+    }
+
+    return mainWindow;
+  };
+
   ipcMain.handle(AppIpcChannel.getBootstrapState, () =>
     appKernel.getBootstrapState(),
   );
@@ -39,6 +50,16 @@ export function registerAppHandlers(
   ipcMain.handle(AppIpcChannel.getReportsState, () =>
     appKernel.getReportsState(),
   );
+  ipcMain.handle(AppIpcChannel.getWindowFullscreen, () =>
+    requireMainWindow().isFullScreen(),
+  );
+  ipcMain.handle(AppIpcChannel.toggleWindowFullscreen, () => {
+    const mainWindow = requireMainWindow();
+    const nextFullscreen = !mainWindow.isFullScreen();
+
+    mainWindow.setFullScreen(nextFullscreen);
+    return mainWindow.isFullScreen();
+  });
   ipcMain.handle(AppIpcChannel.openJsonFileDialog, () =>
     desktopFileDialogService.openJsonFileDialog(),
   );

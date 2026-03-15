@@ -4,7 +4,6 @@ import { FaGoogle } from 'react-icons/fa';
 import {
   FiBriefcase,
   FiCalendar,
-  FiChevronRight,
   FiCheckCircle,
   FiMapPin,
   FiUser,
@@ -67,8 +66,8 @@ export default function OnboardingProgress({
           })}
         </p>
       </div>
-      <div className="overflow-x-auto pb-1">
-        <ol className="flex min-w-max items-center gap-1">
+      <div className="pb-1">
+        <ol className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
           {stepOrder.map((stepId, index) => {
             const StepIcon = getStepIcon(stepId);
             const isActive = currentStepId === stepId;
@@ -95,12 +94,12 @@ export default function OnboardingProgress({
             }
 
             return (
-              <li key={stepId} className="flex items-center">
+              <li key={stepId}>
                 <button
                   type="button"
                   disabled={!isSelectable || isPending}
                   className={cn(
-                    'group flex min-w-40 items-center gap-2 rounded-lg border px-3 py-2 text-left transition',
+                    'group flex h-full w-full items-center gap-2 rounded-lg border px-3 py-2 text-left transition',
                     isActive
                       ? 'border-primary bg-primary text-primary-contrast'
                       : 'border-primary-tint bg-white text-text-color',
@@ -155,9 +154,6 @@ export default function OnboardingProgress({
                     </span>
                   </span>
                 </button>
-                {index < stepOrder.length - 1 ? (
-                  <FiChevronRight className="mx-1 size-4 shrink-0 text-text-color/45" />
-                ) : null}
               </li>
             );
           })}

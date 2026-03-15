@@ -395,68 +395,73 @@ export default function OnboardingPage() {
   const { remainingStepIds, skippedStepIds } = runtime.state.onboarding;
 
   return (
-    <div className="w-full max-w-3xl space-y-5">
-      <OnboardingProgress
-        currentStepId={currentStepId}
-        stepOrder={activeStepOrder}
-        remainingStepIds={remainingStepIds}
-        skippedStepIds={skippedStepIds}
-        isPending={isPending}
-        onSelectStep={(stepId) => {
-          setValidationError(null);
-          setSelectedStepId(stepId);
-        }}
-      />
-      <SectionCard
-        title={t(`onboarding.steps.${currentStepId}.title`)}
-        description={t(`onboarding.steps.${currentStepId}.description`)}
-        className="border-primary-tint bg-white"
-        titleClassName="text-xl md:text-2xl"
-      >
-        <div className="space-y-4">
-          <OnboardingStepFields
-            stepId={currentStepId}
-            stepValues={stepValues}
-            setStepValues={setStepValues}
-            isPending={isPending}
-            isGoogleOauthConfigured={runtime.state.auth.googleAuthConfigured}
-            onConnectGoogle={() => {
-              handleGoogleConnect();
-            }}
-          />
-          {validationError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{validationError}</AlertDescription>
-            </Alert>
-          ) : null}
-          <div className="flex flex-wrap gap-2">
-            {canGoBack ? (
+    <div className="w-full space-y-5">
+      <div className="mx-auto w-full max-w-6xl">
+        <OnboardingProgress
+          currentStepId={currentStepId}
+          stepOrder={activeStepOrder}
+          remainingStepIds={remainingStepIds}
+          skippedStepIds={skippedStepIds}
+          isPending={isPending}
+          onSelectStep={(stepId) => {
+            setValidationError(null);
+            setSelectedStepId(stepId);
+          }}
+        />
+      </div>
+      <div className="mx-auto w-full max-w-3xl">
+        <SectionCard
+          title={t(`onboarding.steps.${currentStepId}.title`)}
+          description={t(`onboarding.steps.${currentStepId}.description`)}
+          className="border-primary-tint bg-white"
+          titleClassName="text-xl md:text-2xl"
+        >
+          <div className="space-y-4">
+            <OnboardingStepFields
+              stepId={currentStepId}
+              stepValues={stepValues}
+              setStepValues={setStepValues}
+              isPending={isPending}
+              isGoogleOauthConfigured={runtime.state.auth.googleAuthConfigured}
+              onConnectGoogle={() => {
+                handleGoogleConnect();
+              }}
+            />
+            {validationError ? (
+              <Alert variant="destructive">
+                <AlertDescription>{validationError}</AlertDescription>
+              </Alert>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              {canGoBack ? (
+                <Button
+                  type="button"
+                  disabled={isPending}
+                  variant="outline"
+                  className="border-primary-tint"
+                  onClick={() => {
+                    const previousStepId =
+                      activeStepOrder[currentStepIndex - 1];
+                    setSelectedStepId(previousStepId ?? null);
+                  }}
+                >
+                  {t('onboarding.actions.back')}
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 disabled={isPending}
-                variant="outline"
-                className="border-primary-tint"
+                className="bg-primary text-primary-contrast hover:bg-primary-shade"
                 onClick={() => {
-                  const previousStepId = activeStepOrder[currentStepIndex - 1];
-                  setSelectedStepId(previousStepId ?? null);
+                  handleContinue();
                 }}
               >
-                {t('onboarding.actions.back')}
+                {nextButtonLabel}
               </Button>
-            ) : null}
-            <Button
-              type="button"
-              disabled={isPending}
-              className="bg-primary text-primary-contrast hover:bg-primary-shade"
-              onClick={() => {
-                handleContinue();
-              }}
-            >
-              {nextButtonLabel}
-            </Button>
+            </div>
           </div>
-        </div>
-      </SectionCard>
+        </SectionCard>
+      </div>
     </div>
   );
 }

@@ -23,6 +23,8 @@ export const AppIpcChannel = {
   getBootstrapState: 'app:get-bootstrap-state',
   getSettingsSnapshot: 'app:get-settings-snapshot',
   getReportsState: 'app:get-reports-state',
+  getWindowFullscreen: 'app:get-window-fullscreen',
+  toggleWindowFullscreen: 'app:toggle-window-fullscreen',
   openJsonFileDialog: 'app:open-json-file-dialog',
   saveJsonFileDialog: 'app:save-json-file-dialog',
   exportWeeklyReportPdf: 'app:export-weekly-report-pdf',
@@ -246,6 +248,8 @@ export type AppApi = {
   getBootstrapState: () => Promise<AppBootstrapState>;
   getSettingsSnapshot: () => Promise<SettingsSnapshot>;
   getReportsState: () => Promise<ReportsState>;
+  getWindowFullscreen: () => Promise<boolean>;
+  toggleWindowFullscreen: () => Promise<boolean>;
   openJsonFileDialog: () => Promise<string | null>;
   saveJsonFileDialog: (
     input: SaveJsonFileDialogInput,

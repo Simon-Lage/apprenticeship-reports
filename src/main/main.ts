@@ -3,7 +3,7 @@ import { app, BrowserWindow, dialog, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 
-import { registerAppHandlers } from '@/main/ipc/registerAppHandlers';
+import registerAppHandlers from '@/main/ipc/registerAppHandlers';
 import { resolveHtmlPath } from '@/main/utils';
 import { AppKernel } from '@/main/services/AppKernel';
 import { AppMetadataRepository } from '@/main/services/AppMetadataRepository';
@@ -203,7 +203,7 @@ app
     const desktopFileDialogService = new DesktopFileDialogService(
       () => mainWindow,
     );
-    registerAppHandlers(appKernel, desktopFileDialogService);
+    registerAppHandlers(appKernel, desktopFileDialogService, () => mainWindow);
     await appKernel.boot();
     await createWindow();
 

@@ -7,6 +7,10 @@ const appApi: AppApi = {
   getSettingsSnapshot: () =>
     ipcRenderer.invoke(AppIpcChannel.getSettingsSnapshot),
   getReportsState: () => ipcRenderer.invoke(AppIpcChannel.getReportsState),
+  getWindowFullscreen: () =>
+    ipcRenderer.invoke(AppIpcChannel.getWindowFullscreen),
+  toggleWindowFullscreen: () =>
+    ipcRenderer.invoke(AppIpcChannel.toggleWindowFullscreen),
   openJsonFileDialog: () =>
     ipcRenderer.invoke(AppIpcChannel.openJsonFileDialog),
   saveJsonFileDialog: (input) =>

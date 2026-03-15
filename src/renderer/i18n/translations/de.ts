@@ -35,6 +35,10 @@ const deTranslation = {
     settings: 'Settings',
     changeAuthMethods: 'Zugang',
   },
+  windowMode: {
+    switchToFullscreen: 'In Vollbild wechseln',
+    switchToWindowed: 'In Fenstermodus wechseln',
+  },
   login: {
     title: 'Anmeldung',
     description: 'Melde dich mit Passwort oder optional mit Google an.',

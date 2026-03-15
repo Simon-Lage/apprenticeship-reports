@@ -10,7 +10,7 @@ const optionalUrlSchema = z
   .union([z.string().trim().url().max(2048), z.literal('')])
   .transform((value) => (value === '' ? null : value));
 const optionalEmailSchema = z
-  .union([z.string().trim().email().max(320), z.literal('')])
+  .union([z.string().trim().email().max(320), z.literal(''), z.null()])
   .transform((value) => (value === '' ? null : value));
 const requiredEmailSchema = z
   .string()
