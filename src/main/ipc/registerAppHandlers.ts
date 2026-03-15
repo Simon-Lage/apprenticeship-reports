@@ -27,6 +27,10 @@ export function registerAppHandlers(appKernel: AppKernel): void {
   ipcMain.handle(AppIpcChannel.getBootstrapState, () =>
     appKernel.getBootstrapState(),
   );
+  ipcMain.handle(AppIpcChannel.getSettingsSnapshot, () =>
+    appKernel.getSettingsSnapshot(),
+  );
+  ipcMain.handle(AppIpcChannel.getReportsState, () => appKernel.getReportsState());
 
   ipcMain.handle(AppIpcChannel.initializePasswordAuth, (_event, input) =>
     appKernel.initializePasswordAuth(

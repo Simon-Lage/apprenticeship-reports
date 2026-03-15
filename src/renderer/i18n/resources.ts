@@ -1,16 +1,11 @@
+import { deTranslation } from '@/renderer/i18n/translations/de';
+import { enTranslation } from '@/renderer/i18n/translations/en';
+
 export const resources = {
   de: {
-    translation: {
-      app: {
-        language: 'Deutsch',
-      },
-    },
+    translation: deTranslation,
   },
   en: {
-    translation: {
-      app: {
-        language: 'English',
-      },
-    },
+    translation: enTranslation,
   },
 } as const;

@@ -52,7 +52,6 @@ export type DailyReportRecord = z.infer<typeof DailyReportRecordSchema>;
 export type WeeklyReportRecord = z.infer<typeof WeeklyReportRecordSchema>;
 export type ReportsState = z.infer<typeof ReportsStateSchema>;
 export type BackupConflictSummary = z.infer<typeof BackupConflictSummarySchema>;
-
 const defaultBackupConflictStrategy: BackupConflictStrategy =
   'latest-timestamp';
 

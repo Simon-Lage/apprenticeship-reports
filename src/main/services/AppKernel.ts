@@ -34,7 +34,10 @@ import {
   parseSettingsImportEnvelope,
   SettingsExportEnvelope,
   SettingsImportPreview,
+  SettingsSnapshot,
+  SettingsSnapshotSchema,
 } from '@/shared/settings/schema';
+import { ReportsState, ReportsStateSchema } from '@/shared/reports/models';
 import { AppKernelReports } from '@/main/services/AppKernelReports';
 import { AppKernelOptions } from '@/main/services/AppKernelCore';
 import { AppMetadataRepository } from '@/main/services/AppMetadataRepository';
@@ -49,6 +52,20 @@ export class AppKernel extends AppKernelReports {
     options: AppKernelOptions = {},
   ) {
     super(repository, weeklyReportHashService, options);
+  }
+
+  async getSettingsSnapshot(): Promise<SettingsSnapshot> {
+    const currentState = await this.repository.read();
+    this.accessGuard.assertOnboardingAccessible(currentState);
+
+    return SettingsSnapshotSchema.parse(currentState.settings.current);
+  }
+
+  async getReportsState(): Promise<ReportsState> {
+    const currentState = await this.repository.read();
+    this.accessGuard.assertApplicationUnlocked(currentState);
+
+    return ReportsStateSchema.parse(currentState.reports);
   }
 
   async exportSettings(): Promise<SettingsExportEnvelope> {

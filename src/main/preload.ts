@@ -4,6 +4,9 @@ import { AppApi, AppIpcChannel } from '@/shared/ipc/app-api';
 
 const appApi: AppApi = {
   getBootstrapState: () => ipcRenderer.invoke(AppIpcChannel.getBootstrapState),
+  getSettingsSnapshot: () =>
+    ipcRenderer.invoke(AppIpcChannel.getSettingsSnapshot),
+  getReportsState: () => ipcRenderer.invoke(AppIpcChannel.getReportsState),
   initializePasswordAuth: (input) =>
     ipcRenderer.invoke(AppIpcChannel.initializePasswordAuth, input),
   authenticateWithPassword: (input) =>

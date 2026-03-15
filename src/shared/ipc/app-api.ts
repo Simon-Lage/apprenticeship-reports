@@ -10,15 +10,19 @@ import { DriveBackupFile } from '@/shared/drive/backups';
 import {
   BackupConflictStrategy,
   BackupConflictStrategySchema,
+  ReportsState,
 } from '@/shared/reports/models';
 import { WeeklyReportHashRecord } from '@/shared/reports/stable';
 import {
   SettingsExportEnvelope,
   SettingsImportPreview,
+  SettingsSnapshot,
 } from '@/shared/settings/schema';
 
 export const AppIpcChannel = {
   getBootstrapState: 'app:get-bootstrap-state',
+  getSettingsSnapshot: 'app:get-settings-snapshot',
+  getReportsState: 'app:get-reports-state',
   initializePasswordAuth: 'app:initialize-password-auth',
   authenticateWithPassword: 'app:authenticate-with-password',
   changePassword: 'app:change-password',
@@ -220,6 +224,8 @@ export type RegisterWeeklyReportHashInput = z.infer<
 
 export type AppApi = {
   getBootstrapState: () => Promise<AppBootstrapState>;
+  getSettingsSnapshot: () => Promise<SettingsSnapshot>;
+  getReportsState: () => Promise<ReportsState>;
   initializePasswordAuth: (
     input: InitializePasswordAuthInput,
   ) => Promise<AppBootstrapState>;

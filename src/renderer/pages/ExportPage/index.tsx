@@ -1,3 +1,159 @@
+import { useTranslation } from 'react-i18next';
+
+import { PageHeader } from '@/renderer/components/app/PageHeader';
+import { SectionCard } from '@/renderer/components/app/SectionCard';
+import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
+import { useToastController } from '@/renderer/contexts/ToastControllerContext';
+import { downloadTextFile } from '@/renderer/lib/file-io';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+
 export default function ExportPage() {
-  return <p>Anforderungen: Getrennter JSON-Export fuer Reports und Settings entweder lokal ueber Dateidialog oder nach Google Drive; falls Google-Konto oder Drive-Rechte fehlen, muessen Ursache und naechster Schritt klar angezeigt werden, inklusive direkter Moeglichkeit zum Nachruesten der fehlenden Voraussetzung.</p>;
+  const { t } = useTranslation();
+  const runtime = useAppRuntime();
+  const toast = useToastController();
+  const driveReady = runtime.state.drive.status === 'granted';
+
+  async function exportReportsJson() {
+    if (!runtime.api) {
+      return;
+    }
+    try {
+      const envelope = await runtime.api.exportBackupArchive();
+      downloadTextFile({
+        fileName: `reports-backup-${new Date().toISOString().slice(0, 10)}.json`,
+        content: JSON.stringify(envelope, null, 2),
+      });
+      toast.success(t('export.feedback.reportsExported'));
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : t('common.errors.unknown');
+      toast.error(t('export.feedback.reportsExportError'), message);
+    }
+  }
+
+  async function exportSettingsJson() {
+    if (!runtime.api) {
+      return;
+    }
+    try {
+      const envelope = await runtime.api.exportSettings();
+      downloadTextFile({
+        fileName: `settings-export-${new Date().toISOString().slice(0, 10)}.json`,
+        content: JSON.stringify(envelope, null, 2),
+      });
+      await runtime.refresh();
+      toast.success(t('export.feedback.settingsExported'));
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : t('common.errors.unknown');
+      toast.error(t('export.feedback.settingsExportError'), message);
+    }
+  }
+
+  async function connectDrive() {
+    if (!runtime.api) {
+      return;
+    }
+    try {
+      await runtime.api.connectGoogleDrive();
+      await runtime.refresh();
+      toast.success(t('export.feedback.driveConnected'));
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : t('common.errors.unknown');
+      toast.error(t('export.feedback.driveError'), message);
+    }
+  }
+
+  async function exportToDrive() {
+    if (!runtime.api) {
+      return;
+    }
+    try {
+      const result = await runtime.api.uploadBackupToDrive();
+      await runtime.refresh();
+      toast.success(t('export.feedback.driveExported'), result.name);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : t('common.errors.unknown');
+      toast.error(t('export.feedback.driveError'), message);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title={t('export.title')}
+        description={t('export.description')}
+      />
+      <SectionCard
+        title={t('export.local.title')}
+        description={t('export.local.description')}
+        className="border-primary-tint bg-white"
+      >
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            className="bg-primary text-primary-contrast hover:bg-primary-shade"
+            onClick={() => {
+              void exportReportsJson();
+            }}
+          >
+            {t('export.local.reports')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="border-primary-tint"
+            onClick={() => {
+              void exportSettingsJson();
+            }}
+          >
+            {t('export.local.settings')}
+          </Button>
+        </div>
+      </SectionCard>
+      <SectionCard
+        title={t('export.drive.title')}
+        description={t('export.drive.description')}
+        className="border-primary-tint bg-white"
+      >
+        <div className="space-y-3">
+          <Badge className={driveReady ? 'bg-primary text-primary-contrast' : 'bg-primary-tint text-text-color'}>
+            {driveReady ? t('export.drive.ready') : t('export.drive.notReady')}
+          </Badge>
+          {!driveReady ? (
+            <Alert className="border-primary-tint bg-primary-tint/30">
+              <AlertTitle>{t('export.drive.warningTitle')}</AlertTitle>
+              <AlertDescription>{t('export.drive.warningDescription')}</AlertDescription>
+            </Alert>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="border-primary-tint"
+              onClick={() => {
+                void connectDrive();
+              }}
+            >
+              {t('export.drive.connect')}
+            </Button>
+            <Button
+              type="button"
+              disabled={!driveReady}
+              className="bg-primary text-primary-contrast hover:bg-primary-shade"
+              onClick={() => {
+                void exportToDrive();
+              }}
+            >
+              {t('export.drive.export')}
+            </Button>
+          </div>
+        </div>
+      </SectionCard>
+    </div>
+  );
 }

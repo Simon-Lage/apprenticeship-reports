@@ -18,6 +18,22 @@ Bitte beachte folgende Punkte:
 
 ---
 
+## UI-Designprinzipien
+
+- Globales UI-Feedback läuft zentral über einen Toast-Controller; Seiten feuern keine uneinheitlichen Einzelmechanismen.
+- Es gilt ein gemeinsames Layout-System mit wiederverwendbaren Sections, Feldern und Statusdarstellungen statt seitenweiser Sonderlösungen.
+- Navigation erfolgt über eine Topbar im authentifizierten App-Bereich; auf Login und Onboarding ist sie ausgeblendet.
+- Farbsteuerung erfolgt zentral über CSS-Variablen und Tailwind-Farbklassen:
+  - `primary`
+  - `primary-contrast`
+  - `primary-shade`
+  - `primary-tint`
+  - `text-color`
+- Alle UI-Flächen, Texte, Borders und States nutzen diese Token-basierten Tailwind-Klassen, damit das Farbschema später global anpassbar bleibt.
+- Neue UI-Komponenten werden nur eingeführt, wenn sie mindestens an zwei Stellen sinnvoll wiederverwendbar sind oder Verantwortlichkeiten klar trennen.
+
+---
+
 ## Endziele
 
 - Anwendung hat verpflichtenden lokalen Passwort-Login und optionalen Google-Login
