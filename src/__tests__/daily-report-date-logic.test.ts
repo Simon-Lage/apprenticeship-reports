@@ -59,6 +59,20 @@ describe('daily report date logic', () => {
     expect(selected).toBe('2026-03-02');
   });
 
+  it('prefers reportsSince over trainingStart when both are set', () => {
+    const reportsState = createReportsState([]);
+
+    const selected = resolveInitialDailyReportDate({
+      reportsState,
+      trainingStart: '2026-01-01',
+      trainingEnd: '2026-12-31',
+      reportsSince: '2026-04-15',
+      now: new Date('2026-04-20T12:00:00.000Z'),
+    });
+
+    expect(selected).toBe('2026-04-15');
+  });
+
   it('returns the next day when all dates through today are already filled', () => {
     const reportsState = createReportsState([
       '2026-03-01',

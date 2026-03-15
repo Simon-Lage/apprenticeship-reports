@@ -27,6 +27,8 @@ export default function OnboardingStepFields({
   onConnectGoogle,
 }: OnboardingStepFieldsProps) {
   const { t } = useTranslation();
+  const isGoogleLinked = stepValues.linked === 'true';
+  const linkedGoogleEmail = stepValues.email?.trim() ?? '';
 
   if (stepId === 'identity') {
     return (
@@ -103,6 +105,7 @@ export default function OnboardingStepFields({
         <FormField
           id="training-reports-since"
           label={t('onboarding.steps.trainingPeriod.reportsSince')}
+          hint={t('onboarding.steps.trainingPeriod.reportsSinceHint')}
         >
           <Input
             id="training-reports-since"
@@ -204,6 +207,12 @@ export default function OnboardingStepFields({
 
   return (
     <>
+      <Alert className="border-primary-tint bg-primary-tint/20">
+        <AlertTitle>{t('onboarding.steps.google.optionalTitle')}</AlertTitle>
+        <AlertDescription>
+          {t('onboarding.steps.google.optionalDescription')}
+        </AlertDescription>
+      </Alert>
       {!isGoogleOauthConfigured ? (
         <Alert className="border-primary-tint bg-primary-tint/35">
           <AlertTitle>
@@ -211,6 +220,18 @@ export default function OnboardingStepFields({
           </AlertTitle>
           <AlertDescription>
             {t('onboarding.steps.google.unavailableDescription')}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+      {isGoogleLinked ? (
+        <Alert className="border-primary-tint bg-primary-tint/20">
+          <AlertTitle>{t('onboarding.steps.google.connectedTitle')}</AlertTitle>
+          <AlertDescription>
+            {linkedGoogleEmail
+              ? t('onboarding.steps.google.connectedDescriptionWithEmail', {
+                  email: linkedGoogleEmail,
+                })
+              : t('onboarding.steps.google.connectedDescription')}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -224,7 +245,9 @@ export default function OnboardingStepFields({
         onClick={onConnectGoogle}
       >
         <FaGoogle className="size-4" />
-        {t('onboarding.steps.google.connect')}
+        {isGoogleLinked
+          ? t('onboarding.steps.google.switchAccount')
+          : t('onboarding.steps.google.connect')}
       </Button>
     </>
   );

@@ -6,7 +6,6 @@ import { FormField } from '@/renderer/components/app/FormField';
 import PasswordInput from '@/renderer/components/app/PasswordInput';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -28,7 +27,7 @@ export default function LoginPage() {
   const runtime = useAppRuntime();
   const toast = useToastController();
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [isPasswordPending, setIsPasswordPending] = useState(false);
   const [isGooglePending, setIsGooglePending] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
@@ -36,7 +35,8 @@ export default function LoginPage() {
     () => Boolean(runtime.state.drive.connectedAccountEmail),
     [runtime.state.drive.connectedAccountEmail],
   );
-  const canUseGoogle = hasGoogleAccount && runtime.state.auth.googleAuthConfigured;
+  const canUseGoogle =
+    hasGoogleAccount && runtime.state.auth.googleAuthConfigured;
 
   async function handlePasswordLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -100,10 +100,6 @@ export default function LoginPage() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <Alert className="border-primary-tint bg-primary-tint/35">
-          <AlertTitle>{t('login.securityTitle')}</AlertTitle>
-          <AlertDescription>{t('login.securityDescription')}</AlertDescription>
-        </Alert>
         <form className="space-y-4" onSubmit={handlePasswordLogin}>
           <FormField
             id="password"

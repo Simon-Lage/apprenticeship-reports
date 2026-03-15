@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { PageHeader } from '@/renderer/components/app/PageHeader';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
+import { appRoutes } from '@/renderer/lib/app-routes';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -154,7 +156,7 @@ export default function ExportPage() {
               className={
                 driveReady
                   ? 'bg-primary text-primary-contrast'
-                  : 'bg-primary-tint text-text-color'
+                  : 'bg-primary text-primary-contrast'
               }
             >
               {driveReady
@@ -174,18 +176,35 @@ export default function ExportPage() {
                 </AlertDescription>
               </Alert>
             ) : null}
+            {driveReady ? (
+              <div className="space-y-1 text-sm">
+                <p className="text-text-color/85">
+                  {t('export.drive.connectedAccount', {
+                    email: runtime.state.drive.connectedAccountEmail ?? '-',
+                  })}
+                </p>
+                <Link
+                  to={appRoutes.changeAuthMethods}
+                  className="text-xs text-primary underline-offset-2 hover:underline"
+                >
+                  {t('export.drive.changeAccountLink')}
+                </Link>
+              </div>
+            ) : null}
             <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="border-primary-tint"
-                disabled={isDrivePending || !isGoogleOauthConfigured}
-                onClick={() => {
-                  connectDrive();
-                }}
-              >
-                {t('export.drive.connect')}
-              </Button>
+              {!driveReady ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-primary-tint"
+                  disabled={isDrivePending || !isGoogleOauthConfigured}
+                  onClick={() => {
+                    connectDrive();
+                  }}
+                >
+                  {t('export.drive.connect')}
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 disabled={!driveReady || isDrivePending}

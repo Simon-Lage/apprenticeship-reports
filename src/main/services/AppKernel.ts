@@ -38,7 +38,7 @@ import {
   SettingsSnapshotSchema,
 } from '@/shared/settings/schema';
 import { ReportsState, ReportsStateSchema } from '@/shared/reports/models';
-import { AppKernelReports } from '@/main/services/AppKernelReports';
+import AppKernelReports from '@/main/services/AppKernelReports';
 import { AppKernelOptions } from '@/main/services/AppKernelCore';
 import { AppMetadataRepository } from '@/main/services/AppMetadataRepository';
 import { WeeklyReportHashService } from '@/main/services/WeeklyReportHashService';
@@ -303,7 +303,9 @@ export class AppKernel extends AppKernelReports {
       });
     });
 
-    return this.buildBootstrapState(nextState);
+    const syncedState = await this.trySyncAbsenceCatalog(nextState);
+
+    return this.buildBootstrapState(syncedState);
   }
 
   async saveOnboardingDraft(

@@ -1,12 +1,14 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { useState } from 'react';
 import {
   FiCalendar,
   FiFileText,
   FiGrid,
   FiHome,
   FiList,
+  FiLogOut,
   FiSlash,
   FiSettings,
   FiShield,
@@ -17,6 +19,25 @@ import { IconType } from 'react-icons';
 
 import { appRoutes } from '@/renderer/lib/app-routes';
 import { cn } from '@/renderer/lib/utils';
+import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
+import { useToastController } from '@/renderer/contexts/ToastControllerContext';
+import WindowModeToggleButton from '@/renderer/components/app/WindowModeToggleButton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import logoVerySmall from '../../../../assets/apprenticeship-reports-logo-very-small.png';
 
 type NavItem = {
@@ -33,11 +54,6 @@ const navItems: NavItem[] = [
     icon: FiFileText,
   },
   {
-    path: appRoutes.absences,
-    labelKey: 'navigation.absences',
-    icon: FiSlash,
-  },
-  {
     path: appRoutes.weeklyReport,
     labelKey: 'navigation.weeklyReport',
     icon: FiCalendar,
@@ -46,6 +62,11 @@ const navItems: NavItem[] = [
     path: appRoutes.reportsOverview,
     labelKey: 'navigation.reportsOverview',
     icon: FiList,
+  },
+  {
+    path: appRoutes.absences,
+    labelKey: 'navigation.absences',
+    icon: FiSlash,
   },
   { path: appRoutes.timeTable, labelKey: 'navigation.timeTable', icon: FiGrid },
   { path: appRoutes.import, labelKey: 'navigation.import', icon: FiDownload },
@@ -65,6 +86,29 @@ const navItems: NavItem[] = [
 export default function AppTopbar() {
   const { t } = useTranslation();
   const location = useLocation();
+  const runtime = useAppRuntime();
+  const toast = useToastController();
+  const [isLogoutOpen, setIsLogoutOpen] = useState(false);
+  const [isLogoutPending, setIsLogoutPending] = useState(false);
+
+  async function handleSignOut() {
+    if (!runtime.api) {
+      return;
+    }
+
+    setIsLogoutPending(true);
+    try {
+      await runtime.api.signOut();
+      await runtime.refresh();
+      setIsLogoutOpen(false);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : t('common.errors.unknown');
+      toast.error(t('navigation.logoutError'), message);
+    } finally {
+      setIsLogoutPending(false);
+    }
+  }
 
   function isActivePath(path: string): boolean {
     if (path === appRoutes.home) {
@@ -137,7 +181,55 @@ export default function AppTopbar() {
             })}
           </ul>
         </div>
+        <div className="flex items-center gap-1">
+          <WindowModeToggleButton className="shrink-0 text-text-color/80 hover:bg-primary-tint/35 hover:text-text-color" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="shrink-0 text-text-color/80 hover:bg-primary-tint/35 hover:text-text-color"
+                onClick={() => {
+                  setIsLogoutOpen(true);
+                }}
+              >
+                <FiLogOut className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={8}>
+              {t('navigation.logout')}
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
+      <AlertDialog open={isLogoutOpen} onOpenChange={setIsLogoutOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('navigation.logoutConfirmTitle')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('navigation.logoutConfirmDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isLogoutPending}>
+              {t('common.no')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isLogoutPending}
+              className="bg-primary text-primary-contrast hover:bg-primary-shade"
+              onClick={(event) => {
+                event.preventDefault();
+                handleSignOut();
+              }}
+            >
+              {isLogoutPending ? t('common.loading') : t('common.yes')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.nav>
   );
 }

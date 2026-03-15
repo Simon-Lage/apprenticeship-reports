@@ -12,6 +12,7 @@ import {
 type SectionCardProps = PropsWithChildren<{
   title?: string;
   description?: string;
+  preserveDescriptionSpace?: boolean;
   action?: ReactNode;
   className?: string;
   contentClassName?: string;
@@ -21,6 +22,7 @@ type SectionCardProps = PropsWithChildren<{
 function SectionCard({
   title,
   description,
+  preserveDescriptionSpace,
   action,
   className,
   contentClassName,
@@ -28,6 +30,16 @@ function SectionCard({
   children,
 }: SectionCardProps) {
   const hasHeader = Boolean(title || description || action);
+  const headerDescription = description ? (
+    <CardDescription className="text-text-color/70">
+      {description}
+    </CardDescription>
+  ) : null;
+  const preservedDescriptionSpace = preserveDescriptionSpace ? (
+    <CardDescription className="invisible text-text-color/70">
+      &nbsp;
+    </CardDescription>
+  ) : null;
 
   return (
     <Card className={cn('overflow-hidden rounded-xl shadow-sm', className)}>
@@ -45,11 +57,7 @@ function SectionCard({
                   {title}
                 </CardTitle>
               ) : null}
-              {description ? (
-                <CardDescription className="text-text-color/70">
-                  {description}
-                </CardDescription>
-              ) : null}
+              {headerDescription || preservedDescriptionSpace}
             </div>
             {action}
           </div>
@@ -65,6 +73,7 @@ function SectionCard({
 SectionCard.defaultProps = {
   title: undefined,
   description: undefined,
+  preserveDescriptionSpace: false,
   action: undefined,
   className: undefined,
   contentClassName: undefined,

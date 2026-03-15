@@ -114,6 +114,44 @@ export type WeeklyAggregates = {
   schoolTopics: string[];
 };
 
+function parseIsoDate(value: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+
+  const [year, month, day] = value.split('-').map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+
+  if (parsed.toISOString().slice(0, 10) !== value) {
+    return null;
+  }
+
+  return parsed;
+}
+
+function toIsoDate(value: Date): string {
+  return value.toISOString().slice(0, 10);
+}
+
+export function listWeekDates(weekStart: string, weekEnd: string): string[] {
+  const startDate = parseIsoDate(weekStart);
+  const endDate = parseIsoDate(weekEnd);
+
+  if (!startDate || !endDate || weekStart > weekEnd) {
+    return [];
+  }
+
+  const dates: string[] = [];
+  const cursor = new Date(startDate.getTime());
+
+  while (toIsoDate(cursor) <= weekEnd) {
+    dates.push(toIsoDate(cursor));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  return dates;
+}
+
 export function buildWeeklyAggregates(
   dailyReports: DailyReportRecord[],
 ): WeeklyAggregates {

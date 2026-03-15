@@ -1,7 +1,6 @@
 import { Navigate, Route, Routes, HashRouter } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useState } from 'react';
-import { FiMaximize2, FiMinimize2 } from 'react-icons/fi';
+import { useEffect } from 'react';
 
 import { AppStateView } from '@/renderer/components/app/AppStateView';
 import AppTopbar from '@/renderer/components/app/AppTopbar';
@@ -29,67 +28,9 @@ import WeeklyReportPage from '@/renderer/pages/WeeklyReportPage';
 import WeeklyReportPDFPage from '@/renderer/pages/WeeklyReportPDFPage';
 import SendWeeklyReportPage from '@/renderer/pages/SendWeeklyReportPage';
 import { hasSeenOnboardingWelcome } from '@/renderer/lib/onboarding-welcome';
-import { Button } from '@/components/ui/button';
 import '@/renderer/i18n';
 import './globals.css';
 import './App.css';
-
-function WindowModeToggleButton() {
-  const { t } = useTranslation();
-  const runtime = useAppRuntime();
-  const api = runtime.api;
-  const [isFullscreen, setIsFullscreen] = useState(true);
-
-  useEffect(() => {
-    if (!api?.getWindowFullscreen) {
-      return;
-    }
-
-    api
-      .getWindowFullscreen()
-      .then((fullscreen) => {
-        setIsFullscreen(fullscreen);
-        return fullscreen;
-      })
-      .catch(() => undefined);
-  }, [api]);
-
-  if (!api?.toggleWindowFullscreen) {
-    return null;
-  }
-
-  const label = isFullscreen
-    ? t('windowMode.switchToWindowed')
-    : t('windowMode.switchToFullscreen');
-
-  return (
-    <div className="pointer-events-none fixed right-3 top-3 z-[150]">
-      <Button
-        type="button"
-        size="icon"
-        variant="outline"
-        className="pointer-events-auto h-8 w-8 border-primary-tint bg-white/95 text-text-color shadow-lg backdrop-blur-sm hover:bg-primary-tint/30"
-        aria-label={label}
-        title={label}
-        onClick={() => {
-          api
-            .toggleWindowFullscreen()
-            .then((fullscreen) => {
-              setIsFullscreen(fullscreen);
-              return fullscreen;
-            })
-            .catch(() => undefined);
-        }}
-      >
-        {isFullscreen ? (
-          <FiMinimize2 className="size-4" />
-        ) : (
-          <FiMaximize2 className="size-4" />
-        )}
-      </Button>
-    </div>
-  );
-}
 
 function AuthenticatedAppRoutes() {
   return (
@@ -253,7 +194,6 @@ export default function App() {
     <ToastControllerProvider>
       <AppRuntimeProvider>
         <HashRouter>
-          <WindowModeToggleButton />
           <RuntimeRouter />
         </HashRouter>
       </AppRuntimeProvider>

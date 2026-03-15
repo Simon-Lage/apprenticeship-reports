@@ -308,26 +308,6 @@ export default function SettingsPage() {
               }
             />
           </FormField>
-          <FormField
-            id="supervisor-2"
-            label={t('settings.general.supervisorSecondary')}
-          >
-            <Input
-              id="supervisor-2"
-              type="email"
-              value={formValues.supervisorEmailSecondary}
-              onChange={(event) =>
-                setFormValues((current) =>
-                  current
-                    ? {
-                        ...current,
-                        supervisorEmailSecondary: event.target.value,
-                      }
-                    : current,
-                )
-              }
-            />
-          </FormField>
           <FormField id="ihk-link" label={t('settings.general.ihkLink')}>
             <Input
               id="ihk-link"

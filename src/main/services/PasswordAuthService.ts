@@ -7,6 +7,20 @@ import { AppMetadataRepository } from '@/main/services/AppMetadataRepository';
 const PasswordSecretSchema = z.string().min(8).max(128);
 const PASSWORD_KEY_LENGTH = 64;
 
+function createPasswordCredential(password: PasswordAuthInput) {
+  const parsedPassword = PasswordSecretSchema.parse(password);
+  const salt = randomBytes(16);
+  const hash = scryptSync(parsedPassword, salt, PASSWORD_KEY_LENGTH);
+  const now = new Date().toISOString();
+
+  return {
+    salt: salt.toString('hex'),
+    hash: hash.toString('hex'),
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
 export type PasswordAuthInput = z.input<typeof PasswordSecretSchema>;
 
 export class PasswordAuthService {
@@ -26,7 +40,7 @@ export class PasswordAuthService {
     }
 
     await this.repository.writePasswordCredential(
-      this.createCredential(password),
+      createPasswordCredential(password),
     );
   }
 
@@ -53,33 +67,12 @@ export class PasswordAuthService {
   }
 
   async changePassword(input: {
-    currentPassword: PasswordAuthInput;
     nextPassword: PasswordAuthInput;
   }): Promise<void> {
-    const currentPassword = PasswordSecretSchema.parse(input.currentPassword);
     const nextPassword = PasswordSecretSchema.parse(input.nextPassword);
-    const isValid = await this.verify(currentPassword);
-
-    if (!isValid) {
-      throw new Error('Das aktuelle Passwort ist ungueltig.');
-    }
 
     await this.repository.writePasswordCredential(
-      this.createCredential(nextPassword),
+      createPasswordCredential(nextPassword),
     );
-  }
-
-  private createCredential(password: PasswordAuthInput) {
-    const parsedPassword = PasswordSecretSchema.parse(password);
-    const salt = randomBytes(16);
-    const hash = scryptSync(parsedPassword, salt, PASSWORD_KEY_LENGTH);
-    const now = new Date().toISOString();
-
-    return {
-      salt: salt.toString('hex'),
-      hash: hash.toString('hex'),
-      createdAt: now,
-      updatedAt: now,
-    };
   }
 }

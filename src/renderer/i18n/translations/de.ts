@@ -24,7 +24,7 @@ const deTranslation = {
   },
   navigation: {
     brand: 'AppRep',
-    home: 'Home',
+    home: 'Start',
     dailyReport: 'Tagesbericht',
     absences: 'Abwesenheiten',
     weeklyReport: 'Wochenbericht',
@@ -34,6 +34,10 @@ const deTranslation = {
     export: 'Export',
     settings: 'Settings',
     changeAuthMethods: 'Zugang',
+    logout: 'Ausloggen',
+    logoutConfirmTitle: 'Ausloggen bestätigen',
+    logoutConfirmDescription: 'Bist du sicher, dass du dich ausloggen willst?',
+    logoutError: 'Ausloggen fehlgeschlagen.',
   },
   windowMode: {
     switchToFullscreen: 'In Vollbild wechseln',
@@ -42,9 +46,6 @@ const deTranslation = {
   login: {
     title: 'Anmeldung',
     description: 'Melde dich mit Passwort oder optional mit Google an.',
-    securityTitle: 'Sicherheit',
-    securityDescription:
-      'Nach 30 Tagen wird eine erneute Authentifizierung erzwungen.',
     passwordLabel: 'Passwort',
     rememberMe: 'Angemeldet bleiben',
     passwordSubmit: 'Mit Passwort anmelden',
@@ -133,12 +134,21 @@ const deTranslation = {
       google: {
         title: 'Google',
         description: 'Optionales Google-Konto für alternative Anmeldung.',
+        optionalTitle: 'Optionaler Schritt',
+        optionalDescription:
+          'Du kannst diesen Schritt überspringen und später in den Einstellungen ein Google-Konto verknüpfen.',
         unavailableTitle: 'Google derzeit nicht verfügbar',
         unavailableDescription:
           'Google OAuth ist in dieser Umgebung nicht konfiguriert. Du kannst diesen optionalen Schritt überspringen.',
         browserHint:
           'Beim Verbinden wird der Browser geöffnet. Danach kehrst du automatisch zurück.',
+        connectedTitle: 'Google-Konto verknüpft',
+        connectedDescription:
+          'Ein Google-Konto wurde erfolgreich mit der App verknüpft.',
+        connectedDescriptionWithEmail:
+          'Ein Google-Konto wurde erfolgreich verknüpft: {{email}}',
         connect: 'Google verbinden',
+        switchAccount: 'Account wechseln',
         validationEmail: 'Bitte eine gültige E-Mail eintragen.',
       },
       identity: {
@@ -150,18 +160,18 @@ const deTranslation = {
       'training-period': {
         title: 'Ausbildungszeitraum',
         description:
-          'Start und Ende der Ausbildung sowie optionaler Startpunkt fuer Berichte.',
+          'Start und Ende der Ausbildung sowie optionaler Startpunkt für Berichte.',
       },
       region: {
         title: 'Bundesland',
-        description: 'Waehle dein Bundesland fuer Feiertags- und Ferienimport.',
+        description: 'Wähle dein Bundesland für Feiertags- und Ferienimport.',
         subdivisionCode: 'Bundesland',
-        placeholder: 'Bitte Bundesland auswaehlen',
-        validationSubdivision: 'Bitte ein gueltiges Bundesland auswaehlen.',
+        placeholder: 'Bitte Bundesland auswählen',
+        validationSubdivision: 'Bitte ein gültiges Bundesland auswählen.',
         options: {
           'DE-BB': 'Brandenburg',
           'DE-BE': 'Berlin',
-          'DE-BW': 'Baden-Wuerttemberg',
+          'DE-BW': 'Baden-Württemberg',
           'DE-BY': 'Bayern',
           'DE-HB': 'Bremen',
           'DE-HE': 'Hessen',
@@ -174,13 +184,15 @@ const deTranslation = {
           'DE-SL': 'Saarland',
           'DE-SN': 'Sachsen',
           'DE-ST': 'Sachsen-Anhalt',
-          'DE-TH': 'Thueringen',
+          'DE-TH': 'Thüringen',
         },
       },
       trainingPeriod: {
         start: 'Ausbildungsbeginn',
         end: 'Ausbildungsende',
         reportsSince: 'Ausbildungsberichte seit (optional)',
+        reportsSinceHint:
+          'Wenn gesetzt, beginnt die Berichtsplanung ab diesem Datum statt ab Ausbildungsbeginn.',
         validationRange:
           'Das Ausbildungsende muss nach dem Ausbildungsbeginn liegen.',
         validationReportsSinceRange:
@@ -252,16 +264,16 @@ const deTranslation = {
     description:
       'Verwalte manuelle Abwesenheiten und automatisch importierte Feiertage/Ferien.',
     sync: {
-      title: 'Open Holidays',
+      title: 'Feiertage und Ferien',
       description:
-        'Import beim Start, falls Daten fehlen, sowie jaehrlich am 1. Januar.',
+        'Beim ersten Anmelden oder am 1. Januar automatisch synchronisiert. Zusätzlich jederzeit manuell synchronisierbar.',
       stateLabel: 'Bundesland',
       syncedAt: 'Letzte Synchronisierung',
       lastError: 'Letzter Fehler',
       currentYear: 'Datenjahr',
       trigger: 'Jetzt synchronisieren',
       missingRegion:
-        'Kein Bundesland im Onboarding hinterlegt. Bitte Onboarding abschliessen.',
+        'Kein Bundesland im Onboarding hinterlegt. Bitte Onboarding abschließen.',
     },
     manual: {
       title: 'Manuelle Abwesenheiten',
@@ -276,7 +288,7 @@ const deTranslation = {
       cancelEdit: 'Bearbeitung abbrechen',
       empty: 'Keine manuellen Abwesenheiten vorhanden.',
       edit: 'Bearbeiten',
-      delete: 'Loeschen',
+      delete: 'Löschen',
       types: {
         sick: 'Krankheit',
         vacation: 'Urlaub',
@@ -285,16 +297,16 @@ const deTranslation = {
       },
     },
     catalog: {
-      publicTitle: 'Feiertage (API)',
-      schoolTitle: 'Ferien (API)',
-      empty: 'Keine Daten verfuegbar.',
+      publicTitle: 'Feiertage',
+      schoolTitle: 'Ferien',
+      empty: 'Keine Daten verfügbar.',
     },
     feedback: {
-      missingDate: 'Bitte gueltige Datumswerte angeben.',
+      missingDate: 'Bitte gültige Datumswerte angeben.',
       invalidRange: 'Das Enddatum muss am oder nach dem Startdatum liegen.',
       saved: 'Abwesenheiten gespeichert.',
       saveError: 'Abwesenheiten konnten nicht gespeichert werden.',
-      deleted: 'Eintrag geloescht.',
+      deleted: 'Eintrag gelöscht.',
       syncSuccess: 'Abwesenheitsdaten synchronisiert.',
       syncError: 'Abwesenheitsdaten konnten nicht synchronisiert werden.',
     },
@@ -304,7 +316,7 @@ const deTranslation = {
     description: 'Passwort bleibt Pflicht, Google ist optional ergänzend.',
     password: {
       title: 'Passwort ändern',
-      description: 'Aktuelles und neues Passwort angeben.',
+      description: 'Neues Passwort setzen und bestätigen.',
       current: 'Aktuelles Passwort',
       next: 'Neues Passwort',
       submit: 'Passwort aktualisieren',
@@ -317,6 +329,21 @@ const deTranslation = {
       connect: 'Google verbinden',
       switch: 'Google wechseln',
       remove: 'Google entfernen',
+    },
+    confirm: {
+      cancel: 'Abbrechen',
+      password: {
+        title: 'Passwort wirklich ändern?',
+        description:
+          'Möchtest du das lokale Passwort jetzt wirklich ändern?',
+        confirm: 'Passwort ändern',
+      },
+      googleRemove: {
+        title: 'Google-Konto wirklich entfernen?',
+        description:
+          'Möchtest du die Google-Verknüpfung wirklich entfernen?',
+        confirm: 'Google-Konto entfernen',
+      },
     },
     feedback: {
       passwordFieldsRequired: 'Bitte beide Passwortfelder ausfüllen.',
@@ -336,15 +363,15 @@ const deTranslation = {
     general: {
       title: 'Allgemein',
       description: 'Standardwerte für Berichte und Betreuung.',
-      department: 'Standard-Abteilung',
-      supervisorPrimary: 'Betreuer-E-Mail 1',
+      department: 'Ausbildungsabschnitt/Abteilung',
+      supervisorPrimary: 'Betreuer-E-Mail',
       supervisorSecondary: 'Betreuer-E-Mail 2',
       ihkLink: 'IHK-Link',
     },
     trainingPeriod: {
       title: 'Ausbildungszeitraum',
       description:
-        'Steuert den Startpunkt fuer Tages- und Wochenberichte sowie den gueltigen Zeitraum.',
+        'Steuert den Startpunkt für Tages- und Wochenberichte sowie den gültigen Zeitraum.',
       start: 'Ausbildungsbeginn',
       end: 'Ausbildungsende',
       reportsSince: 'Ausbildungsberichte seit (optional)',
@@ -352,9 +379,9 @@ const deTranslation = {
     region: {
       title: 'Bundesland',
       description:
-        'Wird fuer den Import von Feiertagen und Ferien ueber Open Holidays verwendet.',
+        'Wird für den Import von Feiertagen und Ferien über Open Holidays verwendet.',
       subdivisionCode: 'Bundesland',
-      placeholder: 'Bitte Bundesland auswaehlen',
+      placeholder: 'Bitte Bundesland auswählen',
     },
     exchange: {
       title: 'Settings Import/Export',
@@ -424,7 +451,7 @@ const deTranslation = {
       free: 'Freier Tag',
     },
     meta: {
-      title: 'Rahmendaten',
+      title: 'Datum und Tagestyp',
       description: 'Datum und Tagestyp festlegen.',
       weekStart: 'Wochenstart',
       weekEnd: 'Wochenende',
@@ -465,7 +492,9 @@ const deTranslation = {
       delete: 'Tagesbericht löschen',
     },
     feedback: {
-      missingDates: 'Bitte ein gueltiges Datum angeben.',
+      missingDates: 'Bitte ein gültiges Datum angeben.',
+      duplicateActivityForDate:
+        'Diese Tätigkeit ist für den {{date}} schon eingetragen.',
       saved: 'Tagesbericht gespeichert.',
       deleted: 'Tagesbericht gelöscht.',
       saveError: 'Tagesbericht konnte nicht gespeichert werden.',
@@ -477,10 +506,13 @@ const deTranslation = {
     meta: {
       title: 'Wochenstatus',
       weekRange: 'Zeitraum',
+      weekHeadline: 'Woche {{start}} bis {{end}}',
       area: 'Ausbildungsabschnitt/Abteilung',
       supervisorPrimary: 'Betreuer-E-Mail',
       submitted: 'Bereits abgeschickt',
       daysTracked: 'Tage in dieser Woche',
+      daysTrackedHeadline: 'Tagesberichte erfasst: {{done}}/{{total}}',
+      weekendAutoReason: 'Wochenende',
       noWeek: 'Keine passende Woche mit Tagesberichten gefunden.',
     },
     sections: {
@@ -490,7 +522,7 @@ const deTranslation = {
       school: 'Berufsschule (Unterrichtsthemen)',
     },
     actions: {
-      cancel: 'Abbrechen',
+      reset: 'Zurücksetzen',
       save: 'Wochenbericht speichern',
       send: 'Wochenbericht senden',
       exportPdf: 'Als PDF exportieren',
@@ -615,6 +647,8 @@ const deTranslation = {
       warningDescription:
         'Google-Konto oder Drive-Rechte fehlen. Bitte verknüpfen und Berechtigungen erteilen.',
       oauthUnavailable: 'Google OAuth ist nicht konfiguriert.',
+      connectedAccount: 'Verknüpftes Konto: {{email}}',
+      changeAccountLink: 'Google-Konto wechseln',
       connect: 'Drive verbinden',
       export: 'Backup zu Drive',
     },

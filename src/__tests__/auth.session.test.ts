@@ -45,7 +45,7 @@ describe('session policy', () => {
     expect(state.provider).toBe('password');
   });
 
-  it('requires reauthentication after 30 days', () => {
+  it('keeps session active without automatic time-based logout', () => {
     const session = createGoogleSession(
       {
         account: {
@@ -58,9 +58,9 @@ describe('session policy', () => {
       '2026-03-13T10:00:00.000Z',
     );
 
-    const state = deriveSessionState(session, '2026-04-12T10:00:00.001Z');
+    const state = deriveSessionState(session, '2036-04-12T10:00:00.001Z');
 
-    expect(state.status).toBe('reauth-required');
-    expect(state.isAuthenticated).toBe(false);
+    expect(state.status).toBe('active');
+    expect(state.isAuthenticated).toBe(true);
   });
 });

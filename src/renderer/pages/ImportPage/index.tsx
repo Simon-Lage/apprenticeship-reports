@@ -7,7 +7,6 @@ import { SectionCard } from '@/renderer/components/app/SectionCard';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SettingsImportPreview } from '@/shared/settings/schema';
 import { DatabaseBackupImportPreview } from '@/shared/app/backup-archive';
 import { DriveBackupFile } from '@/shared/drive/backups';
@@ -194,226 +193,213 @@ export default function ImportPage() {
         title={t('import.title')}
         description={t('import.description')}
       />
-      <Tabs defaultValue="reports" className="space-y-3">
-        <TabsList className="bg-primary-tint/35">
-          <TabsTrigger value="reports">{t('import.tabs.reports')}</TabsTrigger>
-          <TabsTrigger value="settings">
-            {t('import.tabs.settings')}
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="reports" className="space-y-3">
-          <SectionCard
-            title={t('import.reports.title')}
-            description={t('import.reports.description')}
-            className="border-primary-tint bg-white"
-          >
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="border-primary-tint"
-                onClick={() => {
-                  handleBackupFile();
-                }}
-              >
-                {t('import.reports.localFile')}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="border-primary-tint"
-                onClick={() => {
-                  loadDriveBackups();
-                }}
-              >
-                {t('import.reports.loadDrive')}
-              </Button>
-            </div>
-            {driveBackups.length ? (
-              <ul className="mt-3 max-h-52 space-y-2 overflow-auto pr-1 text-sm">
-                {driveBackups.map((backup) => (
-                  <li
-                    key={backup.id}
-                    className="flex items-center justify-between rounded-md border border-primary-tint/70 px-3 py-2"
-                  >
-                    <span>{backup.name}</span>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="border-primary-tint"
-                      onClick={() => {
-                        prepareDriveImport(backup.id);
-                      }}
-                    >
-                      {t('import.reports.useDriveFile')}
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </SectionCard>
-          {backupPreview ? (
-            <SectionCard
-              title={t('import.reports.compareTitle')}
-              description={backupPreview.warning}
-              className="border-primary-tint bg-white"
-              action={
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="border-primary-tint"
-                    onClick={() => {
-                      cancelBackupImport();
-                    }}
-                  >
-                    {t('import.actions.cancel')}
-                  </Button>
-                  <Button
-                    type="button"
-                    disabled={isPending}
-                    className="bg-primary text-primary-contrast hover:bg-primary-shade"
-                    onClick={() => {
-                      applyBackupImport();
-                    }}
-                  >
-                    {isPending
-                      ? t('common.loading')
-                      : t('import.actions.apply')}
-                  </Button>
-                </div>
-              }
-            >
-              <div className="space-y-4">
-                <p className="text-sm text-text-color/80">
-                  {t('import.reports.conflictSummary', {
-                    weeks: backupPreview.conflictSummary.conflictingWeekCount,
-                    days: backupPreview.conflictSummary
-                      .conflictingDailyReportCount,
-                  })}
-                </p>
-                <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
-                  {backupPreview.conflictingWeeks.length ? (
-                    <ul className="max-h-[52vh] space-y-2 overflow-auto pr-1">
-                      {backupPreview.conflictingWeeks.map((week) => (
-                        <li
-                          key={week.weekIdentity}
-                          className={`rounded-md border p-3 ${
-                            selectedConflictId === week.weekIdentity
-                              ? 'border-primary bg-primary-tint/25'
-                              : 'border-primary-tint/70'
-                          }`}
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <button
-                              type="button"
-                              className="text-left font-semibold text-text-color"
-                              onClick={() =>
-                                setSelectedConflictId(week.weekIdentity)
-                              }
-                            >
-                              {week.weekStart} - {week.weekEnd}
-                            </button>
-                            <select
-                              className="border-input bg-background h-8 rounded-md border px-2 text-sm"
-                              value={
-                                backupStrategies[week.weekIdentity] ??
-                                week.defaultStrategy
-                              }
-                              onChange={(event) =>
-                                setBackupStrategies((current) => ({
-                                  ...current,
-                                  [week.weekIdentity]: event.target
-                                    .value as BackupConflictStrategy,
-                                }))
-                              }
-                            >
-                              {backupPreview.availableConflictStrategies.map(
-                                (strategy) => (
-                                  <option key={strategy} value={strategy}>
-                                    {strategyLabels[strategy]}
-                                  </option>
-                                ),
-                              )}
-                            </select>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  {selectedConflict ? (
-                    <JsonDiffViewer
-                      currentValue={selectedConflict.current}
-                      incomingValue={selectedConflict.incoming}
-                      currentTitle={t('import.reports.currentWeek')}
-                      incomingTitle={t('import.reports.incomingWeek')}
-                    />
-                  ) : null}
-                </div>
-              </div>
-            </SectionCard>
-          ) : null}
-        </TabsContent>
-        <TabsContent value="settings" className="space-y-3">
-          <SectionCard
-            title={t('import.settings.title')}
-            description={t('import.settings.description')}
-            className="border-primary-tint bg-white"
-          >
+      <div className="space-y-3">
+        <SectionCard
+          title={t('import.reports.title')}
+          description={t('import.reports.description')}
+          className="border-primary-tint bg-white"
+        >
+          <div className="flex flex-wrap gap-2">
             <Button
               type="button"
               variant="outline"
               className="border-primary-tint"
               onClick={() => {
-                handleSettingsFile();
+                handleBackupFile();
               }}
             >
-              {t('import.settings.chooseFile')}
+              {t('import.reports.localFile')}
             </Button>
-          </SectionCard>
-          {settingsPreview ? (
-            <SectionCard
-              title={t('import.settings.compareTitle')}
-              description={settingsPreview.warning}
-              className="border-primary-tint bg-white"
-              action={
-                <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="border-primary-tint"
+              onClick={() => {
+                loadDriveBackups();
+              }}
+            >
+              {t('import.reports.loadDrive')}
+            </Button>
+          </div>
+          {driveBackups.length ? (
+            <ul className="mt-3 max-h-52 space-y-2 overflow-auto pr-1 text-sm">
+              {driveBackups.map((backup) => (
+                <li
+                  key={backup.id}
+                  className="flex items-center justify-between rounded-md border border-primary-tint/70 px-3 py-2"
+                >
+                  <span>{backup.name}</span>
                   <Button
                     type="button"
+                    size="sm"
                     variant="outline"
                     className="border-primary-tint"
                     onClick={() => {
-                      cancelSettingsImport();
+                      prepareDriveImport(backup.id);
                     }}
                   >
-                    {t('import.actions.cancel')}
+                    {t('import.reports.useDriveFile')}
                   </Button>
-                  <Button
-                    type="button"
-                    disabled={isPending}
-                    className="bg-primary text-primary-contrast hover:bg-primary-shade"
-                    onClick={() => {
-                      applySettingsImport();
-                    }}
-                  >
-                    {isPending
-                      ? t('common.loading')
-                      : t('import.actions.apply')}
-                  </Button>
-                </div>
-              }
-            >
-              <JsonDiffViewer
-                currentValue={settingsPreview.current.values}
-                incomingValue={settingsPreview.incoming.values}
-                currentTitle={`${t('import.settings.current')} (${settingsPreview.current.capturedAt})`}
-                incomingTitle={`${t('import.settings.incoming')} (${settingsPreview.incoming.capturedAt})`}
-              />
-            </SectionCard>
+                </li>
+              ))}
+            </ul>
           ) : null}
-        </TabsContent>
-      </Tabs>
+        </SectionCard>
+        {backupPreview ? (
+          <SectionCard
+            title={t('import.reports.compareTitle')}
+            description={backupPreview.warning}
+            className="border-primary-tint bg-white"
+            action={
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-primary-tint"
+                  onClick={() => {
+                    cancelBackupImport();
+                  }}
+                >
+                  {t('import.actions.cancel')}
+                </Button>
+                <Button
+                  type="button"
+                  disabled={isPending}
+                  className="bg-primary text-primary-contrast hover:bg-primary-shade"
+                  onClick={() => {
+                    applyBackupImport();
+                  }}
+                >
+                  {isPending ? t('common.loading') : t('import.actions.apply')}
+                </Button>
+              </div>
+            }
+          >
+            <div className="space-y-4">
+              <p className="text-sm text-text-color/80">
+                {t('import.reports.conflictSummary', {
+                  weeks: backupPreview.conflictSummary.conflictingWeekCount,
+                  days:
+                    backupPreview.conflictSummary.conflictingDailyReportCount,
+                })}
+              </p>
+              <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
+                {backupPreview.conflictingWeeks.length ? (
+                  <ul className="max-h-[52vh] space-y-2 overflow-auto pr-1">
+                    {backupPreview.conflictingWeeks.map((week) => (
+                      <li
+                        key={week.weekIdentity}
+                        className={`rounded-md border p-3 ${
+                          selectedConflictId === week.weekIdentity
+                            ? 'border-primary bg-primary-tint/25'
+                            : 'border-primary-tint/70'
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            className="text-left font-semibold text-text-color"
+                            onClick={() =>
+                              setSelectedConflictId(week.weekIdentity)
+                            }
+                          >
+                            {week.weekStart} - {week.weekEnd}
+                          </button>
+                          <select
+                            className="border-input bg-background h-8 rounded-md border px-2 text-sm"
+                            value={
+                              backupStrategies[week.weekIdentity] ??
+                              week.defaultStrategy
+                            }
+                            onChange={(event) =>
+                              setBackupStrategies((current) => ({
+                                ...current,
+                                [week.weekIdentity]: event.target
+                                  .value as BackupConflictStrategy,
+                              }))
+                            }
+                          >
+                            {backupPreview.availableConflictStrategies.map(
+                              (strategy) => (
+                                <option key={strategy} value={strategy}>
+                                  {strategyLabels[strategy]}
+                                </option>
+                              ),
+                            )}
+                          </select>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {selectedConflict ? (
+                  <JsonDiffViewer
+                    currentValue={selectedConflict.current}
+                    incomingValue={selectedConflict.incoming}
+                    currentTitle={t('import.reports.currentWeek')}
+                    incomingTitle={t('import.reports.incomingWeek')}
+                  />
+                ) : null}
+              </div>
+            </div>
+          </SectionCard>
+        ) : null}
+
+        <SectionCard
+          title={t('import.settings.title')}
+          description={t('import.settings.description')}
+          className="border-primary-tint bg-white"
+        >
+          <Button
+            type="button"
+            variant="outline"
+            className="border-primary-tint"
+            onClick={() => {
+              handleSettingsFile();
+            }}
+          >
+            {t('import.settings.chooseFile')}
+          </Button>
+        </SectionCard>
+        {settingsPreview ? (
+          <SectionCard
+            title={t('import.settings.compareTitle')}
+            description={settingsPreview.warning}
+            className="border-primary-tint bg-white"
+            action={
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-primary-tint"
+                  onClick={() => {
+                    cancelSettingsImport();
+                  }}
+                >
+                  {t('import.actions.cancel')}
+                </Button>
+                <Button
+                  type="button"
+                  disabled={isPending}
+                  className="bg-primary text-primary-contrast hover:bg-primary-shade"
+                  onClick={() => {
+                    applySettingsImport();
+                  }}
+                >
+                  {isPending ? t('common.loading') : t('import.actions.apply')}
+                </Button>
+              </div>
+            }
+          >
+            <JsonDiffViewer
+              currentValue={settingsPreview.current.values}
+              incomingValue={settingsPreview.incoming.values}
+              currentTitle={`${t('import.settings.current')} (${settingsPreview.current.capturedAt})`}
+              incomingTitle={`${t('import.settings.incoming')} (${settingsPreview.incoming.capturedAt})`}
+            />
+          </SectionCard>
+        ) : null}
+      </div>
     </div>
   );
 }

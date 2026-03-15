@@ -142,6 +142,10 @@ export default function OnboardingPage() {
     );
   }, [currentStepId, runtime.state.auth.provider, stepSettings.value]);
 
+  useEffect(() => {
+    setValidationError(null);
+  }, [currentStepId]);
+
   async function handlePasswordSetup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!runtime.api) {
@@ -266,13 +270,16 @@ export default function OnboardingPage() {
         stepId: 'google',
         values: {
           linked: true,
-          email: bootstrapAfterGoogle.drive.connectedAccountEmail,
+          email:
+            bootstrapAfterGoogle.drive.connectedAccountEmail ??
+            (stepValues.email?.trim() || null),
         },
       });
       await runtime.api.completeOnboardingStep('google');
       setStepValues((current) => ({
         ...current,
         linked: 'true',
+        email: bootstrapAfterGoogle.drive.connectedAccountEmail ?? '',
       }));
       await runtime.refresh();
       await stepSettings.refresh();
@@ -416,7 +423,13 @@ export default function OnboardingPage() {
           className="border-primary-tint bg-white"
           titleClassName="text-xl md:text-2xl"
         >
-          <div className="space-y-4">
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleContinue();
+            }}
+          >
             <OnboardingStepFields
               stepId={currentStepId}
               stepValues={stepValues}
@@ -432,7 +445,7 @@ export default function OnboardingPage() {
                 <AlertDescription>{validationError}</AlertDescription>
               </Alert>
             ) : null}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex w-full items-center justify-between gap-2">
               {canGoBack ? (
                 <Button
                   type="button"
@@ -447,19 +460,18 @@ export default function OnboardingPage() {
                 >
                   {t('onboarding.actions.back')}
                 </Button>
-              ) : null}
+              ) : (
+                <span />
+              )}
               <Button
-                type="button"
+                type="submit"
                 disabled={isPending}
-                className="bg-primary text-primary-contrast hover:bg-primary-shade"
-                onClick={() => {
-                  handleContinue();
-                }}
+                className="ml-auto bg-primary text-primary-contrast hover:bg-primary-shade"
               >
                 {nextButtonLabel}
               </Button>
             </div>
-          </div>
+          </form>
         </SectionCard>
       </div>
     </div>

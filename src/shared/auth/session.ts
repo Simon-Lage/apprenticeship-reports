@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-const REAUTH_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000;
-
 export const UserAccountSchema = z.object({
   id: z.string().min(1),
   email: z.string().email(),
@@ -39,11 +37,10 @@ export type CreateGoogleSessionInput = z.input<
 >;
 
 export type AppSessionState = {
-  status: 'signed-out' | 'active' | 'reauth-required';
+  status: 'signed-out' | 'active';
   isAuthenticated: boolean;
   shouldPersist: boolean;
   provider: z.infer<typeof AuthProviderSchema> | null;
-  expiresAt: string | null;
 };
 
 function createAppSession(
@@ -98,29 +95,24 @@ export function deriveSessionState(
   session: AppSession | null,
   now: string,
 ): AppSessionState {
+  z.string().datetime().parse(now);
+
   if (!session) {
     return {
       status: 'signed-out',
       isAuthenticated: false,
       shouldPersist: false,
       provider: null,
-      expiresAt: null,
     };
   }
 
   const parsedSession = AppSessionSchema.parse(session);
-  const expiresAt = new Date(
-    new Date(parsedSession.authenticatedAt).getTime() + REAUTH_INTERVAL_MS,
-  ).toISOString();
-  const requiresReauthentication =
-    new Date(now).getTime() >= new Date(expiresAt).getTime();
 
   return {
-    status: requiresReauthentication ? 'reauth-required' : 'active',
-    isAuthenticated: !requiresReauthentication,
+    status: 'active',
+    isAuthenticated: true,
     shouldPersist: parsedSession.rememberMe,
     provider: parsedSession.provider,
-    expiresAt,
   };
 }
 

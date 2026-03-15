@@ -24,7 +24,7 @@ import {
 import { WeeklyReportHashRecord } from '@/shared/reports/stable';
 import { AppKernelAuthDrive } from '@/main/services/AppKernelAuthDrive';
 
-export abstract class AppKernelReports extends AppKernelAuthDrive {
+export default abstract class AppKernelReports extends AppKernelAuthDrive {
   async requestManualBackup(): Promise<AppBootstrapState> {
     const nextState = await this.repository.update((currentState) => {
       this.accessGuard.assertApplicationUnlocked(currentState);
@@ -131,7 +131,9 @@ export abstract class AppKernelReports extends AppKernelAuthDrive {
     return this.buildBootstrapState(nextState);
   }
 
-  async upsertDailyReport(input: UpsertDailyReportInput): Promise<AppBootstrapState> {
+  async upsertDailyReport(
+    input: UpsertDailyReportInput,
+  ): Promise<AppBootstrapState> {
     const now = this.now();
     const nextState = await this.repository.update((currentState) => {
       this.accessGuard.assertApplicationUnlocked(currentState);

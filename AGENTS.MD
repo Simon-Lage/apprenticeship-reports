@@ -45,7 +45,6 @@ Bitte beachte folgende Punkte:
   - Google-Login ist optional als zweite Authentifizierungsmoeglichkeit.
   - Fuer die Authentifizierung reicht entweder Passwort oder Google (nicht beides gleichzeitig notwendig).
   - Beim Login option angemeldet zu bleiben als switch
-  - Alle 30 Tage erneute Authentifizierung
 
 - Verpflichtende Google Drive Anbindung
 

@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 
 import { FormField } from '@/renderer/components/app/FormField';
 import { PageHeader } from '@/renderer/components/app/PageHeader';
@@ -36,8 +37,19 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { parseAbsenceSettings } from '@/shared/absence/settings';
 
+function toDisplayDate(dateValue: string): string {
+  const [year, month, day] = dateValue.split('-');
+
+  if (!year || !month || !day) {
+    return dateValue;
+  }
+
+  return `${day}.${month}.${year}`;
+}
+
 export default function DailyReportPage() {
   const { t } = useTranslation();
+  const location = useLocation();
   const runtime = useAppRuntime();
   const toast = useToastController();
   const reportsState = useReportsState();
@@ -63,6 +75,16 @@ export default function DailyReportPage() {
     () => resolveWeekRangeForDate(form.date),
     [form.date],
   );
+  const requestedDate = useMemo(() => {
+    const search = new URLSearchParams(location.search);
+    const candidate = search.get('date');
+
+    if (!candidate || !/^\d{4}-\d{2}-\d{2}$/.test(candidate)) {
+      return null;
+    }
+
+    return candidate;
+  }, [location.search]);
   const autoDayType = useMemo(() => {
     if (!form.date) {
       return null;
@@ -136,12 +158,12 @@ export default function DailyReportPage() {
   }, [form.date, reportsState.value, selectedWeekRange]);
 
   useEffect(() => {
-    if (form.date || !settingsSnapshot.value || !reportsState.value) {
+    if (form.date || !settingsSnapshot.value) {
       return;
     }
 
     const initialDate = resolveInitialDailyReportDate({
-      reportsState: reportsState.value,
+      reportsState: reportsState.value ?? null,
       trainingStart: trainingPeriod.trainingStart,
       trainingEnd: trainingPeriod.trainingEnd,
       reportsSince: trainingPeriod.reportsSince,
@@ -158,6 +180,17 @@ export default function DailyReportPage() {
     trainingPeriod.trainingEnd,
     trainingPeriod.trainingStart,
   ]);
+
+  useEffect(() => {
+    if (!requestedDate || requestedDate === form.date) {
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      date: requestedDate,
+    }));
+  }, [form.date, requestedDate]);
 
   useEffect(() => {
     if (!currentDailyReport) {
@@ -211,6 +244,13 @@ export default function DailyReportPage() {
       return;
     }
     if (form[key].includes(draft)) {
+      if (key === 'activities' && form.date) {
+        toast.info(
+          t('dailyReport.feedback.duplicateActivityForDate', {
+            date: toDisplayDate(form.date),
+          }),
+        );
+      }
       return;
     }
     setForm((current) => ({
@@ -305,7 +345,6 @@ export default function DailyReportPage() {
       <form className="space-y-4 pb-24" onSubmit={handleSubmit}>
         <SectionCard
           title={t('dailyReport.meta.title')}
-          description={t('dailyReport.meta.description')}
           className="border-primary-tint bg-white"
         >
           <div className="grid gap-4 md:grid-cols-2">
@@ -369,7 +408,7 @@ export default function DailyReportPage() {
             <div className="grid gap-4 lg:grid-cols-2">
               <SectionCard
                 title={t('dailyReport.activities.title')}
-                description={t('dailyReport.activities.description')}
+                preserveDescriptionSpace
                 className="border-primary-tint bg-white"
               >
                 <div className="space-y-3">

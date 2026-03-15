@@ -34,6 +34,7 @@ export const AppIpcChannel = {
   savePasswordSession: 'app:save-password-session',
   saveGoogleSession: 'app:save-google-session',
   authenticateWithGoogle: 'app:authenticate-with-google',
+  signOut: 'app:sign-out',
   clearGoogleSession: 'app:clear-google-session',
   setDriveScopes: 'app:set-drive-scopes',
   grantDriveScopes: 'app:grant-drive-scopes',
@@ -77,7 +78,6 @@ export const AuthenticateWithPasswordInputSchema = z.object({
 });
 
 export const ChangePasswordInputSchema = z.object({
-  currentPassword: PasswordSecretSchema,
   nextPassword: PasswordSecretSchema,
 });
 
@@ -273,6 +273,7 @@ export type AppApi = {
   authenticateWithGoogle: (
     input: AuthenticateWithGoogleInput,
   ) => Promise<AppBootstrapState>;
+  signOut: () => Promise<AppBootstrapState>;
   clearGoogleSession: () => Promise<AppBootstrapState>;
   setDriveScopes: (input: SetDriveScopesInput) => Promise<AppBootstrapState>;
   grantDriveScopes: (

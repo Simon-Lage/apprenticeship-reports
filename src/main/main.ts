@@ -4,6 +4,7 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 
 import registerAppHandlers from '@/main/ipc/registerAppHandlers';
+import loadEnvLocal from '@/main/load-env-local';
 import { resolveHtmlPath } from '@/main/utils';
 import { AppKernel } from '@/main/services/AppKernel';
 import { AppMetadataRepository } from '@/main/services/AppMetadataRepository';
@@ -48,6 +49,14 @@ class AppUpdater {
 let mainWindow: BrowserWindow | null = null;
 let appKernel: AppKernel | null = null;
 let isQuittingAfterBackupRegistration = false;
+
+loadEnvLocal([
+  path.join(process.cwd(), '.env.local'),
+  path.join(app.getAppPath(), '.env.local'),
+  path.join(app.getAppPath(), '..', '.env.local'),
+  path.join(process.resourcesPath, '.env.local'),
+  path.join(path.dirname(process.execPath), '.env.local'),
+]);
 
 if (process.env.NODE_ENV === 'production') {
   require('source-map-support').install();
@@ -131,10 +140,10 @@ async function createWindow(): Promise<void> {
 
   mainWindow = new BrowserWindow({
     show: false,
-    width: 1240,
+    width: 1500,
     height: 860,
-    minWidth: 1100,
-    minHeight: 760,
+    minWidth: 1500,
+    minHeight: 860,
     fullscreen: true,
     autoHideMenuBar: true,
     icon: getAssetPath('apprenticeship-reports-logo-small.png'),
@@ -168,6 +177,18 @@ async function createWindow(): Promise<void> {
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
+  });
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown' || input.key !== 'F11') {
+      return;
+    }
+
+    if (!mainWindow) {
+      return;
+    }
+
+    event.preventDefault();
+    mainWindow.setFullScreen(!mainWindow.isFullScreen());
   });
   new AppUpdater(mainWindow);
 }

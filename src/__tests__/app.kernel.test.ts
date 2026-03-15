@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 
+import { parseAbsenceSettings } from '@/shared/absence/settings';
 import { createDefaultAppMetadata } from '@/shared/app/state';
 import { useAppKernelTestHarness } from '@/src/test-utils/app-kernel-test-harness';
 
@@ -81,10 +82,21 @@ describe('app kernel', () => {
     const { kernel } = createKernel();
     await kernel.boot();
     await ensurePasswordSetup(kernel);
+    await kernel.savePasswordSession({
+      account: {
+        id: 'user-1',
+        email: 'user@example.com',
+        displayName: 'User Example',
+      },
+      rememberMe: false,
+    });
     await kernel.clearGoogleSession();
 
+    const { kernel: restartedKernel } = createKernel();
+    await restartedKernel.boot();
+
     await expect(
-      kernel.setSettingsValues({
+      restartedKernel.setSettingsValues({
         backup: {
           enabled: true,
         },
@@ -113,6 +125,79 @@ describe('app kernel', () => {
         },
       }),
     ).rejects.toThrow('Google-Drive-Berechtigungen fehlen');
+  });
+
+  it('allows absence sync without drive permissions when authenticated', async () => {
+    const openHolidaysService = {
+      fetchYearCatalog: jest.fn().mockResolvedValue({
+        publicHolidays: [],
+        schoolHolidays: [],
+      }),
+    };
+    const { kernel, repository } = createKernel();
+    (kernel as any).openHolidaysService = openHolidaysService;
+    await kernel.boot();
+    await ensurePasswordSetup(kernel);
+    await kernel.clearGoogleSession();
+    await kernel.savePasswordSession({
+      account: {
+        id: 'user-1',
+        email: 'user@example.com',
+        displayName: 'User Example',
+      },
+      rememberMe: true,
+    });
+
+    const persistedState = await repository.read();
+    persistedState.settings.current.values = {
+      ...persistedState.settings.current.values,
+      onboarding: {
+        region: {
+          subdivisionCode: 'DE-NW',
+        },
+      },
+    };
+    await repository.write(persistedState);
+
+    await kernel.syncAbsenceCatalog();
+
+    const nextState = await repository.read();
+    const absenceSettings = parseAbsenceSettings(
+      nextState.settings.current.values,
+    );
+
+    expect(openHolidaysService.fetchYearCatalog).toHaveBeenCalled();
+    expect(absenceSettings.lastSyncedAt).not.toBeNull();
+  });
+
+  it('keeps absence sync blocked while unauthenticated', async () => {
+    const openHolidaysService = {
+      fetchYearCatalog: jest.fn().mockResolvedValue({
+        publicHolidays: [],
+        schoolHolidays: [],
+      }),
+    };
+    const { kernel } = createKernel();
+    (kernel as any).openHolidaysService = openHolidaysService;
+    await kernel.boot();
+    await ensurePasswordSetup(kernel);
+    await kernel.savePasswordSession({
+      account: {
+        id: 'user-1',
+        email: 'user@example.com',
+        displayName: 'User Example',
+      },
+      rememberMe: false,
+    });
+    await kernel.clearGoogleSession();
+
+    const { kernel: restartedKernel } = createKernel();
+    (restartedKernel as any).openHolidaysService = openHolidaysService;
+    await restartedKernel.boot();
+
+    await expect(restartedKernel.syncAbsenceCatalog()).rejects.toThrow(
+      'gueltige Anmeldung',
+    );
   });
 
   it('blocks app usage when only google auth exists but no local password is configured', async () => {
@@ -214,6 +299,46 @@ describe('app kernel', () => {
 
     expect(bootstrap.drive.status).toBe('missing');
     expect(bootstrap.drive.missingScopes).toEqual(['scope:drive']);
+  });
+
+  it('signs out and locks the app until the next authentication', async () => {
+    const { kernel } = createKernel();
+    await kernel.boot();
+    await signIn(kernel);
+
+    const bootstrap = await kernel.signOut();
+
+    expect(bootstrap.auth.isAuthenticated).toBe(false);
+    expect(bootstrap.auth.provider).toBeNull();
+    expect(bootstrap.app.lockReasons).toContain('authentication');
+  });
+
+  it('keeps the user authenticated with password session after removing google', async () => {
+    const { kernel } = createKernel();
+    await kernel.boot();
+    await signIn(kernel);
+
+    const bootstrap = await kernel.clearGoogleSession();
+
+    expect(bootstrap.auth.status).toBe('active');
+    expect(bootstrap.auth.provider).toBe('password');
+    expect(bootstrap.drive.connectedAccountEmail).toBeNull();
+  });
+
+  it('keeps google drive linkage after sign out and password login', async () => {
+    const { kernel } = createKernel();
+    await kernel.boot();
+    await signIn(kernel);
+
+    await kernel.signOut();
+
+    const bootstrap = await kernel.authenticateWithPassword({
+      password: 'CorrectHorse1',
+      rememberMe: true,
+    });
+
+    expect(bootstrap.auth.provider).toBe('password');
+    expect(bootstrap.drive.connectedAccountEmail).toBe('user@example.com');
   });
 
   it('stores a settings import preview and can cancel it', async () => {
@@ -386,7 +511,6 @@ describe('app kernel', () => {
     });
 
     const bootstrap = await kernel.changePassword({
-      currentPassword: 'CorrectHorse1',
       nextPassword: 'CorrectHorse2',
     });
 
@@ -412,4 +536,3 @@ describe('app kernel', () => {
     expect(reloginBootstrap.auth.provider).toBe('password');
   });
 });
-

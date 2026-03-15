@@ -104,6 +104,8 @@ export default function registerAppHandlers(
     ),
   );
 
+  ipcMain.handle(AppIpcChannel.signOut, () => appKernel.signOut());
+
   ipcMain.handle(AppIpcChannel.clearGoogleSession, () =>
     appKernel.clearGoogleSession(),
   );

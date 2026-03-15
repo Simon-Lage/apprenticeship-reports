@@ -29,6 +29,7 @@ const appApi: AppApi = {
     ipcRenderer.invoke(AppIpcChannel.saveGoogleSession, input),
   authenticateWithGoogle: (input) =>
     ipcRenderer.invoke(AppIpcChannel.authenticateWithGoogle, input),
+  signOut: () => ipcRenderer.invoke(AppIpcChannel.signOut),
   clearGoogleSession: () =>
     ipcRenderer.invoke(AppIpcChannel.clearGoogleSession),
   setDriveScopes: (input) =>

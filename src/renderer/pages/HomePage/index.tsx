@@ -153,17 +153,17 @@ export default function HomePage() {
               }}
               className="block"
             >
-              <Card className="group border-primary-tint bg-white py-5 transition-colors hover:border-primary hover:bg-primary-tint/20">
+              <Card className="group border-primary-tint bg-white py-5 transition-colors hover:border-primary hover:bg-primary">
                 <CardHeader className="space-y-2">
-                  <div className="flex items-center gap-2 text-primary-shade transition-colors group-hover:text-primary">
+                  <div className="flex items-center gap-2 text-primary-shade transition-colors group-hover:text-primary-contrast">
                     <Icon className="size-4" />
-                    <CardTitle className="text-lg text-text-color">
+                    <CardTitle className="text-lg text-text-color transition-colors group-hover:text-primary-contrast">
                       {t(areaCard.titleKey)}
                     </CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-text-color/75">
+                  <p className="text-sm text-text-color/75 transition-colors group-hover:text-primary-contrast/90">
                     {t(areaCard.descriptionKey)}
                   </p>
                 </CardContent>

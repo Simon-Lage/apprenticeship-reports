@@ -10,7 +10,6 @@ import { useSettingsSnapshot } from '@/renderer/hooks/useKernelData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   createCatalogYearKey,
   ManualAbsence,
@@ -227,14 +226,6 @@ export default function AbsencesPage() {
             {absenceSettings.lastSyncError ?? '-'}
           </p>
         </div>
-        {!subdivisionCode ? (
-          <Alert className="mt-3 border-primary-tint bg-primary-tint/35">
-            <AlertTitle>{t('absences.sync.stateLabel')}</AlertTitle>
-            <AlertDescription>
-              {t('absences.sync.missingRegion')}
-            </AlertDescription>
-          </Alert>
-        ) : null}
       </SectionCard>
       <SectionCard
         title={t('absences.manual.title')}

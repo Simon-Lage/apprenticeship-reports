@@ -194,7 +194,7 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
 
   async syncAbsenceCatalog(force = true): Promise<AppBootstrapState> {
     const currentState = await this.repository.read();
-    this.accessGuard.assertApplicationUnlocked(currentState);
+    this.accessGuard.assertOnboardingAccessible(currentState);
     const syncedState = await this.trySyncAbsenceCatalog(currentState, force);
 
     return this.buildBootstrapState(syncedState);
@@ -233,7 +233,6 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
 
   async changePassword(input: ChangePasswordInput): Promise<AppBootstrapState> {
     await this.getPasswordAuthService().changePassword({
-      currentPassword: input.currentPassword,
       nextPassword: input.nextPassword,
     });
     this.passwordConfigured = true;
@@ -250,6 +249,25 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
       account: result.account,
       rememberMe: input.rememberMe,
     });
+  }
+
+  async signOut(): Promise<AppBootstrapState> {
+    this.activeSession = null;
+
+    const nextState = await this.repository.update((currentState) =>
+      AppMetadataSchema.parse({
+        ...this.applyConfiguredDriveState(currentState),
+        auth: {
+          persistedSession: null,
+        },
+        recovery: {
+          ...currentState.recovery,
+          pendingBackupImport: null,
+        },
+      }),
+    );
+
+    return this.buildBootstrapState(nextState);
   }
 
   async connectGoogleDrive(): Promise<AppBootstrapState> {
@@ -325,14 +343,10 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
     this.accessGuard.assertPasswordConfigured();
     const now = this.now();
     const nextSession = createPasswordSession(input, now);
-    const previousSession = this.activeSession;
     this.activeSession = nextSession;
 
     const nextState = await this.repository.update((currentState) => {
       const configuredState = this.applyConfiguredDriveState(currentState);
-      const currentSession =
-        previousSession ?? configuredState.auth.persistedSession;
-      const isSameAccount = this.hasSameAccount(currentSession, nextSession);
 
       return AppMetadataSchema.parse({
         ...configuredState,
@@ -341,13 +355,9 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
         },
         recovery: {
           ...configuredState.recovery,
-          pendingBackupImport: isSameAccount
-            ? configuredState.recovery.pendingBackupImport
-            : null,
+          pendingBackupImport: configuredState.recovery.pendingBackupImport,
         },
-        drive: isSameAccount
-          ? configuredState.drive
-          : this.createDisconnectedDriveState(configuredState),
+        drive: configuredState.drive,
       });
     });
 
@@ -406,19 +416,30 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
   }
 
   async clearGoogleSession(): Promise<AppBootstrapState> {
-    this.activeSession = null;
+    this.accessGuard.assertPasswordConfigured();
+    const currentState = await this.repository.read();
+    const now = this.now();
+    const currentSession = this.getCurrentSession(currentState);
+    const fallbackSession = createPasswordSession(
+      {
+        account: this.createPasswordAccount(currentState),
+        rememberMe: currentSession?.rememberMe ?? true,
+      },
+      now,
+    );
+    this.activeSession = fallbackSession;
 
-    const nextState = await this.repository.update((currentState) =>
+    const nextState = await this.repository.update((storedState) =>
       AppMetadataSchema.parse({
-        ...this.applyConfiguredDriveState(currentState),
+        ...this.applyConfiguredDriveState(storedState),
         auth: {
-          persistedSession: null,
+          persistedSession: getPersistedGoogleSession(fallbackSession),
         },
         recovery: {
-          ...currentState.recovery,
+          ...storedState.recovery,
           pendingBackupImport: null,
         },
-        drive: this.createDisconnectedDriveState(currentState),
+        drive: this.createDisconnectedDriveState(storedState),
       }),
     );
 

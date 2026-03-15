@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaGoogle } from 'react-icons/fa';
 
@@ -8,7 +8,21 @@ import PasswordInput from '@/renderer/components/app/PasswordInput';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
+import {
+  evaluatePasswordRules,
+  isPasswordStrong,
+} from '@/renderer/pages/OnboardingPage/password-rules';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -16,14 +30,25 @@ export default function ChangeAuthMethodsPage() {
   const { t } = useTranslation();
   const runtime = useAppRuntime();
   const toast = useToastController();
-  const [currentPassword, setCurrentPassword] = useState('');
   const [nextPassword, setNextPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [isPasswordPending, setIsPasswordPending] = useState(false);
   const [isGooglePending, setIsGooglePending] = useState(false);
+  const [isPasswordConfirmOpen, setIsPasswordConfirmOpen] = useState(false);
+  const [isGoogleRemoveConfirmOpen, setIsGoogleRemoveConfirmOpen] =
+    useState(false);
   const isGoogleOauthConfigured = runtime.state.auth.googleAuthConfigured;
   const hasLinkedGoogleAccount = Boolean(
     runtime.state.drive.connectedAccountEmail,
   );
+  const passwordRules = useMemo(
+    () => evaluatePasswordRules(nextPassword),
+    [nextPassword],
+  );
+  const hasPasswordInput = nextPassword.trim().length > 0;
+  const isPasswordRepeatValid =
+    passwordConfirm.trim().length > 0 && nextPassword === passwordConfirm;
   let googleButtonLabel = t('authMethods.google.connect');
   if (isGooglePending) {
     googleButtonLabel = t('common.loading');
@@ -31,14 +56,29 @@ export default function ChangeAuthMethodsPage() {
     googleButtonLabel = t('authMethods.google.switch');
   }
 
-  async function handlePasswordChange(event: FormEvent<HTMLFormElement>) {
+  function handlePasswordChange(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!runtime.api) {
       return;
     }
 
-    if (!currentPassword.trim().length || !nextPassword.trim().length) {
-      toast.error(t('authMethods.feedback.passwordFieldsRequired'));
+    setValidationError(null);
+
+    if (!isPasswordStrong(nextPassword)) {
+      setValidationError(t('onboarding.password.validationRules'));
+      return;
+    }
+
+    if (nextPassword !== passwordConfirm) {
+      setValidationError(t('onboarding.password.validationMatch'));
+      return;
+    }
+
+    setIsPasswordConfirmOpen(true);
+  }
+
+  async function confirmPasswordChange() {
+    if (!runtime.api) {
       return;
     }
 
@@ -46,12 +86,13 @@ export default function ChangeAuthMethodsPage() {
 
     try {
       await runtime.api.changePassword({
-        currentPassword: currentPassword.trim(),
         nextPassword: nextPassword.trim(),
       });
-      setCurrentPassword('');
       setNextPassword('');
+      setPasswordConfirm('');
+      setValidationError(null);
       await runtime.refresh();
+      setIsPasswordConfirmOpen(false);
       toast.success(t('authMethods.feedback.passwordChanged'));
     } catch (error) {
       const message =
@@ -70,7 +111,7 @@ export default function ChangeAuthMethodsPage() {
     setIsGooglePending(true);
 
     try {
-      await runtime.api.authenticateWithGoogle({ rememberMe: true });
+      await runtime.api.connectGoogleDrive();
       await runtime.refresh();
       toast.success(t('authMethods.feedback.googleLinked'));
     } catch (error) {
@@ -92,6 +133,7 @@ export default function ChangeAuthMethodsPage() {
     try {
       await runtime.api.clearGoogleSession();
       await runtime.refresh();
+      setIsGoogleRemoveConfirmOpen(false);
       toast.info(t('authMethods.feedback.googleRemoved'));
     } catch (error) {
       const message =
@@ -115,18 +157,10 @@ export default function ChangeAuthMethodsPage() {
       >
         <form className="space-y-4" onSubmit={handlePasswordChange}>
           <FormField
-            id="current-password"
-            label={t('authMethods.password.current')}
+            id="next-password"
+            label={t('onboarding.password.passwordLabel')}
+            error={validationError ?? undefined}
           >
-            <PasswordInput
-              id="current-password"
-              value={currentPassword}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-              showLabel={t('common.password.show')}
-              hideLabel={t('common.password.hide')}
-            />
-          </FormField>
-          <FormField id="next-password" label={t('authMethods.password.next')}>
             <PasswordInput
               id="next-password"
               value={nextPassword}
@@ -135,6 +169,49 @@ export default function ChangeAuthMethodsPage() {
               hideLabel={t('common.password.hide')}
             />
           </FormField>
+          <FormField
+            id="password-confirm"
+            label={t('onboarding.password.confirmLabel')}
+          >
+            <PasswordInput
+              id="password-confirm"
+              value={passwordConfirm}
+              onChange={(event) => setPasswordConfirm(event.target.value)}
+              showLabel={t('common.password.show')}
+              hideLabel={t('common.password.hide')}
+            />
+          </FormField>
+          <ul className="space-y-1 text-xs leading-5">
+            {passwordRules.map((rule) => (
+              <li
+                key={rule.id}
+                className={[
+                  !hasPasswordInput ? 'text-primary-tint' : '',
+                  hasPasswordInput && rule.isValid ? 'text-text-color/70' : '',
+                  hasPasswordInput && !rule.isValid ? 'text-red-600' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                <span>{t(`onboarding.password.rules.${rule.id}`)}</span>
+              </li>
+            ))}
+            <li
+              className={[
+                !hasPasswordInput ? 'text-primary-tint' : '',
+                hasPasswordInput && isPasswordRepeatValid
+                  ? 'text-text-color/70'
+                  : '',
+                hasPasswordInput && !isPasswordRepeatValid
+                  ? 'text-red-600'
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              {t('onboarding.password.rules.repeatMatches')}
+            </li>
+          </ul>
           <Button
             type="submit"
             disabled={isPasswordPending}
@@ -146,6 +223,70 @@ export default function ChangeAuthMethodsPage() {
           </Button>
         </form>
       </SectionCard>
+      <AlertDialog
+        open={isPasswordConfirmOpen}
+        onOpenChange={setIsPasswordConfirmOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('authMethods.confirm.password.title')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('authMethods.confirm.password.description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPasswordPending}>
+              {t('authMethods.confirm.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isPasswordPending}
+              className="bg-primary text-primary-contrast hover:bg-primary-shade"
+              onClick={(event) => {
+                event.preventDefault();
+                confirmPasswordChange();
+              }}
+            >
+              {isPasswordPending
+                ? t('common.loading')
+                : t('authMethods.confirm.password.confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog
+        open={isGoogleRemoveConfirmOpen}
+        onOpenChange={setIsGoogleRemoveConfirmOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('authMethods.confirm.googleRemove.title')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('authMethods.confirm.googleRemove.description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isGooglePending}>
+              {t('authMethods.confirm.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isGooglePending}
+              className="bg-primary text-primary-contrast hover:bg-primary-shade"
+              onClick={(event) => {
+                event.preventDefault();
+                handleGoogleRemove();
+              }}
+            >
+              {isGooglePending
+                ? t('common.loading')
+                : t('authMethods.confirm.googleRemove.confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <SectionCard
         title={t('authMethods.google.title')}
         description={t('authMethods.google.description')}
@@ -175,7 +316,7 @@ export default function ChangeAuthMethodsPage() {
               variant="outline"
               className="border-primary-tint"
               onClick={() => {
-                handleGoogleRemove();
+                setIsGoogleRemoveConfirmOpen(true);
               }}
             >
               {t('authMethods.google.remove')}

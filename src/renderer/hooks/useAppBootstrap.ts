@@ -12,7 +12,6 @@ function createFallbackBootstrapState(): AppBootstrapState {
       isAuthenticated: false,
       shouldPersist: false,
       provider: null,
-      expiresAt: null,
       passwordConfigured: false,
       googleAuthConfigured: false,
     },
