@@ -1,14 +1,15 @@
 import { FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FaGoogle } from 'react-icons/fa';
 
 import { FormField } from '@/renderer/components/app/FormField';
 import { PageHeader } from '@/renderer/components/app/PageHeader';
+import PasswordInput from '@/renderer/components/app/PasswordInput';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
 export default function ChangeAuthMethodsPage() {
   const { t } = useTranslation();
@@ -102,20 +103,25 @@ export default function ChangeAuthMethodsPage() {
         className="border-primary-tint bg-white"
       >
         <form className="space-y-4" onSubmit={handlePasswordChange}>
-          <FormField id="current-password" label={t('authMethods.password.current')}>
-            <Input
+          <FormField
+            id="current-password"
+            label={t('authMethods.password.current')}
+          >
+            <PasswordInput
               id="current-password"
-              type="password"
               value={currentPassword}
               onChange={(event) => setCurrentPassword(event.target.value)}
+              showLabel={t('common.password.show')}
+              hideLabel={t('common.password.hide')}
             />
           </FormField>
           <FormField id="next-password" label={t('authMethods.password.next')}>
-            <Input
+            <PasswordInput
               id="next-password"
-              type="password"
               value={nextPassword}
               onChange={(event) => setNextPassword(event.target.value)}
+              showLabel={t('common.password.show')}
+              hideLabel={t('common.password.hide')}
             />
           </FormField>
           <Button
@@ -123,7 +129,9 @@ export default function ChangeAuthMethodsPage() {
             disabled={isPasswordPending}
             className="bg-primary text-primary-contrast hover:bg-primary-shade"
           >
-            {isPasswordPending ? t('common.loading') : t('authMethods.password.submit')}
+            {isPasswordPending
+              ? t('common.loading')
+              : t('authMethods.password.submit')}
           </Button>
         </form>
       </SectionCard>
@@ -144,18 +152,23 @@ export default function ChangeAuthMethodsPage() {
               disabled={isGooglePending}
               className="bg-primary text-primary-contrast hover:bg-primary-shade"
               onClick={() => {
-                void handleGoogleConnect();
+                handleGoogleConnect();
               }}
             >
-              {isGooglePending ? t('common.loading') : t('authMethods.google.connect')}
+              <FaGoogle className="size-4" />
+              {isGooglePending
+                ? t('common.loading')
+                : t('authMethods.google.connect')}
             </Button>
             <Button
               type="button"
-              disabled={isGooglePending || !runtime.state.drive.connectedAccountEmail}
+              disabled={
+                isGooglePending || !runtime.state.drive.connectedAccountEmail
+              }
               variant="outline"
               className="border-primary-tint"
               onClick={() => {
-                void handleGoogleRemove();
+                handleGoogleRemove();
               }}
             >
               {t('authMethods.google.remove')}

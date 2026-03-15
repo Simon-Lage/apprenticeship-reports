@@ -11,6 +11,7 @@ import { GoogleDriveService } from '@/main/services/GoogleDriveService';
 import { GoogleOAuthService } from '@/main/services/GoogleOAuthService';
 import { WeeklyReportHashService } from '@/main/services/WeeklyReportHashService';
 import { PasswordAuthService } from '@/main/services/PasswordAuthService';
+import { DesktopFileDialogService } from '@/main/services/DesktopFileDialogService';
 import { defaultOnboardingSteps } from '@/shared/onboarding/default-steps';
 
 class AppUpdater {
@@ -53,6 +54,10 @@ if (process.env.NODE_ENV === 'production') {
 
 const isDebug =
   process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
+
+if (process.env.NODE_ENV === 'development') {
+  app.setPath('userData', path.join(process.cwd(), '.dev-data', 'user-data'));
+}
 
 if (isDebug) {
   require('electron-debug').default();
@@ -191,7 +196,10 @@ app
   .whenReady()
   .then(async () => {
     appKernel = createAppKernel();
-    registerAppHandlers(appKernel);
+    const desktopFileDialogService = new DesktopFileDialogService(
+      () => mainWindow,
+    );
+    registerAppHandlers(appKernel, desktopFileDialogService);
     await appKernel.boot();
     await createWindow();
 

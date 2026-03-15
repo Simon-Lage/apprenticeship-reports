@@ -1,7 +1,7 @@
-import { deTranslation } from '@/renderer/i18n/translations/de';
-import { enTranslation } from '@/renderer/i18n/translations/en';
+import deTranslation from '@/renderer/i18n/translations/de';
+import enTranslation from '@/renderer/i18n/translations/en';
 
-export const resources = {
+const resources = {
   de: {
     translation: deTranslation,
   },
@@ -9,3 +9,5 @@ export const resources = {
     translation: enTranslation,
   },
 } as const;
+
+export default resources;

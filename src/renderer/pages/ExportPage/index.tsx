@@ -4,7 +4,6 @@ import { PageHeader } from '@/renderer/components/app/PageHeader';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
-import { downloadTextFile } from '@/renderer/lib/file-io';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,11 +20,15 @@ export default function ExportPage() {
     }
     try {
       const envelope = await runtime.api.exportBackupArchive();
-      downloadTextFile({
-        fileName: `reports-backup-${new Date().toISOString().slice(0, 10)}.json`,
-        content: JSON.stringify(envelope, null, 2),
+      const outputPath = await runtime.api.saveJsonFileDialog({
+        defaultFileName: `reports-backup-${new Date().toISOString().slice(0, 10)}.json`,
+        serialized: JSON.stringify(envelope, null, 2),
       });
-      toast.success(t('export.feedback.reportsExported'));
+      if (!outputPath) {
+        toast.info(t('export.feedback.exportCanceled'));
+        return;
+      }
+      toast.success(t('export.feedback.reportsExported'), outputPath);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : t('common.errors.unknown');
@@ -39,12 +42,16 @@ export default function ExportPage() {
     }
     try {
       const envelope = await runtime.api.exportSettings();
-      downloadTextFile({
-        fileName: `settings-export-${new Date().toISOString().slice(0, 10)}.json`,
-        content: JSON.stringify(envelope, null, 2),
+      const outputPath = await runtime.api.saveJsonFileDialog({
+        defaultFileName: `settings-export-${new Date().toISOString().slice(0, 10)}.json`,
+        serialized: JSON.stringify(envelope, null, 2),
       });
+      if (!outputPath) {
+        toast.info(t('export.feedback.exportCanceled'));
+        return;
+      }
       await runtime.refresh();
-      toast.success(t('export.feedback.settingsExported'));
+      toast.success(t('export.feedback.settingsExported'), outputPath);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : t('common.errors.unknown');
@@ -98,7 +105,7 @@ export default function ExportPage() {
             type="button"
             className="bg-primary text-primary-contrast hover:bg-primary-shade"
             onClick={() => {
-              void exportReportsJson();
+              exportReportsJson();
             }}
           >
             {t('export.local.reports')}
@@ -108,7 +115,7 @@ export default function ExportPage() {
             variant="outline"
             className="border-primary-tint"
             onClick={() => {
-              void exportSettingsJson();
+              exportSettingsJson();
             }}
           >
             {t('export.local.settings')}
@@ -121,13 +128,21 @@ export default function ExportPage() {
         className="border-primary-tint bg-white"
       >
         <div className="space-y-3">
-          <Badge className={driveReady ? 'bg-primary text-primary-contrast' : 'bg-primary-tint text-text-color'}>
+          <Badge
+            className={
+              driveReady
+                ? 'bg-primary text-primary-contrast'
+                : 'bg-primary-tint text-text-color'
+            }
+          >
             {driveReady ? t('export.drive.ready') : t('export.drive.notReady')}
           </Badge>
           {!driveReady ? (
             <Alert className="border-primary-tint bg-primary-tint/30">
               <AlertTitle>{t('export.drive.warningTitle')}</AlertTitle>
-              <AlertDescription>{t('export.drive.warningDescription')}</AlertDescription>
+              <AlertDescription>
+                {t('export.drive.warningDescription')}
+              </AlertDescription>
             </Alert>
           ) : null}
           <div className="flex flex-wrap gap-2">
@@ -136,7 +151,7 @@ export default function ExportPage() {
               variant="outline"
               className="border-primary-tint"
               onClick={() => {
-                void connectDrive();
+                connectDrive();
               }}
             >
               {t('export.drive.connect')}
@@ -146,7 +161,7 @@ export default function ExportPage() {
               disabled={!driveReady}
               className="bg-primary text-primary-contrast hover:bg-primary-shade"
               onClick={() => {
-                void exportToDrive();
+                exportToDrive();
               }}
             >
               {t('export.drive.export')}

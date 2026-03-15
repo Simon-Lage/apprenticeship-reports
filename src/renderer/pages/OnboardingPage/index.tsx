@@ -1,82 +1,59 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FiCheckCircle, FiLock, FiXCircle } from 'react-icons/fi';
 import { z } from 'zod';
 
-import { FormField } from '@/renderer/components/app/FormField';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
+import PasswordInput from '@/renderer/components/app/PasswordInput';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
 import { useSettingsSnapshot } from '@/renderer/hooks/useKernelData';
+import {
+  evaluatePasswordRules,
+  isPasswordStrong,
+} from '@/renderer/pages/OnboardingPage/password-rules';
+import OnboardingProgress from '@/renderer/pages/OnboardingPage/OnboardingProgress';
+import OnboardingStepFields from '@/renderer/pages/OnboardingPage/OnboardingStepFields';
+import {
+  getOnboardingStepDefaults,
+  onboardingStepOrder,
+  OnboardingStepId,
+  optionalOnboardingSteps,
+  parseOnboardingStepValues,
+} from '@/renderer/pages/OnboardingPage/schema';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
+import { FormField } from '@/renderer/components/app/FormField';
 import { JsonObject } from '@/shared/common/json';
 
-type OnboardingStepId = 'identity' | 'training-period' | 'workplace';
+const welcomeStorageKey = 'apprenticeship-reports.onboarding.welcome-seen.v1';
 
-const identitySchema = z.object({
-  firstName: z.string().trim().min(1),
-  lastName: z.string().trim().min(1),
-});
-
-const trainingPeriodSchema = z
-  .object({
-    trainingStart: z.string().date(),
-    trainingEnd: z.string().date(),
-  })
-  .superRefine((value, context) => {
-    if (value.trainingEnd < value.trainingStart) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['trainingEnd'],
-        message: 'invalid-range',
-      });
-    }
-  });
-
-const workplaceSchema = z.object({
-  department: z.string().trim().max(120),
-  trainerEmail: z
-    .string()
-    .trim()
-    .max(320)
-    .refine((value) => !value || z.string().email().safeParse(value).success, {
-      message: 'invalid-email',
-    }),
-  ihkLink: z
-    .string()
-    .trim()
-    .max(2048)
-    .refine((value) => !value || z.string().url().safeParse(value).success, {
-      message: 'invalid-url',
-    }),
-});
-
-const stepOrder: OnboardingStepId[] = ['identity', 'training-period', 'workplace'];
-const optionalSteps: OnboardingStepId[] = ['workplace'];
-
-function parseStepValues(stepId: OnboardingStepId, value: unknown): JsonObject {
-  if (stepId === 'identity') {
-    return identitySchema.parse(value);
+function readWelcomeSeen(): boolean {
+  try {
+    return window.localStorage.getItem(welcomeStorageKey) === 'true';
+  } catch {
+    return false;
   }
-  if (stepId === 'training-period') {
-    return trainingPeriodSchema.parse(value);
+}
+
+function persistWelcomeSeen(): void {
+  try {
+    window.localStorage.setItem(welcomeStorageKey, 'true');
+  } catch {
+    return;
   }
-  return workplaceSchema.parse(value);
 }
 
 export default function OnboardingPage() {
   const { t } = useTranslation();
   const runtime = useAppRuntime();
   const toast = useToastController();
-  const [rememberMe, setRememberMe] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [stepValues, setStepValues] = useState<Record<string, string>>({});
   const [isPending, setIsPending] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [welcomeSeen, setWelcomeSeen] = useState(() => readWelcomeSeen());
   const hasPassword = runtime.state.auth.passwordConfigured;
   const stepSettings = useSettingsSnapshot(
     hasPassword && runtime.state.auth.isAuthenticated,
@@ -84,13 +61,17 @@ export default function OnboardingPage() {
   const currentStepId = useMemo<OnboardingStepId | null>(() => {
     const next = runtime.state.onboarding.nextStepId;
     if (!next) {
-      return stepOrder[0] ?? null;
+      return onboardingStepOrder[0] ?? null;
     }
-    if (stepOrder.includes(next as OnboardingStepId)) {
+    if (onboardingStepOrder.includes(next as OnboardingStepId)) {
       return next as OnboardingStepId;
     }
     return null;
   }, [runtime.state.onboarding.nextStepId]);
+  const passwordRules = useMemo(
+    () => evaluatePasswordRules(password),
+    [password],
+  );
 
   useEffect(() => {
     if (!currentStepId || !stepSettings.value) {
@@ -105,40 +86,25 @@ export default function OnboardingPage() {
     const existing = onboardingValues[currentStepId];
     const source =
       typeof existing === 'object' && existing ? (existing as JsonObject) : {};
-    let defaultValues: Record<string, string>;
-
-    if (currentStepId === 'identity') {
-      defaultValues = {
-        firstName: typeof source.firstName === 'string' ? source.firstName : '',
-        lastName: typeof source.lastName === 'string' ? source.lastName : '',
-      };
-    } else if (currentStepId === 'training-period') {
-      defaultValues = {
-        trainingStart:
-          typeof source.trainingStart === 'string' ? source.trainingStart : '',
-        trainingEnd: typeof source.trainingEnd === 'string' ? source.trainingEnd : '',
-      };
-    } else {
-      defaultValues = {
-        department: typeof source.department === 'string' ? source.department : '',
-        trainerEmail:
-          typeof source.trainerEmail === 'string' ? source.trainerEmail : '',
-        ihkLink: typeof source.ihkLink === 'string' ? source.ihkLink : '',
-      };
-    }
-
-    setStepValues(defaultValues);
-  }, [currentStepId, stepSettings.value]);
+    setStepValues(
+      getOnboardingStepDefaults({
+        stepId: currentStepId,
+        source,
+        authProvider: runtime.state.auth.provider,
+      }),
+    );
+  }, [currentStepId, runtime.state.auth.provider, stepSettings.value]);
 
   async function handlePasswordSetup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!runtime.api) {
       return;
     }
+
     setValidationError(null);
 
-    if (password.trim().length < 8) {
-      setValidationError(t('onboarding.password.validationLength'));
+    if (!isPasswordStrong(password)) {
+      setValidationError(t('onboarding.password.validationRules'));
       return;
     }
 
@@ -148,11 +114,10 @@ export default function OnboardingPage() {
     }
 
     setIsPending(true);
-
     try {
       await runtime.api.initializePasswordAuth({
         password: password.trim(),
-        rememberMe,
+        rememberMe: true,
       });
       await runtime.refresh();
       toast.success(t('onboarding.feedback.passwordSetupSuccess'));
@@ -169,6 +134,7 @@ export default function OnboardingPage() {
     if (!runtime.api || !currentStepId) {
       return;
     }
+
     setValidationError(null);
     const normalizedValues = Object.entries(stepValues).reduce<JsonObject>(
       (result, [key, value]) => {
@@ -179,7 +145,7 @@ export default function OnboardingPage() {
     );
 
     try {
-      const parsed = parseStepValues(currentStepId, normalizedValues);
+      const parsed = parseOnboardingStepValues(currentStepId, normalizedValues);
       setIsPending(true);
       await runtime.api.saveOnboardingDraft({
         stepId: currentStepId,
@@ -189,6 +155,7 @@ export default function OnboardingPage() {
       if (completeStep) {
         await runtime.api.completeOnboardingStep(currentStepId);
       }
+
       await runtime.refresh();
       await stepSettings.refresh();
       toast.success(
@@ -201,7 +168,9 @@ export default function OnboardingPage() {
         const issue = error.issues[0];
         const code = typeof issue?.message === 'string' ? issue.message : '';
         if (code === 'invalid-range') {
-          setValidationError(t('onboarding.steps.trainingPeriod.validationRange'));
+          setValidationError(
+            t('onboarding.steps.trainingPeriod.validationRange'),
+          );
         } else if (code === 'invalid-email') {
           setValidationError(t('onboarding.steps.workplace.validationEmail'));
         } else if (code === 'invalid-url') {
@@ -225,7 +194,6 @@ export default function OnboardingPage() {
     }
 
     setIsPending(true);
-
     try {
       await runtime.api.skipOnboardingStep(currentStepId);
       await runtime.refresh();
@@ -240,44 +208,110 @@ export default function OnboardingPage() {
     }
   }
 
+  async function handleGoogleConnect() {
+    if (!runtime.api) {
+      return;
+    }
+
+    setIsPending(true);
+    try {
+      await runtime.api.authenticateWithGoogle({ rememberMe: true });
+      setStepValues((current) => ({
+        ...current,
+        linked: 'true',
+      }));
+      await runtime.refresh();
+      toast.success(t('onboarding.feedback.googleLinked'));
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : t('common.errors.unknown');
+      toast.error(t('onboarding.feedback.stepError'), message);
+    } finally {
+      setIsPending(false);
+    }
+  }
+
+  if (!hasPassword && !welcomeSeen) {
+    return (
+      <SectionCard
+        title={t('onboarding.welcome.title')}
+        description={t('onboarding.welcome.description')}
+        className="w-full max-w-2xl border-primary-tint bg-white"
+      >
+        <div className="space-y-6">
+          <div className="rounded-md border border-primary-tint/80 bg-primary-tint/25 p-4 text-sm text-text-color/85">
+            {t('onboarding.welcome.hint')}
+          </div>
+          <Button
+            type="button"
+            className="bg-primary text-primary-contrast hover:bg-primary-shade"
+            onClick={() => {
+              persistWelcomeSeen();
+              setWelcomeSeen(true);
+            }}
+          >
+            {t('onboarding.welcome.start')}
+          </Button>
+        </div>
+      </SectionCard>
+    );
+  }
+
   if (!hasPassword) {
     return (
       <SectionCard
         title={t('onboarding.password.title')}
-        description={t('onboarding.password.description')}
         className="w-full max-w-2xl border-primary-tint bg-white"
       >
         <form className="space-y-4" onSubmit={handlePasswordSetup}>
+          <div className="flex items-center gap-2 rounded-md border border-primary-tint/80 bg-primary-tint/25 px-3 py-2 text-sm text-text-color">
+            <FiLock className="size-4" />
+            <span>{t('onboarding.password.requirementsTitle')}</span>
+          </div>
           <FormField
             id="onboarding-password"
             label={t('onboarding.password.passwordLabel')}
             error={validationError ?? undefined}
           >
-            <Input
+            <PasswordInput
               id="onboarding-password"
-              type="password"
+              autoComplete="new-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
+              showLabel={t('common.password.show')}
+              hideLabel={t('common.password.hide')}
             />
           </FormField>
-          <FormField id="onboarding-password-confirm" label={t('onboarding.password.confirmLabel')}>
-            <Input
+          <FormField
+            id="onboarding-password-confirm"
+            label={t('onboarding.password.confirmLabel')}
+          >
+            <PasswordInput
               id="onboarding-password-confirm"
-              type="password"
+              autoComplete="new-password"
               value={passwordConfirm}
               onChange={(event) => setPasswordConfirm(event.target.value)}
+              showLabel={t('common.password.show')}
+              hideLabel={t('common.password.hide')}
             />
           </FormField>
-          <div className="flex items-center justify-between rounded-md border border-primary-tint/80 px-3 py-2">
-            <label htmlFor="onboarding-remember" className="text-sm text-text-color">
-              {t('onboarding.password.rememberMe')}
-            </label>
-            <Switch
-              id="onboarding-remember"
-              checked={rememberMe}
-              onCheckedChange={setRememberMe}
-            />
-          </div>
+          <ul className="space-y-2 rounded-md border border-primary-tint/80 bg-primary-tint/15 p-3 text-sm">
+            {passwordRules.map((rule) => (
+              <li
+                key={rule.id}
+                className={`flex items-center gap-2 ${
+                  rule.isValid ? 'text-emerald-700' : 'text-red-600'
+                }`}
+              >
+                {rule.isValid ? (
+                  <FiCheckCircle className="size-4 shrink-0" />
+                ) : (
+                  <FiXCircle className="size-4 shrink-0" />
+                )}
+                <span>{t(`onboarding.password.rules.${rule.id}`)}</span>
+              </li>
+            ))}
+          </ul>
           <Button
             type="submit"
             disabled={isPending}
@@ -294,118 +328,40 @@ export default function OnboardingPage() {
     return (
       <Alert className="w-full max-w-3xl border-primary-tint bg-primary-tint/35">
         <AlertTitle>{t('onboarding.completed.title')}</AlertTitle>
-        <AlertDescription>{t('onboarding.completed.description')}</AlertDescription>
+        <AlertDescription>
+          {t('onboarding.completed.description')}
+        </AlertDescription>
       </Alert>
     );
   }
 
-  const isOptional = optionalSteps.includes(currentStepId);
-  const completedStepIds = new Set(runtime.state.onboarding.skippedStepIds);
+  const { remainingStepIds, skippedStepIds } = runtime.state.onboarding;
+  const isOptional = optionalOnboardingSteps.includes(currentStepId);
 
   return (
     <div className="w-full max-w-3xl space-y-5">
-      <div className="flex flex-wrap gap-2">
-        {stepOrder.map((stepId) => (
-          <Badge
-            key={stepId}
-            className={
-              currentStepId === stepId
-                ? 'bg-primary text-primary-contrast'
-                : completedStepIds.has(stepId) ||
-                    !runtime.state.onboarding.remainingStepIds.includes(stepId)
-                  ? 'bg-primary-tint text-text-color'
-                  : 'bg-white text-text-color'
-            }
-          >
-            {t(`onboarding.steps.${stepId}.title`)}
-          </Badge>
-        ))}
-      </div>
+      <OnboardingProgress
+        currentStepId={currentStepId}
+        stepOrder={onboardingStepOrder}
+        remainingStepIds={remainingStepIds}
+        skippedStepIds={skippedStepIds}
+      />
       <SectionCard
         title={t(`onboarding.steps.${currentStepId}.title`)}
         description={t(`onboarding.steps.${currentStepId}.description`)}
         className="border-primary-tint bg-white"
       >
         <div className="space-y-4">
-          {currentStepId === 'identity' ? (
-            <>
-              <FormField id="identity-first-name" label={t('onboarding.steps.identity.firstName')}>
-                <Input
-                  id="identity-first-name"
-                  value={stepValues.firstName ?? ''}
-                  onChange={(event) =>
-                    setStepValues((current) => ({ ...current, firstName: event.target.value }))
-                  }
-                />
-              </FormField>
-              <FormField id="identity-last-name" label={t('onboarding.steps.identity.lastName')}>
-                <Input
-                  id="identity-last-name"
-                  value={stepValues.lastName ?? ''}
-                  onChange={(event) =>
-                    setStepValues((current) => ({ ...current, lastName: event.target.value }))
-                  }
-                />
-              </FormField>
-            </>
-          ) : null}
-          {currentStepId === 'training-period' ? (
-            <>
-              <FormField id="training-start" label={t('onboarding.steps.trainingPeriod.start')}>
-                <Input
-                  id="training-start"
-                  type="date"
-                  value={stepValues.trainingStart ?? ''}
-                  onChange={(event) =>
-                    setStepValues((current) => ({ ...current, trainingStart: event.target.value }))
-                  }
-                />
-              </FormField>
-              <FormField id="training-end" label={t('onboarding.steps.trainingPeriod.end')}>
-                <Input
-                  id="training-end"
-                  type="date"
-                  value={stepValues.trainingEnd ?? ''}
-                  onChange={(event) =>
-                    setStepValues((current) => ({ ...current, trainingEnd: event.target.value }))
-                  }
-                />
-              </FormField>
-            </>
-          ) : null}
-          {currentStepId === 'workplace' ? (
-            <>
-              <FormField id="workplace-department" label={t('onboarding.steps.workplace.department')}>
-                <Input
-                  id="workplace-department"
-                  value={stepValues.department ?? ''}
-                  onChange={(event) =>
-                    setStepValues((current) => ({ ...current, department: event.target.value }))
-                  }
-                />
-              </FormField>
-              <FormField id="workplace-email" label={t('onboarding.steps.workplace.trainerEmail')}>
-                <Input
-                  id="workplace-email"
-                  type="email"
-                  value={stepValues.trainerEmail ?? ''}
-                  onChange={(event) =>
-                    setStepValues((current) => ({ ...current, trainerEmail: event.target.value }))
-                  }
-                />
-              </FormField>
-              <FormField id="workplace-ihk" label={t('onboarding.steps.workplace.ihkLink')}>
-                <Input
-                  id="workplace-ihk"
-                  type="url"
-                  value={stepValues.ihkLink ?? ''}
-                  onChange={(event) =>
-                    setStepValues((current) => ({ ...current, ihkLink: event.target.value }))
-                  }
-                />
-              </FormField>
-            </>
-          ) : null}
+          <OnboardingStepFields
+            stepId={currentStepId}
+            stepValues={stepValues}
+            setStepValues={setStepValues}
+            isPending={isPending}
+            googleEmail={runtime.state.drive.connectedAccountEmail}
+            onConnectGoogle={() => {
+              handleGoogleConnect();
+            }}
+          />
           {validationError ? (
             <Alert variant="destructive">
               <AlertDescription>{validationError}</AlertDescription>
@@ -418,7 +374,7 @@ export default function OnboardingPage() {
               variant="outline"
               className="border-primary-tint"
               onClick={() => {
-                void handleStepSave(false);
+                handleStepSave(false);
               }}
             >
               {t('onboarding.actions.saveDraft')}
@@ -428,7 +384,7 @@ export default function OnboardingPage() {
               disabled={isPending}
               className="bg-primary text-primary-contrast hover:bg-primary-shade"
               onClick={() => {
-                void handleStepSave(true);
+                handleStepSave(true);
               }}
             >
               {t('onboarding.actions.completeStep')}
@@ -437,10 +393,10 @@ export default function OnboardingPage() {
               <Button
                 type="button"
                 disabled={isPending}
-                variant="ghost"
-                className="text-text-color"
+                variant="outline"
+                className="border-primary-tint"
                 onClick={() => {
-                  void handleSkipStep();
+                  handleSkipStep();
                 }}
               >
                 {t('onboarding.actions.skipStep')}

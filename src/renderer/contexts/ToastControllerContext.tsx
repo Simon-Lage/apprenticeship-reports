@@ -12,7 +12,8 @@ const ToastControllerContext = createContext<ToastController | null>(null);
 export function ToastControllerProvider({ children }: PropsWithChildren) {
   const value = useMemo<ToastController>(
     () => ({
-      success: (message, description) => toast.success(message, { description }),
+      success: (message, description) =>
+        toast.success(message, { description }),
       error: (message, description) => toast.error(message, { description }),
       info: (message, description) => toast(message, { description }),
     }),
@@ -22,7 +23,16 @@ export function ToastControllerProvider({ children }: PropsWithChildren) {
   return (
     <ToastControllerContext.Provider value={value}>
       {children}
-      <Toaster richColors closeButton position="top-right" />
+      <Toaster
+        richColors
+        closeButton
+        position="top-right"
+        toastOptions={{
+          className:
+            'border border-primary-tint bg-white text-text-color shadow-lg',
+          descriptionClassName: 'text-text-color/75',
+        }}
+      />
     </ToastControllerContext.Provider>
   );
 }

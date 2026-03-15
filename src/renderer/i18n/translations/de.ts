@@ -1,4 +1,4 @@
-export const deTranslation = {
+const deTranslation = {
   appState: {
     bridgeMissingTitle: 'Electron Bridge nicht verfügbar',
     bridgeMissingDescription:
@@ -14,6 +14,10 @@ export const deTranslation = {
     remove: 'Entfernen',
     yes: 'Ja',
     no: 'Nein',
+    password: {
+      show: 'Passwort anzeigen',
+      hide: 'Passwort ausblenden',
+    },
     errors: {
       unknown: 'Unbekannter Fehler.',
     },
@@ -54,16 +58,31 @@ export const deTranslation = {
     },
   },
   onboarding: {
+    welcome: {
+      title: 'Willkommen',
+      description: 'Richte die Anwendung in wenigen Schritten ein.',
+      hint: 'Der erste Schritt ist das lokale Passwort.',
+      start: 'Los geht’s',
+    },
     password: {
-      title: 'Passwort einrichten',
-      description:
-        'Lege zuerst das verpflichtende lokale Passwort fest, bevor weitere Angaben folgen.',
+      title: 'Passwort',
       passwordLabel: 'Neues Passwort',
       confirmLabel: 'Passwort bestätigen',
-      rememberMe: 'Nach Einrichtung direkt angemeldet bleiben',
       submit: 'Passwort speichern',
-      validationLength: 'Das Passwort muss mindestens 8 Zeichen enthalten.',
+      requirementsTitle: 'Passwort-Anforderungen',
+      validationRules: 'Bitte erfülle alle Passwort-Anforderungen.',
       validationMatch: 'Die Passwörter stimmen nicht überein.',
+      rules: {
+        minLength: 'Mindestens 8 Zeichen',
+        lowercase: 'Mindestens ein Kleinbuchstabe',
+        uppercase: 'Mindestens ein Großbuchstabe',
+        number: 'Mindestens eine Zahl',
+        special: 'Mindestens ein Sonderzeichen',
+      },
+    },
+    progress: {
+      title: 'Fortschritt',
+      counter: '{{done}} von {{total}} Schritten',
     },
     completed: {
       title: 'Onboarding abgeschlossen',
@@ -84,8 +103,21 @@ export const deTranslation = {
       stepSaved: 'Entwurf gespeichert.',
       stepSkipped: 'Optionaler Schritt übersprungen.',
       stepError: 'Onboarding-Aktion fehlgeschlagen.',
+      googleLinked: 'Google-Konto wurde verknüpft.',
     },
     steps: {
+      google: {
+        title: 'Google',
+        description: 'Optionales Google-Konto für alternative Anmeldung.',
+        statusTitle: 'Google-Status',
+        statusLinked: 'Google ist verbunden: {{email}}',
+        statusNotLinked: 'Es ist noch kein Google-Konto verbunden.',
+        noEmail: 'E-Mail unbekannt',
+        browserHint:
+          'Beim Verbinden wird der Browser geöffnet. Danach kehrst du automatisch zurück.',
+        connect: 'Google verbinden',
+        validationEmail: 'Bitte eine gültige E-Mail eintragen.',
+      },
       identity: {
         title: 'Identität',
         description: 'Basisdaten für die lokale Kontoidentität.',
@@ -192,6 +224,7 @@ export const deTranslation = {
       saved: 'Settings gespeichert.',
       saveError: 'Settings konnten nicht gespeichert werden.',
       exported: 'Settings exportiert.',
+      exportCanceled: 'Settings-Export abgebrochen.',
       exportError: 'Settings-Export fehlgeschlagen.',
       importPrepared: 'Settings-Import vorbereitet.',
       importPrepareError: 'Settings-Import konnte nicht vorbereitet werden.',
@@ -232,7 +265,8 @@ export const deTranslation = {
   },
   dailyReport: {
     title: 'Tagesbericht',
-    description: 'Tagestypabhängige Erfassung mit Tätigkeiten und Schulanteilen.',
+    description:
+      'Tagestypabhängige Erfassung mit Tätigkeiten und Schulanteilen.',
     dayTypes: {
       work: 'Arbeitstag',
       school: 'Schultag',
@@ -315,7 +349,7 @@ export const deTranslation = {
   },
   weeklyPdf: {
     title: 'Weekly Report PDF',
-    description: 'Einseitige Vorschau und Export über Druckdialog.',
+    description: 'Einseitige Vorschau und Export als PDF-Datei.',
     export: 'Als PDF exportieren',
     selectorTitle: 'Woche auswählen',
     selectorDescription: 'Woche auswählen, die als PDF angezeigt wird.',
@@ -326,12 +360,19 @@ export const deTranslation = {
       date: 'Datum',
       area: 'Abteilung',
       supervisor: 'Betreuer',
+      supervisorSecondary: 'Betreuer 2',
     },
     sections: {
       work: 'Betriebliche Tätigkeiten',
       school: 'Berufsschule',
       training: 'Unterweisungen/Schulungen',
       notes: 'Notizen',
+    },
+    feedback: {
+      selectWeekFirst: 'Bitte zuerst eine gültige Woche auswählen.',
+      exportCanceled: 'PDF-Export abgebrochen.',
+      exported: 'PDF wurde exportiert.',
+      exportError: 'PDF-Export fehlgeschlagen.',
     },
   },
   reportsOverview: {
@@ -365,8 +406,7 @@ export const deTranslation = {
     },
     reports: {
       title: 'Reports importieren',
-      description:
-        'Reports als JSON laden oder aus Google Drive auswählen.',
+      description: 'Reports als JSON laden oder aus Google Drive auswählen.',
       localFile: 'Lokale JSON-Datei wählen',
       loadDrive: 'Drive-Backups laden',
       useDriveFile: 'Backup verwenden',
@@ -375,6 +415,11 @@ export const deTranslation = {
         '{{weeks}} Konflikt-Wochen, {{days}} konfliktbehaftete Tagesberichte',
       currentWeek: 'Lokal',
       incomingWeek: 'Importiert',
+      strategies: {
+        backup: 'Importiert',
+        local: 'Lokal',
+        latestTimestamp: 'Neuester Timestamp',
+      },
     },
     settings: {
       title: 'Settings importieren',
@@ -385,6 +430,7 @@ export const deTranslation = {
       incoming: 'Importiert',
     },
     feedback: {
+      openFileCanceled: 'Dateiauswahl abgebrochen.',
       settingsPrepared: 'Settings-Import vorbereitet.',
       settingsPrepareError: 'Settings-Import konnte nicht vorbereitet werden.',
       settingsApplied: 'Settings importiert.',
@@ -402,7 +448,7 @@ export const deTranslation = {
     description: 'Reports und Settings lokal oder in Google Drive exportieren.',
     local: {
       title: 'Lokaler Export',
-      description: 'JSON-Dateien werden lokal heruntergeladen.',
+      description: 'JSON-Dateien werden per Dateidialog lokal gespeichert.',
       reports: 'Reports JSON exportieren',
       settings: 'Settings JSON exportieren',
     },
@@ -418,6 +464,7 @@ export const deTranslation = {
       export: 'Backup zu Drive',
     },
     feedback: {
+      exportCanceled: 'Export abgebrochen.',
       reportsExported: 'Reports exportiert.',
       reportsExportError: 'Reports konnten nicht exportiert werden.',
       settingsExported: 'Settings exportiert.',
@@ -428,3 +475,5 @@ export const deTranslation = {
     },
   },
 } as const;
+
+export default deTranslation;

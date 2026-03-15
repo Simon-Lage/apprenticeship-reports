@@ -23,7 +23,10 @@ const navItems: NavItem[] = [
   { path: appRoutes.import, labelKey: 'navigation.import' },
   { path: appRoutes.export, labelKey: 'navigation.export' },
   { path: appRoutes.settings, labelKey: 'navigation.settings' },
-  { path: appRoutes.changeAuthMethods, labelKey: 'navigation.changeAuthMethods' },
+  {
+    path: appRoutes.changeAuthMethods,
+    labelKey: 'navigation.changeAuthMethods',
+  },
 ];
 
 export function AppTopbar({ authenticatedEmail }: AppTopbarProps) {
@@ -47,7 +50,7 @@ export function AppTopbar({ authenticatedEmail }: AppTopbarProps) {
                 'rounded-md border border-primary-tint px-3 py-2 text-sm font-medium transition-colors',
                 isActive
                   ? 'bg-primary text-primary-contrast'
-                  : 'bg-primary-tint/40 text-text-color hover:bg-primary-tint',
+                  : 'bg-primary-tint/40 text-text-color hover:bg-primary-shade hover:text-primary-contrast',
               )
             }
           >

@@ -5,11 +5,20 @@
 
 :root {
   --radius: 0.625rem;
-  --primary: oklch(0.56 0.15 251);
+  --primary: oklch(0.541 0.203 11.823);
   --primary-contrast: oklch(0.99 0.01 247);
-  --primary-shade: oklch(0.41 0.13 251);
-  --primary-tint: oklch(0.95 0.04 250);
+  --primary-shade: oklch(0.442 0.165 11.534);
+  --primary-tint: oklch(0.583 0.217 12.404);
   --text-color: oklch(0.26 0.03 252);
+  --app-auth-bg-start: color-mix(in oklch, var(--primary-tint) 30%, white);
+  --app-auth-bg-middle: color-mix(in oklch, var(--primary-tint) 70%, white);
+  --app-auth-bg-end: color-mix(in oklch, var(--primary-tint) 45%, white);
+  --app-default-bg-overlay: color-mix(
+    in oklch,
+    var(--primary-tint) 70%,
+    transparent
+  );
+  --app-default-bg-end: color-mix(in oklch, var(--primary-tint) 75%, white);
   --background: oklch(0.995 0.005 247);
   --foreground: var(--text-color);
   --card: oklch(1 0 0);
@@ -48,6 +57,15 @@
   --primary-shade: oklch(0.56 0.12 251);
   --primary-tint: oklch(0.24 0.04 252);
   --text-color: oklch(0.94 0.01 247);
+  --app-auth-bg-start: color-mix(in oklch, var(--primary-tint) 40%, black);
+  --app-auth-bg-middle: color-mix(in oklch, var(--primary-tint) 65%, black);
+  --app-auth-bg-end: color-mix(in oklch, var(--primary-tint) 45%, black);
+  --app-default-bg-overlay: color-mix(
+    in oklch,
+    var(--primary-tint) 75%,
+    transparent
+  );
+  --app-default-bg-end: color-mix(in oklch, var(--primary-tint) 70%, black);
   --background: oklch(0.19 0.03 252);
   --foreground: var(--text-color);
   --card: oklch(0.23 0.03 252);

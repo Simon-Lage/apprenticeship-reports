@@ -7,6 +7,12 @@ const appApi: AppApi = {
   getSettingsSnapshot: () =>
     ipcRenderer.invoke(AppIpcChannel.getSettingsSnapshot),
   getReportsState: () => ipcRenderer.invoke(AppIpcChannel.getReportsState),
+  openJsonFileDialog: () =>
+    ipcRenderer.invoke(AppIpcChannel.openJsonFileDialog),
+  saveJsonFileDialog: (input) =>
+    ipcRenderer.invoke(AppIpcChannel.saveJsonFileDialog, input),
+  exportWeeklyReportPdf: (input) =>
+    ipcRenderer.invoke(AppIpcChannel.exportWeeklyReportPdf, input),
   initializePasswordAuth: (input) =>
     ipcRenderer.invoke(AppIpcChannel.initializePasswordAuth, input),
   authenticateWithPassword: (input) =>

@@ -23,6 +23,9 @@ export const AppIpcChannel = {
   getBootstrapState: 'app:get-bootstrap-state',
   getSettingsSnapshot: 'app:get-settings-snapshot',
   getReportsState: 'app:get-reports-state',
+  openJsonFileDialog: 'app:open-json-file-dialog',
+  saveJsonFileDialog: 'app:save-json-file-dialog',
+  exportWeeklyReportPdf: 'app:export-weekly-report-pdf',
   initializePasswordAuth: 'app:initialize-password-auth',
   authenticateWithPassword: 'app:authenticate-with-password',
   changePassword: 'app:change-password',
@@ -176,6 +179,16 @@ export const RegisterWeeklyReportHashInputSchema = z.object({
   weeklyReportId: z.string().min(1),
 });
 
+export const SaveJsonFileDialogInputSchema = z.object({
+  defaultFileName: z.string().trim().min(1),
+  serialized: z.string().min(1),
+});
+
+export const ExportWeeklyReportPdfInputSchema = z.object({
+  defaultFileName: z.string().trim().min(1),
+  html: z.string().min(1),
+});
+
 export type InitializePasswordAuthInput = z.input<
   typeof InitializePasswordAuthInputSchema
 >;
@@ -221,11 +234,24 @@ export type DeleteDailyReportInput = z.infer<
 export type RegisterWeeklyReportHashInput = z.infer<
   typeof RegisterWeeklyReportHashInputSchema
 >;
+export type SaveJsonFileDialogInput = z.infer<
+  typeof SaveJsonFileDialogInputSchema
+>;
+export type ExportWeeklyReportPdfInput = z.infer<
+  typeof ExportWeeklyReportPdfInputSchema
+>;
 
 export type AppApi = {
   getBootstrapState: () => Promise<AppBootstrapState>;
   getSettingsSnapshot: () => Promise<SettingsSnapshot>;
   getReportsState: () => Promise<ReportsState>;
+  openJsonFileDialog: () => Promise<string | null>;
+  saveJsonFileDialog: (
+    input: SaveJsonFileDialogInput,
+  ) => Promise<string | null>;
+  exportWeeklyReportPdf: (
+    input: ExportWeeklyReportPdfInput,
+  ) => Promise<string | null>;
   initializePasswordAuth: (
     input: InitializePasswordAuthInput,
   ) => Promise<AppBootstrapState>;
@@ -270,10 +296,18 @@ export type AppApi = {
   applyBackupImport: (
     input: ApplyBackupImportInput,
   ) => Promise<AppBootstrapState>;
-  upsertWeeklyReport: (input: UpsertWeeklyReportInput) => Promise<AppBootstrapState>;
-  deleteWeeklyReport: (input: DeleteWeeklyReportInput) => Promise<AppBootstrapState>;
-  upsertDailyReport: (input: UpsertDailyReportInput) => Promise<AppBootstrapState>;
-  deleteDailyReport: (input: DeleteDailyReportInput) => Promise<AppBootstrapState>;
+  upsertWeeklyReport: (
+    input: UpsertWeeklyReportInput,
+  ) => Promise<AppBootstrapState>;
+  deleteWeeklyReport: (
+    input: DeleteWeeklyReportInput,
+  ) => Promise<AppBootstrapState>;
+  upsertDailyReport: (
+    input: UpsertDailyReportInput,
+  ) => Promise<AppBootstrapState>;
+  deleteDailyReport: (
+    input: DeleteDailyReportInput,
+  ) => Promise<AppBootstrapState>;
   setSettingsValues: (values: JsonObject) => Promise<AppBootstrapState>;
   saveOnboardingDraft: (
     input: SaveOnboardingDraftInput,

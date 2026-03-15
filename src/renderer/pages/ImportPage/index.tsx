@@ -1,68 +1,68 @@
-import { ChangeEvent, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { CompareLayout } from '@/renderer/layouts/CompareLayout';
+import JsonDiffViewer from '@/renderer/components/app/JsonDiffViewer';
 import { PageHeader } from '@/renderer/components/app/PageHeader';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
-import { readTextFile } from '@/renderer/lib/file-io';
 import { Button } from '@/components/ui/button';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SettingsImportPreview } from '@/shared/settings/schema';
-import {
-  DatabaseBackupImportPreview,
-} from '@/shared/app/backup-archive';
+import { DatabaseBackupImportPreview } from '@/shared/app/backup-archive';
 import { DriveBackupFile } from '@/shared/drive/backups';
 import { BackupConflictStrategy } from '@/shared/reports/models';
-
-function JsonPanel({ value }: { value: unknown }) {
-  return (
-    <pre className="overflow-x-auto rounded-md border border-primary-tint/70 bg-primary-tint/20 p-3 text-xs text-text-color">
-      {JSON.stringify(value, null, 2)}
-    </pre>
-  );
-}
-
-function strategyLabel(strategy: BackupConflictStrategy) {
-  if (strategy === 'backup') {
-    return 'Backup';
-  }
-  if (strategy === 'local') {
-    return 'Lokal';
-  }
-  return 'Neuester Timestamp';
-}
 
 export default function ImportPage() {
   const { t } = useTranslation();
   const runtime = useAppRuntime();
   const toast = useToastController();
-  const [settingsPreview, setSettingsPreview] = useState<SettingsImportPreview | null>(null);
-  const [backupPreview, setBackupPreview] = useState<DatabaseBackupImportPreview | null>(null);
-  const [backupStrategies, setBackupStrategies] = useState<Record<string, BackupConflictStrategy>>({});
+  const [settingsPreview, setSettingsPreview] =
+    useState<SettingsImportPreview | null>(null);
+  const [backupPreview, setBackupPreview] =
+    useState<DatabaseBackupImportPreview | null>(null);
+  const [backupStrategies, setBackupStrategies] = useState<
+    Record<string, BackupConflictStrategy>
+  >({});
+  const [selectedConflictId, setSelectedConflictId] = useState<string | null>(
+    null,
+  );
   const [driveBackups, setDriveBackups] = useState<DriveBackupFile[]>([]);
   const [isPending, setIsPending] = useState(false);
+  const strategyLabels = useMemo<Record<BackupConflictStrategy, string>>(
+    () => ({
+      backup: t('import.reports.strategies.backup'),
+      local: t('import.reports.strategies.local'),
+      'latest-timestamp': t('import.reports.strategies.latestTimestamp'),
+    }),
+    [t],
+  );
+  useEffect(() => {
+    const firstConflictId =
+      backupPreview?.conflictingWeeks[0]?.weekIdentity ?? null;
+    setSelectedConflictId(firstConflictId);
+  }, [backupPreview]);
   const selectedConflict = useMemo(
-    () => backupPreview?.conflictingWeeks[0] ?? null,
-    [backupPreview?.conflictingWeeks],
+    () =>
+      backupPreview?.conflictingWeeks.find(
+        (week) => week.weekIdentity === selectedConflictId,
+      ) ??
+      backupPreview?.conflictingWeeks[0] ??
+      null,
+    [backupPreview?.conflictingWeeks, selectedConflictId],
   );
 
-  async function handleSettingsFile(event: ChangeEvent<HTMLInputElement>) {
+  async function handleSettingsFile() {
     if (!runtime.api) {
       return;
     }
-    const file = event.target.files?.[0];
-    if (!file) {
+    const serialized = await runtime.api.openJsonFileDialog();
+
+    if (!serialized) {
+      toast.info(t('import.feedback.openFileCanceled'));
       return;
     }
     try {
-      const serialized = await readTextFile(file);
       const preview = await runtime.api.prepareSettingsImport(serialized);
       setSettingsPreview(preview);
       toast.info(t('import.feedback.settingsPrepared'));
@@ -70,21 +70,20 @@ export default function ImportPage() {
       const message =
         error instanceof Error ? error.message : t('common.errors.unknown');
       toast.error(t('import.feedback.settingsPrepareError'), message);
-    } finally {
-      event.target.value = '';
     }
   }
 
-  async function handleBackupFile(event: ChangeEvent<HTMLInputElement>) {
+  async function handleBackupFile() {
     if (!runtime.api) {
       return;
     }
-    const file = event.target.files?.[0];
-    if (!file) {
+    const serialized = await runtime.api.openJsonFileDialog();
+
+    if (!serialized) {
+      toast.info(t('import.feedback.openFileCanceled'));
       return;
     }
     try {
-      const serialized = await readTextFile(file);
       const preview = await runtime.api.prepareBackupImport(serialized);
       setBackupPreview(preview);
       setBackupStrategies({});
@@ -93,8 +92,6 @@ export default function ImportPage() {
       const message =
         error instanceof Error ? error.message : t('common.errors.unknown');
       toast.error(t('import.feedback.reportsPrepareError'), message);
-    } finally {
-      event.target.value = '';
     }
   }
 
@@ -200,7 +197,9 @@ export default function ImportPage() {
       <Tabs defaultValue="reports" className="space-y-4">
         <TabsList className="bg-primary-tint/40">
           <TabsTrigger value="reports">{t('import.tabs.reports')}</TabsTrigger>
-          <TabsTrigger value="settings">{t('import.tabs.settings')}</TabsTrigger>
+          <TabsTrigger value="settings">
+            {t('import.tabs.settings')}
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="reports" className="space-y-4">
           <SectionCard
@@ -209,23 +208,22 @@ export default function ImportPage() {
             className="border-primary-tint bg-white"
           >
             <div className="flex flex-wrap gap-2">
-              <label className="inline-flex cursor-pointer items-center rounded-md border border-primary-tint px-3 py-2 text-sm text-text-color">
-                <input
-                  type="file"
-                  accept=".json,application/json"
-                  className="hidden"
-                  onChange={(event) => {
-                    void handleBackupFile(event);
-                  }}
-                />
-                {t('import.reports.localFile')}
-              </label>
               <Button
                 type="button"
                 variant="outline"
                 className="border-primary-tint"
                 onClick={() => {
-                  void loadDriveBackups();
+                  handleBackupFile();
+                }}
+              >
+                {t('import.reports.localFile')}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-primary-tint"
+                onClick={() => {
+                  loadDriveBackups();
                 }}
               >
                 {t('import.reports.loadDrive')}
@@ -245,7 +243,7 @@ export default function ImportPage() {
                       variant="outline"
                       className="border-primary-tint"
                       onClick={() => {
-                        void prepareDriveImport(backup.id);
+                        prepareDriveImport(backup.id);
                       }}
                     >
                       {t('import.reports.useDriveFile')}
@@ -267,7 +265,7 @@ export default function ImportPage() {
                     variant="outline"
                     className="border-primary-tint"
                     onClick={() => {
-                      void cancelBackupImport();
+                      cancelBackupImport();
                     }}
                   >
                     {t('import.actions.cancel')}
@@ -277,10 +275,12 @@ export default function ImportPage() {
                     disabled={isPending}
                     className="bg-primary text-primary-contrast hover:bg-primary-shade"
                     onClick={() => {
-                      void applyBackupImport();
+                      applyBackupImport();
                     }}
                   >
-                    {isPending ? t('common.loading') : t('import.actions.apply')}
+                    {isPending
+                      ? t('common.loading')
+                      : t('import.actions.apply')}
                   </Button>
                 </div>
               }
@@ -289,7 +289,8 @@ export default function ImportPage() {
                 <p className="text-sm text-text-color/80">
                   {t('import.reports.conflictSummary', {
                     weeks: backupPreview.conflictSummary.conflictingWeekCount,
-                    days: backupPreview.conflictSummary.conflictingDailyReportCount,
+                    days: backupPreview.conflictSummary
+                      .conflictingDailyReportCount,
                   })}
                 </p>
                 {backupPreview.conflictingWeeks.length ? (
@@ -297,15 +298,28 @@ export default function ImportPage() {
                     {backupPreview.conflictingWeeks.map((week) => (
                       <li
                         key={week.weekIdentity}
-                        className="rounded-md border border-primary-tint/70 p-3"
+                        className={`rounded-md border p-3 ${
+                          selectedConflictId === week.weekIdentity
+                            ? 'border-primary bg-primary-tint/25'
+                            : 'border-primary-tint/70'
+                        }`}
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <strong>
+                          <button
+                            type="button"
+                            className="text-left font-semibold text-text-color"
+                            onClick={() =>
+                              setSelectedConflictId(week.weekIdentity)
+                            }
+                          >
                             {week.weekStart} - {week.weekEnd}
-                          </strong>
+                          </button>
                           <select
                             className="border-input bg-background h-8 rounded-md border px-2 text-sm"
-                            value={backupStrategies[week.weekIdentity] ?? week.defaultStrategy}
+                            value={
+                              backupStrategies[week.weekIdentity] ??
+                              week.defaultStrategy
+                            }
                             onChange={(event) =>
                               setBackupStrategies((current) => ({
                                 ...current,
@@ -314,11 +328,13 @@ export default function ImportPage() {
                               }))
                             }
                           >
-                            {backupPreview.availableConflictStrategies.map((strategy) => (
-                              <option key={strategy} value={strategy}>
-                                {strategyLabel(strategy)}
-                              </option>
-                            ))}
+                            {backupPreview.availableConflictStrategies.map(
+                              (strategy) => (
+                                <option key={strategy} value={strategy}>
+                                  {strategyLabels[strategy]}
+                                </option>
+                              ),
+                            )}
                           </select>
                         </div>
                       </li>
@@ -326,11 +342,11 @@ export default function ImportPage() {
                   </ul>
                 ) : null}
                 {selectedConflict ? (
-                  <CompareLayout
-                    leftTitle={t('import.reports.currentWeek')}
-                    rightTitle={t('import.reports.incomingWeek')}
-                    left={<JsonPanel value={selectedConflict.current} />}
-                    right={<JsonPanel value={selectedConflict.incoming} />}
+                  <JsonDiffViewer
+                    currentValue={selectedConflict.current}
+                    incomingValue={selectedConflict.incoming}
+                    currentTitle={t('import.reports.currentWeek')}
+                    incomingTitle={t('import.reports.incomingWeek')}
                   />
                 ) : null}
               </div>
@@ -343,17 +359,16 @@ export default function ImportPage() {
             description={t('import.settings.description')}
             className="border-primary-tint bg-white"
           >
-            <label className="inline-flex cursor-pointer items-center rounded-md border border-primary-tint px-3 py-2 text-sm text-text-color">
-              <input
-                type="file"
-                accept=".json,application/json"
-                className="hidden"
-                onChange={(event) => {
-                  void handleSettingsFile(event);
-                }}
-              />
+            <Button
+              type="button"
+              variant="outline"
+              className="border-primary-tint"
+              onClick={() => {
+                handleSettingsFile();
+              }}
+            >
               {t('import.settings.chooseFile')}
-            </label>
+            </Button>
           </SectionCard>
           {settingsPreview ? (
             <SectionCard
@@ -367,7 +382,7 @@ export default function ImportPage() {
                     variant="outline"
                     className="border-primary-tint"
                     onClick={() => {
-                      void cancelSettingsImport();
+                      cancelSettingsImport();
                     }}
                   >
                     {t('import.actions.cancel')}
@@ -377,19 +392,21 @@ export default function ImportPage() {
                     disabled={isPending}
                     className="bg-primary text-primary-contrast hover:bg-primary-shade"
                     onClick={() => {
-                      void applySettingsImport();
+                      applySettingsImport();
                     }}
                   >
-                    {isPending ? t('common.loading') : t('import.actions.apply')}
+                    {isPending
+                      ? t('common.loading')
+                      : t('import.actions.apply')}
                   </Button>
                 </div>
               }
             >
-              <CompareLayout
-                leftTitle={t('import.settings.current')}
-                rightTitle={t('import.settings.incoming')}
-                left={<JsonPanel value={settingsPreview.current.values} />}
-                right={<JsonPanel value={settingsPreview.incoming.values} />}
+              <JsonDiffViewer
+                currentValue={settingsPreview.current.values}
+                incomingValue={settingsPreview.incoming.values}
+                currentTitle={`${t('import.settings.current')} (${settingsPreview.current.capturedAt})`}
+                incomingTitle={`${t('import.settings.incoming')} (${settingsPreview.incoming.capturedAt})`}
               />
             </SectionCard>
           ) : null}

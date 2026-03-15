@@ -1,7 +1,9 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FaGoogle } from 'react-icons/fa';
 
 import { FormField } from '@/renderer/components/app/FormField';
+import PasswordInput from '@/renderer/components/app/PasswordInput';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -13,9 +15,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -85,7 +91,9 @@ export default function LoginPage() {
   return (
     <Card className="w-full max-w-xl border-primary-tint bg-white/95 shadow-lg">
       <CardHeader className="space-y-2">
-        <CardTitle className="text-2xl text-text-color">{t('login.title')}</CardTitle>
+        <CardTitle className="text-2xl text-text-color">
+          {t('login.title')}
+        </CardTitle>
         <CardDescription className="text-text-color/75">
           {t('login.description')}
         </CardDescription>
@@ -101,12 +109,13 @@ export default function LoginPage() {
             label={t('login.passwordLabel')}
             error={passwordError ?? undefined}
           >
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
+              showLabel={t('common.password.show')}
+              hideLabel={t('common.password.hide')}
             />
           </FormField>
           <div className="flex items-center justify-between rounded-md border border-primary-tint/80 px-3 py-2">
@@ -143,9 +152,10 @@ export default function LoginPage() {
                     variant="outline"
                     className="w-full border-primary-tint text-text-color"
                     onClick={() => {
-                      void handleGoogleLogin();
+                      handleGoogleLogin();
                     }}
                   >
+                    <FaGoogle className="size-4" />
                     {isGooglePending
                       ? t('common.loading')
                       : t('login.googleSubmit')}

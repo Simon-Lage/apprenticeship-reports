@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron';
 
 import { AppKernel } from '@/main/services/AppKernel';
+import { DesktopFileDialogService } from '@/main/services/DesktopFileDialogService';
 import { JsonObjectSchema } from '@/shared/common/json';
 import {
   AppIpcChannel,
@@ -11,10 +12,12 @@ import {
   ChangePasswordInputSchema,
   DeleteDailyReportInputSchema,
   DeleteWeeklyReportInputSchema,
+  ExportWeeklyReportPdfInputSchema,
   GrantDriveScopesInputSchema,
   InitializePasswordAuthInputSchema,
   PrepareDriveBackupImportInputSchema,
   RegisterWeeklyReportHashInputSchema,
+  SaveJsonFileDialogInputSchema,
   SaveGoogleSessionInputSchema,
   SaveOnboardingDraftInputSchema,
   SavePasswordSessionInputSchema,
@@ -23,14 +26,32 @@ import {
   UpsertWeeklyReportInputSchema,
 } from '@/shared/ipc/app-api';
 
-export function registerAppHandlers(appKernel: AppKernel): void {
+export function registerAppHandlers(
+  appKernel: AppKernel,
+  desktopFileDialogService: DesktopFileDialogService,
+): void {
   ipcMain.handle(AppIpcChannel.getBootstrapState, () =>
     appKernel.getBootstrapState(),
   );
   ipcMain.handle(AppIpcChannel.getSettingsSnapshot, () =>
     appKernel.getSettingsSnapshot(),
   );
-  ipcMain.handle(AppIpcChannel.getReportsState, () => appKernel.getReportsState());
+  ipcMain.handle(AppIpcChannel.getReportsState, () =>
+    appKernel.getReportsState(),
+  );
+  ipcMain.handle(AppIpcChannel.openJsonFileDialog, () =>
+    desktopFileDialogService.openJsonFileDialog(),
+  );
+  ipcMain.handle(AppIpcChannel.saveJsonFileDialog, (_event, input) =>
+    desktopFileDialogService.saveJsonFileDialog(
+      SaveJsonFileDialogInputSchema.parse(input),
+    ),
+  );
+  ipcMain.handle(AppIpcChannel.exportWeeklyReportPdf, (_event, input) =>
+    desktopFileDialogService.exportWeeklyReportPdf(
+      ExportWeeklyReportPdfInputSchema.parse(input),
+    ),
+  );
 
   ipcMain.handle(AppIpcChannel.initializePasswordAuth, (_event, input) =>
     appKernel.initializePasswordAuth(

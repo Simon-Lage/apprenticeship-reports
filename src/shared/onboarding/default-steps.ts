@@ -46,7 +46,19 @@ const workplaceSchema = z
   })
   .transform((value) => ensureJsonObject(value));
 
+const googleSchema = z
+  .object({
+    linked: z.boolean().default(false),
+    email: optionalEmailSchema.default(null),
+  })
+  .transform((value) => ensureJsonObject(value));
+
 export const defaultOnboardingSteps: OnboardingStepDefinition[] = [
+  {
+    id: 'google',
+    optional: true,
+    schema: googleSchema,
+  },
   {
     id: 'identity',
     schema: identitySchema,

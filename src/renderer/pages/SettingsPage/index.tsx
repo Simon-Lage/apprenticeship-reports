@@ -1,28 +1,22 @@
-import { ChangeEvent, useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { CompareLayout } from '@/renderer/layouts/CompareLayout';
 import { FormField } from '@/renderer/components/app/FormField';
+import JsonDiffViewer from '@/renderer/components/app/JsonDiffViewer';
 import { PageHeader } from '@/renderer/components/app/PageHeader';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
 import { useSettingsSnapshot } from '@/renderer/hooks/useKernelData';
-import { useSettingsComparison } from '@/renderer/hooks/useSettingsComparison';
-import { downloadTextFile, readTextFile } from '@/renderer/lib/file-io';
-import { mergeUiSettings, parseUiSettings, UiSettingsValues } from '@/renderer/lib/app-settings';
+import {
+  mergeUiSettings,
+  parseUiSettings,
+  UiSettingsValues,
+} from '@/renderer/lib/app-settings';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SettingsImportPreview } from '@/shared/settings/schema';
-
-function JsonPreview({ value }: { value: unknown }) {
-  return (
-    <pre className="overflow-x-auto rounded-md border border-primary-tint/80 bg-primary-tint/20 p-3 text-xs text-text-color">
-      {JSON.stringify(value, null, 2)}
-    </pre>
-  );
-}
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -32,10 +26,6 @@ export default function SettingsPage() {
   const [formValues, setFormValues] = useState<UiSettingsValues | null>(null);
   const [preview, setPreview] = useState<SettingsImportPreview | null>(null);
   const [isPending, setIsPending] = useState(false);
-  const comparison = useSettingsComparison(
-    preview?.current.values ?? {},
-    preview?.incoming.values ?? {},
-  );
 
   useEffect(() => {
     if (!settingsSnapshot.value) {
@@ -44,11 +34,6 @@ export default function SettingsPage() {
 
     setFormValues(parseUiSettings(settingsSnapshot.value.values));
   }, [settingsSnapshot.value]);
-
-  const hasDifferences = useMemo(
-    () => comparison.hasDifferences && Boolean(preview),
-    [comparison.hasDifferences, preview],
-  );
 
   if (!formValues) {
     return (
@@ -88,12 +73,16 @@ export default function SettingsPage() {
 
     try {
       const envelope = await runtime.api.exportSettings();
-      downloadTextFile({
-        fileName: `settings-export-${new Date().toISOString().slice(0, 10)}.json`,
-        content: JSON.stringify(envelope, null, 2),
+      const outputPath = await runtime.api.saveJsonFileDialog({
+        defaultFileName: `settings-export-${new Date().toISOString().slice(0, 10)}.json`,
+        serialized: JSON.stringify(envelope, null, 2),
       });
+      if (!outputPath) {
+        toast.info(t('settings.feedback.exportCanceled'));
+        return;
+      }
       await runtime.refresh();
-      toast.success(t('settings.feedback.exported'));
+      toast.success(t('settings.feedback.exported'), outputPath);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : t('common.errors.unknown');
@@ -101,17 +90,19 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleSettingsImportFile(event: ChangeEvent<HTMLInputElement>) {
+  async function handleSettingsImportFile() {
     if (!runtime.api) {
       return;
     }
-    const file = event.target.files?.[0];
-    if (!file) {
+
+    const serialized = await runtime.api.openJsonFileDialog();
+
+    if (!serialized) {
+      toast.info(t('settings.feedback.importCanceled'));
       return;
     }
 
     try {
-      const serialized = await readTextFile(file);
       const nextPreview = await runtime.api.prepareSettingsImport(serialized);
       setPreview(nextPreview);
       toast.info(t('settings.feedback.importPrepared'));
@@ -119,8 +110,6 @@ export default function SettingsPage() {
       const message =
         error instanceof Error ? error.message : t('common.errors.unknown');
       toast.error(t('settings.feedback.importPrepareError'), message);
-    } finally {
-      event.target.value = '';
     }
   }
 
@@ -173,7 +162,7 @@ export default function SettingsPage() {
             disabled={isPending}
             className="bg-primary text-primary-contrast hover:bg-primary-shade"
             onClick={() => {
-              void saveSettings();
+              saveSettings();
             }}
           >
             {isPending ? t('common.loading') : t('settings.save')}
@@ -199,7 +188,10 @@ export default function SettingsPage() {
               }
             />
           </FormField>
-          <FormField id="supervisor-1" label={t('settings.general.supervisorPrimary')}>
+          <FormField
+            id="supervisor-1"
+            label={t('settings.general.supervisorPrimary')}
+          >
             <Input
               id="supervisor-1"
               type="email"
@@ -213,7 +205,10 @@ export default function SettingsPage() {
               }
             />
           </FormField>
-          <FormField id="supervisor-2" label={t('settings.general.supervisorSecondary')}>
+          <FormField
+            id="supervisor-2"
+            label={t('settings.general.supervisorSecondary')}
+          >
             <Input
               id="supervisor-2"
               type="email"
@@ -221,7 +216,10 @@ export default function SettingsPage() {
               onChange={(event) =>
                 setFormValues((current) =>
                   current
-                    ? { ...current, supervisorEmailSecondary: event.target.value }
+                    ? {
+                        ...current,
+                        supervisorEmailSecondary: event.target.value,
+                      }
                     : current,
                 )
               }
@@ -235,22 +233,26 @@ export default function SettingsPage() {
         className="border-primary-tint bg-white"
       >
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" className="border-primary-tint" onClick={() => {
-            void handleSettingsExport();
-          }}>
+          <Button
+            type="button"
+            variant="outline"
+            className="border-primary-tint"
+            onClick={() => {
+              handleSettingsExport();
+            }}
+          >
             {t('settings.exchange.export')}
           </Button>
-          <label className="inline-flex cursor-pointer items-center rounded-md border border-primary-tint px-3 py-2 text-sm text-text-color">
-            <input
-              type="file"
-              accept=".json,application/json"
-              className="hidden"
-              onChange={(event) => {
-                void handleSettingsImportFile(event);
-              }}
-            />
+          <Button
+            type="button"
+            variant="outline"
+            className="border-primary-tint"
+            onClick={() => {
+              handleSettingsImportFile();
+            }}
+          >
             {t('settings.exchange.import')}
-          </label>
+          </Button>
         </div>
       </SectionCard>
       {preview ? (
@@ -265,7 +267,7 @@ export default function SettingsPage() {
                 variant="outline"
                 className="border-primary-tint"
                 onClick={() => {
-                  void cancelSettingsImport();
+                  cancelSettingsImport();
                 }}
               >
                 {t('settings.compare.cancel')}
@@ -274,7 +276,7 @@ export default function SettingsPage() {
                 type="button"
                 className="bg-primary text-primary-contrast hover:bg-primary-shade"
                 onClick={() => {
-                  void applySettingsImport();
+                  applySettingsImport();
                 }}
               >
                 {t('settings.compare.apply')}
@@ -285,17 +287,18 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <Alert className="border-primary-tint bg-primary-tint/30">
               <AlertTitle>{t('settings.compare.diffCount')}</AlertTitle>
-              <AlertDescription>
-                {preview.differences.length}
-              </AlertDescription>
+              <AlertDescription>{preview.differences.length}</AlertDescription>
             </Alert>
-            <CompareLayout
-              leftTitle={t('settings.compare.currentTitle')}
-              rightTitle={t('settings.compare.incomingTitle')}
-              left={<JsonPreview value={preview.current.values} />}
-              right={<JsonPreview value={preview.incoming.values} />}
+            <p className="text-xs text-text-color/70">
+              {preview.current.capturedAt} | {preview.incoming.capturedAt}
+            </p>
+            <JsonDiffViewer
+              currentValue={preview.current.values}
+              incomingValue={preview.incoming.values}
+              currentTitle={`${t('settings.compare.currentTitle')} (${preview.current.capturedAt})`}
+              incomingTitle={`${t('settings.compare.incomingTitle')} (${preview.incoming.capturedAt})`}
             />
-            {hasDifferences ? (
+            {preview.differences.length ? (
               <ul className="space-y-2 text-sm">
                 {preview.differences.slice(0, 12).map((difference) => (
                   <li

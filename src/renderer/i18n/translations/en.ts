@@ -1,3 +1,5 @@
-import { deTranslation } from '@/renderer/i18n/translations/de';
+import deTranslation from '@/renderer/i18n/translations/de';
 
-export const enTranslation = deTranslation;
+const enTranslation = deTranslation;
+
+export default enTranslation;
