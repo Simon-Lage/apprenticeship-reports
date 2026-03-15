@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { JsonObject } from '@/shared/common/json';
+import { isGermanSubdivisionCode } from '@/shared/absence/german-subdivisions';
+import { ensureJsonObject, JsonObject } from '@/shared/common/json';
 
 export const weekDayKeys = [
   'monday',
@@ -43,17 +44,82 @@ const uiSettingsSchema = z.object({
   }),
 });
 
+const onboardingTrainingPeriodSchema = z.object({
+  trainingStart: z.string().date().nullable(),
+  trainingEnd: z.string().date().nullable(),
+  reportsSince: z.string().date().nullable(),
+});
+
+const onboardingWorkplaceSchema = z.object({
+  department: z.string().trim().min(1).max(120).nullable(),
+  trainerEmail: z.string().trim().email().max(320).nullable(),
+  ihkLink: z.string().trim().url().max(2048).nullable(),
+});
+
+const onboardingRegionSchema = z.object({
+  subdivisionCode: z.string().trim().min(1).max(16).nullable(),
+});
+
 export type TimetableSlot = z.infer<typeof timetableSlotSchema>;
 export type UiSettingsValues = z.infer<typeof uiSettingsSchema>;
+export type OnboardingTrainingPeriodValues = z.infer<
+  typeof onboardingTrainingPeriodSchema
+>;
+export type OnboardingWorkplaceValues = z.infer<
+  typeof onboardingWorkplaceSchema
+>;
+export type OnboardingRegionValues = z.infer<typeof onboardingRegionSchema>;
+
+function normalizeSubdivisionOrNull(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const normalized = value.trim();
+
+  if (!normalized || !isGermanSubdivisionCode(normalized)) {
+    return null;
+  }
+
+  return normalized;
+}
+
+function normalizeUrlOrNull(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const parsed = z.string().trim().url().max(2048).safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
 
 function uniqStrings(values: string[]): string[] {
-  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean))).sort(
-    (left, right) => left.localeCompare(right),
-  );
+  return Array.from(
+    new Set(values.map((value) => value.trim()).filter(Boolean)),
+  ).sort((left, right) => left.localeCompare(right));
+}
+
+function normalizeDateOrNull(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const parsed = z.string().date().safeParse(value.trim());
+  return parsed.success ? parsed.data : null;
+}
+
+function normalizeEmailOrNull(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const parsed = z.string().trim().email().max(320).safeParse(value);
+  return parsed.success ? parsed.data : null;
 }
 
 export function parseUiSettings(values: JsonObject): UiSettingsValues {
-  const appUi = typeof values.appUi === 'object' && values.appUi ? values.appUi : {};
+  const appUi =
+    typeof values.appUi === 'object' && values.appUi ? values.appUi : {};
   const parsed = uiSettingsSchema.parse(appUi);
 
   return {
@@ -68,6 +134,47 @@ export function parseUiSettings(values: JsonObject): UiSettingsValues {
       friday: parsed.timetable.friday,
     },
   };
+}
+
+export function parseOnboardingTrainingPeriod(
+  values: JsonObject,
+): OnboardingTrainingPeriodValues {
+  const onboarding = ensureJsonObject(values.onboarding ?? {});
+  const trainingPeriod = ensureJsonObject(onboarding['training-period'] ?? {});
+
+  return onboardingTrainingPeriodSchema.parse({
+    trainingStart: normalizeDateOrNull(trainingPeriod.trainingStart),
+    trainingEnd: normalizeDateOrNull(trainingPeriod.trainingEnd),
+    reportsSince: normalizeDateOrNull(trainingPeriod.reportsSince),
+  });
+}
+
+export function parseOnboardingWorkplace(
+  values: JsonObject,
+): OnboardingWorkplaceValues {
+  const onboarding = ensureJsonObject(values.onboarding ?? {});
+  const workplace = ensureJsonObject(onboarding.workplace ?? {});
+
+  return onboardingWorkplaceSchema.parse({
+    department:
+      typeof workplace.department === 'string' &&
+      workplace.department.trim().length
+        ? workplace.department
+        : null,
+    trainerEmail: normalizeEmailOrNull(workplace.trainerEmail),
+    ihkLink: normalizeUrlOrNull(workplace.ihkLink),
+  });
+}
+
+export function parseOnboardingRegion(
+  values: JsonObject,
+): OnboardingRegionValues {
+  const onboarding = ensureJsonObject(values.onboarding ?? {});
+  const region = ensureJsonObject(onboarding.region ?? {});
+
+  return onboardingRegionSchema.parse({
+    subdivisionCode: normalizeSubdivisionOrNull(region.subdivisionCode),
+  });
 }
 
 export function mergeUiSettings(
@@ -110,12 +217,40 @@ export function mergeOnboardingIntoUiSettings(input: {
       typeof onboardingWorkplace.department === 'string'
         ? onboardingWorkplace.department
         : parsed.defaultDepartment,
-    supervisorEmailPrimary:
-      trainerEmail || parsed.supervisorEmailPrimary,
+    supervisorEmailPrimary: trainerEmail || parsed.supervisorEmailPrimary,
     supervisorEmailSecondary:
       typeof onboardingIdentity.lastName === 'string' &&
       onboardingIdentity.lastName.trim().length
         ? parsed.supervisorEmailSecondary
         : parsed.supervisorEmailSecondary,
+  };
+}
+
+export function mergeOnboardingSettings(input: {
+  values: JsonObject;
+  trainingPeriod: OnboardingTrainingPeriodValues;
+  workplace: OnboardingWorkplaceValues;
+  region: OnboardingRegionValues;
+}): JsonObject {
+  const onboarding = ensureJsonObject(input.values.onboarding ?? {});
+
+  return {
+    ...input.values,
+    onboarding: {
+      ...onboarding,
+      'training-period': {
+        trainingStart: input.trainingPeriod.trainingStart,
+        trainingEnd: input.trainingPeriod.trainingEnd,
+        reportsSince: input.trainingPeriod.reportsSince,
+      },
+      workplace: {
+        department: input.workplace.department,
+        trainerEmail: input.workplace.trainerEmail,
+        ihkLink: input.workplace.ihkLink,
+      },
+      region: {
+        subdivisionCode: input.region.subdivisionCode,
+      },
+    },
   };
 }

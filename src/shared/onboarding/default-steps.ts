@@ -1,20 +1,25 @@
 import { z } from 'zod';
 
+import { isGermanSubdivisionCode } from '@/shared/absence/german-subdivisions';
 import { ensureJsonObject } from '@/shared/common/json';
 import { OnboardingStepDefinition } from '@/shared/onboarding/progress';
+import { trainingPeriodStepSchema } from '@/shared/onboarding/training-period';
 
 const requiredTextSchema = z.string().trim().min(1).max(120);
-const optionalTextSchema = z
-  .union([z.string().trim().min(1).max(240), z.literal('')])
-  .transform((value) => (value === '' ? null : value));
 const optionalUrlSchema = z
   .union([z.string().trim().url().max(2048), z.literal('')])
   .transform((value) => (value === '' ? null : value));
 const optionalEmailSchema = z
   .union([z.string().trim().email().max(320), z.literal('')])
   .transform((value) => (value === '' ? null : value));
-const dateSchema = z.string().date();
-
+const requiredEmailSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(320)
+  .refine((value) => z.string().email().safeParse(value).success, {
+    message: 'invalid-email',
+  });
 const identitySchema = z
   .object({
     firstName: requiredTextSchema,
@@ -22,26 +27,25 @@ const identitySchema = z
   })
   .transform((value) => ensureJsonObject(value));
 
-const trainingPeriodSchema = z
+const trainingPeriodSchema = trainingPeriodStepSchema.transform((value) =>
+  ensureJsonObject(value),
+);
+
+const regionSchema = z
   .object({
-    trainingStart: dateSchema,
-    trainingEnd: dateSchema,
-  })
-  .superRefine((value, context) => {
-    if (value.trainingEnd < value.trainingStart) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['trainingEnd'],
-        message: 'Das Ausbildungsende muss nach dem Ausbildungsstart liegen.',
-      });
-    }
+    subdivisionCode: z
+      .string()
+      .trim()
+      .refine((value) => isGermanSubdivisionCode(value), {
+        message: 'invalid-subdivision',
+      }),
   })
   .transform((value) => ensureJsonObject(value));
 
 const workplaceSchema = z
   .object({
-    department: optionalTextSchema,
-    trainerEmail: optionalEmailSchema,
+    department: requiredTextSchema,
+    trainerEmail: requiredEmailSchema,
     ihkLink: optionalUrlSchema,
   })
   .transform((value) => ensureJsonObject(value));
@@ -53,7 +57,7 @@ const googleSchema = z
   })
   .transform((value) => ensureJsonObject(value));
 
-export const defaultOnboardingSteps: OnboardingStepDefinition[] = [
+const defaultOnboardingSteps: OnboardingStepDefinition[] = [
   {
     id: 'google',
     optional: true,
@@ -68,8 +72,13 @@ export const defaultOnboardingSteps: OnboardingStepDefinition[] = [
     schema: trainingPeriodSchema,
   },
   {
+    id: 'region',
+    schema: regionSchema,
+  },
+  {
     id: 'workplace',
-    optional: true,
     schema: workplaceSchema,
   },
 ];
+
+export default defaultOnboardingSteps;

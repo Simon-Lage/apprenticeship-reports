@@ -2,6 +2,7 @@ import { Dispatch, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaGoogle } from 'react-icons/fa';
 
+import { germanSubdivisions } from '@/shared/absence/german-subdivisions';
 import { FormField } from '@/renderer/components/app/FormField';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -99,6 +100,22 @@ export default function OnboardingStepFields({
             }
           />
         </FormField>
+        <FormField
+          id="training-reports-since"
+          label={t('onboarding.steps.trainingPeriod.reportsSince')}
+        >
+          <Input
+            id="training-reports-since"
+            type="date"
+            value={stepValues.reportsSince ?? ''}
+            onChange={(event) =>
+              setStepValues((current) => ({
+                ...current,
+                reportsSince: event.target.value,
+              }))
+            }
+          />
+        </FormField>
       </>
     );
   }
@@ -157,11 +174,41 @@ export default function OnboardingStepFields({
     );
   }
 
+  if (stepId === 'region') {
+    return (
+      <FormField
+        id="region-subdivision-code"
+        label={t('onboarding.steps.region.subdivisionCode')}
+      >
+        <select
+          id="region-subdivision-code"
+          className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+          value={stepValues.subdivisionCode ?? ''}
+          onChange={(event) =>
+            setStepValues((current) => ({
+              ...current,
+              subdivisionCode: event.target.value,
+            }))
+          }
+        >
+          <option value="">{t('onboarding.steps.region.placeholder')}</option>
+          {germanSubdivisions.map((entry) => (
+            <option key={entry.code} value={entry.code}>
+              {t(`onboarding.steps.region.options.${entry.code}`)}
+            </option>
+          ))}
+        </select>
+      </FormField>
+    );
+  }
+
   return (
     <>
       {!isGoogleOauthConfigured ? (
         <Alert className="border-primary-tint bg-primary-tint/35">
-          <AlertTitle>{t('onboarding.steps.google.unavailableTitle')}</AlertTitle>
+          <AlertTitle>
+            {t('onboarding.steps.google.unavailableTitle')}
+          </AlertTitle>
           <AlertDescription>
             {t('onboarding.steps.google.unavailableDescription')}
           </AlertDescription>

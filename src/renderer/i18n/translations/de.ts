@@ -23,16 +23,17 @@ const deTranslation = {
     },
   },
   navigation: {
-    brand: 'Apprenticeship Reports',
+    brand: 'AppRep',
     home: 'Home',
     dailyReport: 'Tagesbericht',
+    absences: 'Abwesenheiten',
     weeklyReport: 'Wochenbericht',
     reportsOverview: 'Übersicht',
     timeTable: 'Stundenplan',
     import: 'Import',
     export: 'Export',
     settings: 'Settings',
-    changeAuthMethods: 'Auth-Methoden',
+    changeAuthMethods: 'Zugang',
   },
   login: {
     title: 'Anmeldung',
@@ -59,8 +60,8 @@ const deTranslation = {
   },
   onboarding: {
     welcome: {
-      kicker: 'Apprenticeship Reports',
-      title: 'Willkommen bei Apprenticeship Reports',
+      kicker: 'AppRep',
+      title: 'Willkommen bei AppRep',
       description:
         'Diese Anwendung hilft dir, Tages- und Wochenberichte strukturiert zu erfassen, zu exportieren und sicher zu sichern.',
       start: 'Los geht’s',
@@ -144,44 +145,154 @@ const deTranslation = {
       },
       'training-period': {
         title: 'Ausbildungszeitraum',
-        description: 'Start- und Enddatum der Ausbildung.',
+        description:
+          'Start und Ende der Ausbildung sowie optionaler Startpunkt fuer Berichte.',
+      },
+      region: {
+        title: 'Bundesland',
+        description: 'Waehle dein Bundesland fuer Feiertags- und Ferienimport.',
+        subdivisionCode: 'Bundesland',
+        placeholder: 'Bitte Bundesland auswaehlen',
+        validationSubdivision: 'Bitte ein gueltiges Bundesland auswaehlen.',
+        options: {
+          'DE-BB': 'Brandenburg',
+          'DE-BE': 'Berlin',
+          'DE-BW': 'Baden-Wuerttemberg',
+          'DE-BY': 'Bayern',
+          'DE-HB': 'Bremen',
+          'DE-HE': 'Hessen',
+          'DE-HH': 'Hamburg',
+          'DE-MV': 'Mecklenburg-Vorpommern',
+          'DE-NI': 'Niedersachsen',
+          'DE-NW': 'Nordrhein-Westfalen',
+          'DE-RP': 'Rheinland-Pfalz',
+          'DE-SH': 'Schleswig-Holstein',
+          'DE-SL': 'Saarland',
+          'DE-SN': 'Sachsen',
+          'DE-ST': 'Sachsen-Anhalt',
+          'DE-TH': 'Thueringen',
+        },
       },
       trainingPeriod: {
         start: 'Ausbildungsbeginn',
         end: 'Ausbildungsende',
+        reportsSince: 'Ausbildungsberichte seit (optional)',
         validationRange:
           'Das Ausbildungsende muss nach dem Ausbildungsbeginn liegen.',
+        validationReportsSinceRange:
+          'Das Berichtsstart-Datum muss innerhalb des Ausbildungszeitraums liegen.',
       },
       workplace: {
         title: 'Arbeitsplatz',
-        description: 'Optionale Daten zu Abteilung und Betreuung.',
+        description: 'Pflichtdaten zu Ausbildungsabschnitt und Betreuung.',
         department: 'Abteilung',
         trainerEmail: 'E-Mail Betreuer',
         ihkLink: 'IHK-Link',
+        validationDepartmentRequired: 'Bitte eine Abteilung eintragen.',
+        validationTrainerEmailRequired: 'Bitte eine Betreuer-E-Mail eintragen.',
         validationEmail: 'Bitte eine gültige E-Mail eintragen.',
         validationUrl: 'Bitte eine gültige URL eintragen.',
       },
     },
   },
   home: {
-    title: 'Startübersicht',
-    description: 'Schneller Einstieg in die wichtigsten Bereiche.',
+    hero: {
+      kicker: 'AppRep',
+      title: 'Dein Berichtsheft',
+      description:
+        'Erfasse Tages- und Wochenberichte strukturiert und springe direkt in die Bereiche, die du gerade brauchst.',
+    },
     stats: {
       dailyReports: 'Tagesberichte',
       weeklyReports: 'Wochenberichte',
-      backupStatus: 'Backup-Status',
+      totalEntries: 'Gesamteinträge',
     },
-    backup: {
-      required: 'Backup erforderlich',
-      upToDate: 'Backup aktuell',
+    areas: {
+      daily: {
+        title: 'Tagesbericht',
+        description: 'Neuen Tag erfassen und bestehende Inhalte bearbeiten.',
+      },
+      weekly: {
+        title: 'Wochenbericht',
+        description: 'Wocheninhalte konsolidieren und als Bericht pflegen.',
+      },
+      overview: {
+        title: 'Berichte Übersicht',
+        description: 'Alle Einträge durchsuchen, filtern und vergleichen.',
+      },
+      timetable: {
+        title: 'Stundenplan',
+        description: 'Schulfächer, Lehrer und Presets zentral verwalten.',
+      },
+      import: {
+        title: 'Import',
+        description: 'JSON-Daten und Settings mit Vergleichsansicht einlesen.',
+      },
+      export: {
+        title: 'Export',
+        description: 'Berichte und Settings lokal oder nach Drive exportieren.',
+      },
+      settings: {
+        title: 'Settings',
+        description: 'Standardwerte und Anwendungseinstellungen anpassen.',
+      },
+      absences: {
+        title: 'Abwesenheiten',
+        description:
+          'Krankheit, Urlaub sowie Feiertage und Ferien zentral verwalten.',
+      },
     },
-    quickActions: {
-      title: 'Schnellaktionen',
-      description: 'Direkte Einstiege für häufige Aufgaben.',
-      newDaily: 'Neuen Tagesbericht',
-      weekly: 'Wochenbericht',
-      import: 'Import',
-      export: 'Export',
+  },
+  absences: {
+    title: 'Abwesenheiten',
+    description:
+      'Verwalte manuelle Abwesenheiten und automatisch importierte Feiertage/Ferien.',
+    sync: {
+      title: 'Open Holidays',
+      description:
+        'Import beim Start, falls Daten fehlen, sowie jaehrlich am 1. Januar.',
+      stateLabel: 'Bundesland',
+      syncedAt: 'Letzte Synchronisierung',
+      lastError: 'Letzter Fehler',
+      currentYear: 'Datenjahr',
+      trigger: 'Jetzt synchronisieren',
+      missingRegion:
+        'Kein Bundesland im Onboarding hinterlegt. Bitte Onboarding abschliessen.',
+    },
+    manual: {
+      title: 'Manuelle Abwesenheiten',
+      description: 'Krankheit, Urlaub sowie manuelle Ferien/Feiertage.',
+      startDate: 'Von',
+      endDate: 'Bis',
+      type: 'Typ',
+      label: 'Bezeichnung',
+      note: 'Notiz',
+      add: 'Eintrag speichern',
+      update: 'Eintrag aktualisieren',
+      cancelEdit: 'Bearbeitung abbrechen',
+      empty: 'Keine manuellen Abwesenheiten vorhanden.',
+      edit: 'Bearbeiten',
+      delete: 'Loeschen',
+      types: {
+        sick: 'Krankheit',
+        vacation: 'Urlaub',
+        publicHoliday: 'Feiertag',
+        schoolHoliday: 'Ferien',
+      },
+    },
+    catalog: {
+      publicTitle: 'Feiertage (API)',
+      schoolTitle: 'Ferien (API)',
+      empty: 'Keine Daten verfuegbar.',
+    },
+    feedback: {
+      missingDate: 'Bitte gueltige Datumswerte angeben.',
+      invalidRange: 'Das Enddatum muss am oder nach dem Startdatum liegen.',
+      saved: 'Abwesenheiten gespeichert.',
+      saveError: 'Abwesenheiten konnten nicht gespeichert werden.',
+      deleted: 'Eintrag geloescht.',
+      syncSuccess: 'Abwesenheitsdaten synchronisiert.',
+      syncError: 'Abwesenheitsdaten konnten nicht synchronisiert werden.',
     },
   },
   authMethods: {
@@ -224,6 +335,22 @@ const deTranslation = {
       department: 'Standard-Abteilung',
       supervisorPrimary: 'Betreuer-E-Mail 1',
       supervisorSecondary: 'Betreuer-E-Mail 2',
+      ihkLink: 'IHK-Link',
+    },
+    trainingPeriod: {
+      title: 'Ausbildungszeitraum',
+      description:
+        'Steuert den Startpunkt fuer Tages- und Wochenberichte sowie den gueltigen Zeitraum.',
+      start: 'Ausbildungsbeginn',
+      end: 'Ausbildungsende',
+      reportsSince: 'Ausbildungsberichte seit (optional)',
+    },
+    region: {
+      title: 'Bundesland',
+      description:
+        'Wird fuer den Import von Feiertagen und Ferien ueber Open Holidays verwendet.',
+      subdivisionCode: 'Bundesland',
+      placeholder: 'Bitte Bundesland auswaehlen',
     },
     exchange: {
       title: 'Settings Import/Export',
@@ -294,11 +421,20 @@ const deTranslation = {
     },
     meta: {
       title: 'Rahmendaten',
-      description: 'Woche, Datum und Tagestyp festlegen.',
+      description: 'Datum und Tagestyp festlegen.',
       weekStart: 'Wochenstart',
       weekEnd: 'Wochenende',
       date: 'Datum',
       dayType: 'Tagestyp',
+    },
+    auto: {
+      reasonPublicHoliday: 'Automatisch erkannt: Feiertag ({{name}}).',
+      reasonSick: 'Automatisch erkannt: Krankheit ({{name}}).',
+      reasonVacation: 'Automatisch erkannt: Urlaub ({{name}}).',
+      reasonSchoolHoliday:
+        'Automatisch erkannt: Ferien ({{name}}), Schultag wird zu Arbeitstag.',
+      reasonBaseSchool: 'Automatisch erkannt: Schultag (laut Stundenplan).',
+      reasonBaseWork: 'Automatisch erkannt: Arbeitstag.',
     },
     freeDay: {
       title: 'Freier Tag',
@@ -325,7 +461,7 @@ const deTranslation = {
       delete: 'Tagesbericht löschen',
     },
     feedback: {
-      missingDates: 'Bitte Woche und Datum vollständig angeben.',
+      missingDates: 'Bitte ein gueltiges Datum angeben.',
       saved: 'Tagesbericht gespeichert.',
       deleted: 'Tagesbericht gelöscht.',
       saveError: 'Tagesbericht konnte nicht gespeichert werden.',
@@ -333,42 +469,36 @@ const deTranslation = {
   },
   weeklyReport: {
     title: 'Wochenbericht',
-    description: 'Metadaten und aggregierte Wocheninhalte verwalten.',
+    description: 'Aggregierte Wocheninhalte aus Tagesberichten und Metadaten.',
     meta: {
-      title: 'Wochenmetadaten',
-      description: 'Zeitraum, Abteilung und Betreuerdaten.',
-      weekStart: 'Von',
-      weekEnd: 'Bis',
-      reportDate: 'Berichtsdatum',
+      title: 'Wochenstatus',
+      weekRange: 'Zeitraum',
       area: 'Ausbildungsabschnitt/Abteilung',
-      supervisorPrimary: 'Betreuer-E-Mail 1',
-      supervisorSecondary: 'Betreuer-E-Mail 2',
+      supervisorPrimary: 'Betreuer-E-Mail',
       submitted: 'Bereits abgeschickt',
-      submittedEmail: 'Abgeschickt an E-Mail',
       daysTracked: 'Tage in dieser Woche',
+      noWeek: 'Keine passende Woche mit Tagesberichten gefunden.',
     },
     sections: {
       work: 'Betriebliche Tätigkeiten',
-      school: 'Berufsschule / Unterrichtsthemen',
       training:
         'Unterweisungen / betrieblicher Unterricht / sonstige Schulungen',
-      notes: 'Zusätzliche Notizen',
+      school: 'Berufsschule (Unterrichtsthemen)',
     },
     actions: {
+      cancel: 'Abbrechen',
       save: 'Wochenbericht speichern',
-      importDailyData: 'Aus Tagesdaten übernehmen',
-      registerHash: 'Hash registrieren',
-      openPdf: 'PDF-Vorschau',
+      send: 'Wochenbericht senden',
+      exportPdf: 'Als PDF exportieren',
     },
     feedback: {
-      missingRange: 'Bitte Wochenstart und Wochenende setzen.',
+      missingRange: 'Es ist keine gültige Woche ausgewählt.',
       saved: 'Wochenbericht gespeichert.',
       saveError: 'Wochenbericht konnte nicht gespeichert werden.',
-      hashRegistered: 'Wochen-Hash wurde registriert.',
     },
   },
   weeklyPdf: {
-    title: 'Weekly Report PDF',
+    title: 'Wochenbericht PDF',
     description: 'Einseitige Vorschau und Export als PDF-Datei.',
     export: 'Als PDF exportieren',
     selectorTitle: 'Woche auswählen',
@@ -377,7 +507,6 @@ const deTranslation = {
     empty: 'Bitte zunächst eine vorhandene Woche auswählen.',
     labels: {
       week: 'Woche',
-      date: 'Datum',
       area: 'Abteilung',
       supervisor: 'Betreuer',
       supervisorSecondary: 'Betreuer 2',
@@ -385,8 +514,8 @@ const deTranslation = {
     sections: {
       work: 'Betriebliche Tätigkeiten',
       school: 'Berufsschule',
-      training: 'Unterweisungen/Schulungen',
-      notes: 'Notizen',
+      training:
+        'Unterweisungen / betrieblicher Unterricht / sonstige Schulungen',
     },
     feedback: {
       selectWeekFirst: 'Bitte zuerst eine gültige Woche auswählen.',
@@ -396,7 +525,7 @@ const deTranslation = {
     },
   },
   reportsOverview: {
-    title: 'Reports Übersicht',
+    title: 'Berichte Übersicht',
     description: 'Scrollbare Übersicht aller vorhandenen Tagesdaten.',
     filters: {
       title: 'Filter',
@@ -415,9 +544,9 @@ const deTranslation = {
   },
   import: {
     title: 'Import',
-    description: 'Settings und Reports sicher importieren.',
+    description: 'Settings und Berichte sicher importieren.',
     tabs: {
-      reports: 'Reports',
+      reports: 'Berichte',
       settings: 'Settings',
     },
     actions: {
@@ -425,12 +554,12 @@ const deTranslation = {
       apply: 'Übernehmen',
     },
     reports: {
-      title: 'Reports importieren',
-      description: 'Reports als JSON laden oder aus Google Drive auswählen.',
+      title: 'Berichte importieren',
+      description: 'Berichte als JSON laden oder aus Google Drive auswählen.',
       localFile: 'Lokale JSON-Datei wählen',
       loadDrive: 'Drive-Backups laden',
       useDriveFile: 'Backup verwenden',
-      compareTitle: 'Reports Vergleich',
+      compareTitle: 'Berichte Vergleich',
       conflictSummary:
         '{{weeks}} Konflikt-Wochen, {{days}} konfliktbehaftete Tagesberichte',
       currentWeek: 'Lokal',
@@ -455,21 +584,22 @@ const deTranslation = {
       settingsPrepareError: 'Settings-Import konnte nicht vorbereitet werden.',
       settingsApplied: 'Settings importiert.',
       settingsApplyError: 'Settings-Import fehlgeschlagen.',
-      reportsPrepared: 'Reports-Import vorbereitet.',
-      reportsPrepareError: 'Reports-Import konnte nicht vorbereitet werden.',
-      reportsApplied: 'Reports importiert.',
-      reportsApplyError: 'Reports-Import fehlgeschlagen.',
+      reportsPrepared: 'Berichte-Import vorbereitet.',
+      reportsPrepareError: 'Berichte-Import konnte nicht vorbereitet werden.',
+      reportsApplied: 'Berichte importiert.',
+      reportsApplyError: 'Berichte-Import fehlgeschlagen.',
       driveLoaded: 'Drive-Backups geladen.',
       driveError: 'Drive-Import fehlgeschlagen.',
     },
   },
   export: {
     title: 'Export',
-    description: 'Reports und Settings lokal oder in Google Drive exportieren.',
+    description:
+      'Berichte und Settings lokal oder in Google Drive exportieren.',
     local: {
       title: 'Lokaler Export',
       description: 'JSON-Dateien werden per Dateidialog lokal gespeichert.',
-      reports: 'Reports JSON exportieren',
+      reports: 'Berichte JSON exportieren',
       settings: 'Settings JSON exportieren',
     },
     drive: {
@@ -480,13 +610,14 @@ const deTranslation = {
       warningTitle: 'Voraussetzungen fehlen',
       warningDescription:
         'Google-Konto oder Drive-Rechte fehlen. Bitte verknüpfen und Berechtigungen erteilen.',
+      oauthUnavailable: 'Google OAuth ist nicht konfiguriert.',
       connect: 'Drive verbinden',
       export: 'Backup zu Drive',
     },
     feedback: {
       exportCanceled: 'Export abgebrochen.',
-      reportsExported: 'Reports exportiert.',
-      reportsExportError: 'Reports konnten nicht exportiert werden.',
+      reportsExported: 'Berichte exportiert.',
+      reportsExportError: 'Berichte konnten nicht exportiert werden.',
       settingsExported: 'Settings exportiert.',
       settingsExportError: 'Settings konnten nicht exportiert werden.',
       driveConnected: 'Drive-Verbindung aktualisiert.',

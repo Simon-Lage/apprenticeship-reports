@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { useState } from 'react';
 
 import { PageHeader } from '@/renderer/components/app/PageHeader';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
@@ -13,6 +14,8 @@ export default function ExportPage() {
   const runtime = useAppRuntime();
   const toast = useToastController();
   const driveReady = runtime.state.drive.status === 'granted';
+  const isGoogleOauthConfigured = runtime.state.auth.googleAuthConfigured;
+  const [isDrivePending, setIsDrivePending] = useState(false);
 
   async function exportReportsJson() {
     if (!runtime.api) {
@@ -63,6 +66,17 @@ export default function ExportPage() {
     if (!runtime.api) {
       return;
     }
+
+    if (!isGoogleOauthConfigured) {
+      toast.error(
+        t('export.feedback.driveError'),
+        t('export.drive.oauthUnavailable'),
+      );
+      return;
+    }
+
+    setIsDrivePending(true);
+
     try {
       await runtime.api.connectGoogleDrive();
       await runtime.refresh();
@@ -71,6 +85,8 @@ export default function ExportPage() {
       const message =
         error instanceof Error ? error.message : t('common.errors.unknown');
       toast.error(t('export.feedback.driveError'), message);
+    } finally {
+      setIsDrivePending(false);
     }
   }
 
@@ -78,6 +94,9 @@ export default function ExportPage() {
     if (!runtime.api) {
       return;
     }
+
+    setIsDrivePending(true);
+
     try {
       const result = await runtime.api.uploadBackupToDrive();
       await runtime.refresh();
@@ -86,6 +105,8 @@ export default function ExportPage() {
       const message =
         error instanceof Error ? error.message : t('common.errors.unknown');
       toast.error(t('export.feedback.driveError'), message);
+    } finally {
+      setIsDrivePending(false);
     }
   }
 
@@ -140,6 +161,11 @@ export default function ExportPage() {
                 ? t('export.drive.ready')
                 : t('export.drive.notReady')}
             </Badge>
+            {!isGoogleOauthConfigured ? (
+              <p className="text-sm text-text-color/75">
+                {t('export.drive.oauthUnavailable')}
+              </p>
+            ) : null}
             {!driveReady ? (
               <Alert className="border-primary-tint bg-primary-tint/30">
                 <AlertTitle>{t('export.drive.warningTitle')}</AlertTitle>
@@ -153,6 +179,7 @@ export default function ExportPage() {
                 type="button"
                 variant="outline"
                 className="border-primary-tint"
+                disabled={isDrivePending || !isGoogleOauthConfigured}
                 onClick={() => {
                   connectDrive();
                 }}
@@ -161,7 +188,7 @@ export default function ExportPage() {
               </Button>
               <Button
                 type="button"
-                disabled={!driveReady}
+                disabled={!driveReady || isDrivePending}
                 className="bg-primary text-primary-contrast hover:bg-primary-shade"
                 onClick={() => {
                   exportToDrive();

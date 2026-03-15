@@ -7,6 +7,7 @@ import {
   FiGrid,
   FiHome,
   FiList,
+  FiSlash,
   FiSettings,
   FiShield,
   FiUpload,
@@ -16,6 +17,7 @@ import { IconType } from 'react-icons';
 
 import { appRoutes } from '@/renderer/lib/app-routes';
 import { cn } from '@/renderer/lib/utils';
+import logoVerySmall from '../../../../assets/apprenticeship-reports-logo-very-small.png';
 
 type NavItem = {
   path: string;
@@ -29,6 +31,11 @@ const navItems: NavItem[] = [
     path: appRoutes.dailyReport,
     labelKey: 'navigation.dailyReport',
     icon: FiFileText,
+  },
+  {
+    path: appRoutes.absences,
+    labelKey: 'navigation.absences',
+    icon: FiSlash,
   },
   {
     path: appRoutes.weeklyReport,
@@ -74,17 +81,22 @@ export default function AppTopbar() {
       initial={{ y: -14, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.24, ease: [0.2, 0.8, 0.2, 1] }}
-      className="z-30 mb-4 rounded-xl border border-primary-tint/60 bg-white/88 shadow-sm backdrop-blur-md"
+      className="sticky top-0 z-40 w-full border-b border-primary-tint/60 bg-white/92 shadow-sm backdrop-blur-md"
     >
-      <div className="flex w-full items-center gap-3 px-4 py-3 lg:px-5">
-        <Link
-          to={appRoutes.home}
-          className="shrink-0 text-sm font-semibold tracking-tight text-text-color"
-        >
-          {t('navigation.brand')}
-        </Link>
-        <div className="min-w-0 flex-1 overflow-x-auto">
-          <ul className="flex min-w-max items-center gap-1">
+      <div className="flex w-full items-center gap-3 px-4 py-2.5 lg:px-6">
+        <div className="flex shrink-0 items-center gap-2 select-none">
+          <img
+            src={logoVerySmall}
+            alt=""
+            className="size-4 shrink-0"
+            draggable={false}
+          />
+          <span className="text-sm font-semibold tracking-tight text-text-color">
+            {t('navigation.brand')}
+          </span>
+        </div>
+        <div className="app-no-scrollbar min-w-0 flex-1 overflow-x-auto">
+          <ul className="flex min-w-max items-center justify-center gap-1">
             {navItems.map((item) => {
               const isActive = isActivePath(item.path);
               const Icon = item.icon;
@@ -93,8 +105,12 @@ export default function AppTopbar() {
                 <li key={item.path}>
                   <Link
                     to={item.path}
+                    draggable={false}
+                    onDragStart={(event) => {
+                      event.preventDefault();
+                    }}
                     className={cn(
-                      'relative inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                      'relative inline-flex items-center rounded-md px-2.5 py-2 text-sm font-medium transition-colors lg:px-3',
                       isActive
                         ? 'text-primary-contrast'
                         : 'text-text-color/80 hover:bg-primary-tint/35 hover:text-text-color',

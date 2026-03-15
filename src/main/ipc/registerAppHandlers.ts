@@ -113,6 +113,10 @@ export function registerAppHandlers(
     ),
   );
 
+  ipcMain.handle(AppIpcChannel.syncAbsenceCatalog, () =>
+    appKernel.syncAbsenceCatalog(true),
+  );
+
   ipcMain.handle(AppIpcChannel.requestManualBackup, () =>
     appKernel.requestManualBackup(),
   );

@@ -4,9 +4,13 @@ import {
 } from '@/shared/app/bootstrap';
 import { AppMetadata, AppMetadataSchema } from '@/shared/app/state';
 import {
-  deriveGoogleSessionState,
-  GoogleSession,
-} from '@/shared/auth/session';
+  createCatalogYearKey,
+  mergeAbsenceSettings,
+  parseAbsenceSettings,
+  resolveOnboardingSubdivisionCode,
+} from '@/shared/absence/settings';
+import { deriveGoogleSessionState, GoogleSession } from '@/shared/auth/session';
+import { markBackupDirty } from '@/shared/backup/policy';
 import {
   ensureJsonObject,
   isJsonObject,
@@ -22,6 +26,7 @@ import { WeeklyReportHashService } from '@/main/services/WeeklyReportHashService
 import { PasswordAuthService } from '@/main/services/PasswordAuthService';
 import { OnboardingResolver } from '@/main/services/OnboardingResolver';
 import { AppAccessGuard } from '@/main/services/AppAccessGuard';
+import OpenHolidaysService from '@/main/services/OpenHolidaysService';
 
 export type AppKernelOptions = {
   now?: () => string;
@@ -34,6 +39,7 @@ export type AppKernelOptions = {
   passwordAuthService?: PasswordAuthService | null;
   googleOAuthService?: GoogleOAuthService | null;
   googleDriveService?: GoogleDriveService | null;
+  openHolidaysService?: OpenHolidaysService | null;
 };
 
 export class AppKernelCore {
@@ -57,13 +63,17 @@ export class AppKernelCore {
 
   protected readonly settingsSchemaVersion: number;
 
-  protected readonly normalizeSettingsValues: (values: JsonObject) => JsonObject;
+  protected readonly normalizeSettingsValues: (
+    values: JsonObject,
+  ) => JsonObject;
 
   protected readonly passwordAuthService: PasswordAuthService | null;
 
   protected readonly googleOAuthService: GoogleOAuthService | null;
 
   protected readonly googleDriveService: GoogleDriveService | null;
+
+  protected readonly openHolidaysService: OpenHolidaysService | null;
 
   protected activeSession: GoogleSession | null = null;
 
@@ -92,6 +102,7 @@ export class AppKernelCore {
     this.passwordAuthService = options.passwordAuthService ?? null;
     this.googleOAuthService = options.googleOAuthService ?? null;
     this.googleDriveService = options.googleDriveService ?? null;
+    this.openHolidaysService = options.openHolidaysService ?? null;
     this.accessGuard = new AppAccessGuard({
       now: this.now,
       getCurrentSession: (currentState) => this.getCurrentSession(currentState),
@@ -210,6 +221,121 @@ export class AppKernelCore {
 
     const driveState = deriveDriveAccessState(currentState.drive, true);
     return driveState.status === 'granted';
+  }
+
+  protected async trySyncAbsenceCatalog(
+    currentState: AppMetadata,
+    force = false,
+  ): Promise<AppMetadata> {
+    if (!this.openHolidaysService) {
+      return currentState;
+    }
+
+    const subdivisionCode = resolveOnboardingSubdivisionCode(
+      currentState.settings.current.values,
+    );
+
+    if (!subdivisionCode) {
+      return currentState;
+    }
+
+    const nowIso = this.now();
+    const nowDate = new Date(nowIso);
+    const year = nowDate.getUTCFullYear();
+    const yearKey = createCatalogYearKey(year);
+    const parsedAbsenceSettings = parseAbsenceSettings(
+      currentState.settings.current.values,
+    );
+    const hasCatalogForYear =
+      Boolean(parsedAbsenceSettings.catalogsByYear[yearKey]) &&
+      parsedAbsenceSettings.catalogsByYear[yearKey].subdivisionCode ===
+        subdivisionCode;
+    const shouldRefreshOnNewYear =
+      nowDate.getUTCMonth() === 0 &&
+      nowDate.getUTCDate() === 1 &&
+      parsedAbsenceSettings.lastSyncYear !== year;
+    const shouldSync =
+      force ||
+      !hasCatalogForYear ||
+      shouldRefreshOnNewYear ||
+      parsedAbsenceSettings.subdivisionCode !== subdivisionCode;
+
+    if (!shouldSync) {
+      return currentState;
+    }
+
+    try {
+      const catalog = await this.openHolidaysService.fetchYearCatalog({
+        subdivisionCode,
+        year,
+      });
+      const nextAbsenceSettings = parseAbsenceSettings(
+        mergeAbsenceSettings(currentState.settings.current.values, {
+          ...parsedAbsenceSettings,
+          subdivisionCode,
+          lastSyncYear: year,
+          lastSyncedAt: nowIso,
+          lastSyncError: null,
+          catalogsByYear: {
+            ...parsedAbsenceSettings.catalogsByYear,
+            [yearKey]: {
+              year,
+              subdivisionCode,
+              fetchedAt: nowIso,
+              publicHolidays: catalog.publicHolidays,
+              schoolHolidays: catalog.schoolHolidays,
+            },
+          },
+        }),
+      );
+      const nextValues = mergeAbsenceSettings(
+        currentState.settings.current.values,
+        nextAbsenceSettings,
+      );
+
+      return this.repository.update((storedState) =>
+        AppMetadataSchema.parse({
+          ...storedState,
+          backup: markBackupDirty(storedState.backup),
+          settings: {
+            ...storedState.settings,
+            current: {
+              ...storedState.settings.current,
+              capturedAt: nowIso,
+              values: nextValues,
+            },
+          },
+        }),
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'OpenHolidays sync failed.';
+      const nextAbsenceSettings = parseAbsenceSettings(
+        mergeAbsenceSettings(currentState.settings.current.values, {
+          ...parsedAbsenceSettings,
+          subdivisionCode,
+          lastSyncError: message,
+        }),
+      );
+      const nextValues = mergeAbsenceSettings(
+        currentState.settings.current.values,
+        nextAbsenceSettings,
+      );
+
+      return this.repository.update((storedState) =>
+        AppMetadataSchema.parse({
+          ...storedState,
+          settings: {
+            ...storedState.settings,
+            current: {
+              ...storedState.settings.current,
+              capturedAt: nowIso,
+              values: nextValues,
+            },
+          },
+        }),
+      );
+    }
   }
 
   protected createPasswordAccount(currentState: AppMetadata) {

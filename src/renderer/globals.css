@@ -145,10 +145,25 @@
     @apply border-border outline-ring/50;
     scrollbar-width: thin;
     scrollbar-color: color-mix(in oklch, var(--primary) 45%, white) transparent;
+    -webkit-user-drag: none;
+    user-select: none;
   }
 
   body {
     @apply bg-background text-text-color;
+  }
+
+  input,
+  textarea,
+  select,
+  [contenteditable='true'],
+  [contenteditable='plaintext-only'] {
+    user-select: text;
+  }
+
+  a,
+  img {
+    -webkit-user-drag: none;
   }
 }
 
@@ -338,4 +353,28 @@
 [data-sonner-toaster][data-x-position='center']
   [data-sonner-toast][data-removed='true'][data-swipe-out='false'] {
   animation: app-toast-out-center 0.2s ease-out forwards;
+}
+
+@keyframes app-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.995);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+[data-slot='card'] {
+  animation: app-card-in 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.app-no-scrollbar {
+  scrollbar-width: none;
+}
+
+.app-no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

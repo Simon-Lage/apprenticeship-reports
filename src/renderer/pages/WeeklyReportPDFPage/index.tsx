@@ -34,21 +34,17 @@ function buildListItems(values: string[]): string {
 
 function buildWeeklyPdfHtml(input: {
   weekRangeLabel: string;
-  dateLabel: string;
   areaLabel: string;
   supervisorLabel: string;
   supervisorSecondaryLabel: string;
-  notesLabel: string;
   workLabel: string;
   schoolLabel: string;
   trainingLabel: string;
   reportTitle: string;
   weekRangeValue: string;
-  dateValue: string;
   areaValue: string;
   supervisorValue: string;
   supervisorSecondaryValue: string;
-  notesValue: string;
   workValues: string[];
   schoolValues: string[];
   trainingValues: string[];
@@ -79,7 +75,6 @@ function buildWeeklyPdfHtml(input: {
     <h1>${escapeHtml(input.reportTitle)}</h1>
     <div class="meta">
       <div class="meta-row"><span class="label">${escapeHtml(input.weekRangeLabel)}:</span> ${escapeHtml(input.weekRangeValue)}</div>
-      <div class="meta-row"><span class="label">${escapeHtml(input.dateLabel)}:</span> ${escapeHtml(input.dateValue)}</div>
       <div class="meta-row"><span class="label">${escapeHtml(input.areaLabel)}:</span> ${escapeHtml(input.areaValue)}</div>
       <div class="meta-row"><span class="label">${escapeHtml(input.supervisorLabel)}:</span> ${escapeHtml(input.supervisorValue)}</div>
       <div class="meta-row"><span class="label">${escapeHtml(input.supervisorSecondaryLabel)}:</span> ${escapeHtml(input.supervisorSecondaryValue)}</div>
@@ -95,10 +90,6 @@ function buildWeeklyPdfHtml(input: {
     <div class="section">
       <h2>${escapeHtml(input.trainingLabel)}</h2>
       <ul>${buildListItems(input.trainingValues)}</ul>
-    </div>
-    <div class="section">
-      <h2>${escapeHtml(input.notesLabel)}</h2>
-      <div class="notes">${escapeHtml(input.notesValue || '-')}</div>
     </div>
   </div>
 </body>
@@ -142,20 +133,16 @@ export default function WeeklyReportPDFPage() {
       const html = buildWeeklyPdfHtml({
         reportTitle: t('weeklyPdf.previewTitle'),
         weekRangeLabel: t('weeklyPdf.labels.week'),
-        dateLabel: t('weeklyPdf.labels.date'),
         areaLabel: t('weeklyPdf.labels.area'),
         supervisorLabel: t('weeklyPdf.labels.supervisor'),
         supervisorSecondaryLabel: t('weeklyPdf.labels.supervisorSecondary'),
-        notesLabel: t('weeklyPdf.sections.notes'),
         workLabel: t('weeklyPdf.sections.work'),
         schoolLabel: t('weeklyPdf.sections.school'),
         trainingLabel: t('weeklyPdf.sections.training'),
         weekRangeValue: `${selectedWeek.weeklyReport.weekStart} - ${selectedWeek.weeklyReport.weekEnd}`,
-        dateValue: parsedValues.reportDate || '-',
         areaValue: parsedValues.area || '-',
         supervisorValue: parsedValues.supervisorEmailPrimary || '-',
-        supervisorSecondaryValue: parsedValues.supervisorEmailSecondary || '-',
-        notesValue: parsedValues.notes,
+        supervisorSecondaryValue: parsedValues.supervisorEmailPrimary || '-',
         workValues: parsedValues.workActivities,
         schoolValues: parsedValues.schoolTopics,
         trainingValues: parsedValues.trainings,
@@ -227,10 +214,6 @@ export default function WeeklyReportPDFPage() {
                 {selectedWeek.weeklyReport.weekEnd}
               </p>
               <p>
-                <strong>{t('weeklyPdf.labels.date')}:</strong>{' '}
-                {parsedValues.reportDate || '-'}
-              </p>
-              <p>
                 <strong>{t('weeklyPdf.labels.area')}:</strong>{' '}
                 {parsedValues.area || '-'}
               </p>
@@ -240,7 +223,7 @@ export default function WeeklyReportPDFPage() {
               </p>
               <p>
                 <strong>{t('weeklyPdf.labels.supervisorSecondary')}:</strong>{' '}
-                {parsedValues.supervisorEmailSecondary || '-'}
+                {parsedValues.supervisorEmailPrimary || '-'}
               </p>
             </div>
             <div className="space-y-2">
@@ -258,10 +241,6 @@ export default function WeeklyReportPDFPage() {
                 {t('weeklyPdf.sections.training')}
               </h3>
               <p>{parsedValues.trainings.join(', ') || '-'}</p>
-            </div>
-            <div className="space-y-2">
-              <h3 className="font-semibold">{t('weeklyPdf.sections.notes')}</h3>
-              <p>{parsedValues.notes || '-'}</p>
             </div>
           </div>
         ) : (

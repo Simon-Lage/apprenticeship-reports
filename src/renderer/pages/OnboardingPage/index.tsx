@@ -217,6 +217,22 @@ export default function OnboardingPage() {
           setValidationError(
             t('onboarding.steps.trainingPeriod.validationRange'),
           );
+        } else if (code === 'invalid-reports-since-range') {
+          setValidationError(
+            t('onboarding.steps.trainingPeriod.validationReportsSinceRange'),
+          );
+        } else if (code === 'invalid-subdivision') {
+          setValidationError(
+            t('onboarding.steps.region.validationSubdivision'),
+          );
+        } else if (code === 'required-department') {
+          setValidationError(
+            t('onboarding.steps.workplace.validationDepartmentRequired'),
+          );
+        } else if (code === 'required-trainer-email') {
+          setValidationError(
+            t('onboarding.steps.workplace.validationTrainerEmailRequired'),
+          );
         } else if (code === 'invalid-email') {
           setValidationError(t('onboarding.steps.workplace.validationEmail'));
         } else if (code === 'invalid-url') {
@@ -385,6 +401,11 @@ export default function OnboardingPage() {
         stepOrder={activeStepOrder}
         remainingStepIds={remainingStepIds}
         skippedStepIds={skippedStepIds}
+        isPending={isPending}
+        onSelectStep={(stepId) => {
+          setValidationError(null);
+          setSelectedStepId(stepId);
+        }}
       />
       <SectionCard
         title={t(`onboarding.steps.${currentStepId}.title`)}

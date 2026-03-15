@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes, HashRouter } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useEffect } from 'react';
 
 import { AppStateView } from '@/renderer/components/app/AppStateView';
 import AppTopbar from '@/renderer/components/app/AppTopbar';
@@ -12,6 +13,7 @@ import AuthLayout from '@/renderer/layouts/AuthLayout';
 import DefaultLayout from '@/renderer/layouts/DefaultLayout';
 import { appRoutes } from '@/renderer/lib/app-routes';
 import ChangeAuthMethodsPage from '@/renderer/pages/ChangeAuthMethodsPage';
+import AbsencesPage from '@/renderer/pages/AbsencesPage';
 import DailyReportPage from '@/renderer/pages/DailyReportPage';
 import ExportPage from '@/renderer/pages/ExportPage';
 import HomePage from '@/renderer/pages/HomePage';
@@ -24,6 +26,7 @@ import TimeTablePage from '@/renderer/pages/TimeTablePage';
 import WelcomePage from '@/renderer/pages/WelcomePage';
 import WeeklyReportPage from '@/renderer/pages/WeeklyReportPage';
 import WeeklyReportPDFPage from '@/renderer/pages/WeeklyReportPDFPage';
+import SendWeeklyReportPage from '@/renderer/pages/SendWeeklyReportPage';
 import { hasSeenOnboardingWelcome } from '@/renderer/lib/onboarding-welcome';
 import '@/renderer/i18n';
 import './globals.css';
@@ -34,7 +37,12 @@ function AuthenticatedAppRoutes() {
     <Routes>
       <Route path={appRoutes.home} element={<HomePage />} />
       <Route path={appRoutes.dailyReport} element={<DailyReportPage />} />
+      <Route path={appRoutes.absences} element={<AbsencesPage />} />
       <Route path={appRoutes.weeklyReport} element={<WeeklyReportPage />} />
+      <Route
+        path={appRoutes.sendWeeklyReport}
+        element={<SendWeeklyReportPage />}
+      />
       <Route
         path={appRoutes.weeklyReportPdf}
         element={<WeeklyReportPDFPage />}
@@ -130,7 +138,7 @@ function RuntimeRouter() {
     return (
       <DefaultLayout>
         <main className="min-h-0 flex-1 overflow-y-auto">
-          <div className="mx-auto flex min-h-full w-full max-w-6xl items-center justify-center py-2">
+          <div className="mx-auto flex min-h-full w-full max-w-6xl items-center justify-center p-6">
             <PasswordSetupRoutes />
           </div>
         </main>
@@ -157,7 +165,7 @@ function RuntimeRouter() {
   return (
     <DefaultLayout>
       <AppTopbar />
-      <main className="min-h-0 flex-1 overflow-y-auto pb-4">
+      <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
         <AuthenticatedAppRoutes />
       </main>
     </DefaultLayout>
@@ -165,6 +173,23 @@ function RuntimeRouter() {
 }
 
 export default function App() {
+  useEffect(() => {
+    const preventDragDefault = (event: DragEvent) => {
+      event.preventDefault();
+    };
+    const capture = true;
+
+    window.addEventListener('dragstart', preventDragDefault, capture);
+    window.addEventListener('dragover', preventDragDefault, capture);
+    window.addEventListener('drop', preventDragDefault, capture);
+
+    return () => {
+      window.removeEventListener('dragstart', preventDragDefault, capture);
+      window.removeEventListener('dragover', preventDragDefault, capture);
+      window.removeEventListener('drop', preventDragDefault, capture);
+    };
+  }, []);
+
   return (
     <ToastControllerProvider>
       <AppRuntimeProvider>

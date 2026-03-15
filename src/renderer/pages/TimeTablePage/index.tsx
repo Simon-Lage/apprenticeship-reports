@@ -175,22 +175,18 @@ export default function TimeTablePage() {
           </Button>
         }
       />
-      <SectionCard
-        title={t('timeTable.schedule.title')}
-        description={t('timeTable.schedule.description')}
-        className="border-primary-tint bg-white"
-      >
-        <div className="max-h-[58vh] overflow-auto rounded-md border border-primary-tint/60">
+      <SectionCard className="border-primary-tint bg-white">
+        <div className="overflow-x-auto rounded-md border border-primary-tint/60">
           <table className="w-full min-w-[900px] border-separate border-spacing-2">
             <thead>
               <tr>
-                <th className="rounded-md bg-primary-tint px-2 py-2 text-left text-sm text-text-color">
+                <th className="sticky top-0 z-20 rounded-md bg-primary px-2 py-2 text-left text-sm text-primary-contrast">
                   {t('timeTable.schedule.lesson')}
                 </th>
                 {weekDayKeys.map((day) => (
                   <th
                     key={day}
-                    className="rounded-md bg-primary-tint px-2 py-2 text-left text-sm text-text-color"
+                    className="sticky top-0 z-20 rounded-md bg-primary px-2 py-2 text-left text-sm text-primary-contrast"
                   >
                     {t(`timeTable.days.${day}`)}
                   </th>
@@ -290,7 +286,7 @@ export default function TimeTablePage() {
                   </Button>
                 </div>
               </FormField>
-              <ul className="max-h-60 space-y-1 overflow-auto pr-1 text-sm">
+              <ul className="space-y-1 text-sm">
                 {teacherOptions.map((teacher) => (
                   <li
                     key={teacher}
@@ -344,7 +340,7 @@ export default function TimeTablePage() {
                   </Button>
                 </div>
               </FormField>
-              <ul className="max-h-60 space-y-1 overflow-auto pr-1 text-sm">
+              <ul className="space-y-1 text-sm">
                 {subjectOptions.map((subject) => (
                   <li
                     key={subject}

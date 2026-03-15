@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-import { DailyReportRecord, ReportsState, WeeklyReportRecord } from '@/shared/reports/models';
+import {
+  DailyReportRecord,
+  ReportsState,
+  WeeklyReportRecord,
+} from '@/shared/reports/models';
 
 export const dayTypeValues = ['work', 'school', 'free'] as const;
 export type DayTypeValue = (typeof dayTypeValues)[number];
@@ -39,34 +43,17 @@ export type WeeklyReportValues = z.infer<typeof weeklyReportValuesSchema>;
 export type SchoolLessonInput = z.infer<typeof schoolLessonSchema>;
 
 function uniqValues(values: string[]): string[] {
-  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
+  return Array.from(
+    new Set(values.map((value) => value.trim()).filter(Boolean)),
+  );
 }
 
-export function parseDailyReportValues(values: unknown): DailyReportValues {
-  const parsed = dailyReportValuesSchema.parse(values ?? {});
-
-  return {
-    ...parsed,
-    activities: uniqValues(parsed.activities),
-    schoolTopics: uniqValues(parsed.schoolTopics),
-    trainings: uniqValues(parsed.trainings),
-    lessons: normalizeLessons(parsed.lessons),
-  };
-}
-
-export function parseWeeklyReportValues(values: unknown): WeeklyReportValues {
-  const parsed = weeklyReportValuesSchema.parse(values ?? {});
-
-  return {
-    ...parsed,
-    workActivities: uniqValues(parsed.workActivities),
-    schoolTopics: uniqValues(parsed.schoolTopics),
-    trainings: uniqValues(parsed.trainings),
-  };
-}
-
-export function normalizeLessons(lessons: SchoolLessonInput[]): SchoolLessonInput[] {
-  const byLesson = [...lessons].sort((left, right) => left.lesson - right.lesson);
+export function normalizeLessons(
+  lessons: SchoolLessonInput[],
+): SchoolLessonInput[] {
+  const byLesson = [...lessons].sort(
+    (left, right) => left.lesson - right.lesson,
+  );
   const result: SchoolLessonInput[] = [];
 
   byLesson.forEach((lesson) => {
@@ -93,17 +80,109 @@ export function normalizeLessons(lessons: SchoolLessonInput[]): SchoolLessonInpu
   return result;
 }
 
+export function parseDailyReportValues(values: unknown): DailyReportValues {
+  const parsed = dailyReportValuesSchema.parse(values ?? {});
+
+  return {
+    ...parsed,
+    activities: uniqValues(parsed.activities),
+    schoolTopics: uniqValues(parsed.schoolTopics),
+    trainings: uniqValues(parsed.trainings),
+    lessons: normalizeLessons(parsed.lessons),
+  };
+}
+
+export function parseWeeklyReportValues(values: unknown): WeeklyReportValues {
+  const parsed = weeklyReportValuesSchema.parse(values ?? {});
+
+  return {
+    ...parsed,
+    workActivities: uniqValues(parsed.workActivities),
+    schoolTopics: uniqValues(parsed.schoolTopics),
+    trainings: uniqValues(parsed.trainings),
+  };
+}
+
 export type WeekWithReports = {
   weeklyReport: WeeklyReportRecord;
   dailyReports: DailyReportRecord[];
 };
 
-export function listWeeksWithDailyReports(reports: ReportsState): WeekWithReports[] {
+export type WeeklyAggregates = {
+  workActivities: string[];
+  trainings: string[];
+  schoolTopics: string[];
+};
+
+export function buildWeeklyAggregates(
+  dailyReports: DailyReportRecord[],
+): WeeklyAggregates {
+  const workActivities: string[] = [];
+  const trainings: string[] = [];
+  const schoolTopics: string[] = [];
+  const seenWork = new Set<string>();
+  const seenTraining = new Set<string>();
+  const seenSchool = new Set<string>();
+
+  dailyReports
+    .slice()
+    .sort((left, right) => left.date.localeCompare(right.date))
+    .forEach((dailyReport) => {
+      const parsed = parseDailyReportValues(dailyReport.values);
+
+      parsed.activities.forEach((value) => {
+        if (!seenWork.has(value)) {
+          seenWork.add(value);
+          workActivities.push(value);
+        }
+      });
+
+      parsed.trainings.forEach((value) => {
+        if (!seenTraining.has(value)) {
+          seenTraining.add(value);
+          trainings.push(value);
+        }
+      });
+
+      parsed.schoolTopics.forEach((value) => {
+        if (!seenSchool.has(value)) {
+          seenSchool.add(value);
+          schoolTopics.push(value);
+        }
+      });
+
+      parsed.lessons.forEach((lesson) => {
+        const topic = lesson.topic.trim();
+
+        if (!topic.length) {
+          return;
+        }
+
+        const value = `${lesson.subject}: ${topic}`;
+        if (!seenSchool.has(value)) {
+          seenSchool.add(value);
+          schoolTopics.push(value);
+        }
+      });
+    });
+
+  return {
+    workActivities,
+    trainings,
+    schoolTopics,
+  };
+}
+
+export function listWeeksWithDailyReports(
+  reports: ReportsState,
+): WeekWithReports[] {
   return Object.values(reports.weeklyReports)
     .map((weeklyReport) => {
       const dailyReports = weeklyReport.dailyReportIds
         .map((dailyReportId) => reports.dailyReports[dailyReportId])
-        .filter((dailyReport): dailyReport is DailyReportRecord => Boolean(dailyReport))
+        .filter((dailyReport): dailyReport is DailyReportRecord =>
+          Boolean(dailyReport),
+        )
         .sort((left, right) => left.date.localeCompare(right.date));
 
       return {
@@ -111,7 +190,9 @@ export function listWeeksWithDailyReports(reports: ReportsState): WeekWithReport
         dailyReports,
       };
     })
-    .sort((left, right) => left.weeklyReport.weekStart.localeCompare(right.weeklyReport.weekStart));
+    .sort((left, right) =>
+      left.weeklyReport.weekStart.localeCompare(right.weeklyReport.weekStart),
+    );
 }
 
 export function collectActivitySuggestions(
@@ -132,5 +213,7 @@ export function collectActivitySuggestions(
     parsed.trainings.forEach((value) => suggestions.add(value));
   });
 
-  return Array.from(suggestions).sort((left, right) => left.localeCompare(right));
+  return Array.from(suggestions).sort((left, right) =>
+    left.localeCompare(right),
+  );
 }

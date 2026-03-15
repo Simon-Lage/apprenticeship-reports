@@ -15,7 +15,6 @@ import {
   registerBackupSuccess,
   registerLaunchBackupCheck,
 } from '@/shared/backup/policy';
-import { deriveDriveAccessState } from '@/shared/drive/permissions';
 import { DriveBackupFile } from '@/shared/drive/backups';
 import {
   AuthenticateWithGoogleInput,
@@ -178,7 +177,9 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
         backup: registerLaunchBackupCheck(configuredState.backup),
       });
     });
-    const processedState = await this.tryProcessPendingBackup(nextState);
+    const absenceSyncedState = await this.trySyncAbsenceCatalog(nextState);
+    const processedState =
+      await this.tryProcessPendingBackup(absenceSyncedState);
 
     return this.buildBootstrapState(processedState);
   }
@@ -189,6 +190,14 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
       : false;
     const currentState = await this.repository.read();
     return this.buildBootstrapState(currentState);
+  }
+
+  async syncAbsenceCatalog(force = true): Promise<AppBootstrapState> {
+    const currentState = await this.repository.read();
+    this.accessGuard.assertApplicationUnlocked(currentState);
+    const syncedState = await this.trySyncAbsenceCatalog(currentState, force);
+
+    return this.buildBootstrapState(syncedState);
   }
 
   async initializePasswordAuth(
@@ -462,5 +471,4 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
 
     return this.buildBootstrapState(nextState);
   }
-
 }

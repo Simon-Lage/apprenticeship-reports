@@ -1,29 +1,43 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { z } from 'zod';
 
 import { FormField } from '@/renderer/components/app/FormField';
 import JsonDiffViewer from '@/renderer/components/app/JsonDiffViewer';
-import { PageHeader } from '@/renderer/components/app/PageHeader';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
 import { useSettingsSnapshot } from '@/renderer/hooks/useKernelData';
 import {
+  mergeOnboardingSettings,
   mergeUiSettings,
+  parseOnboardingRegion,
+  parseOnboardingTrainingPeriod,
+  parseOnboardingWorkplace,
   parseUiSettings,
   UiSettingsValues,
 } from '@/renderer/lib/app-settings';
+import { parseOnboardingStepValues } from '@/renderer/pages/OnboardingPage/schema';
+import { germanSubdivisions } from '@/shared/absence/german-subdivisions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SettingsImportPreview } from '@/shared/settings/schema';
+
+type SettingsFormValues = UiSettingsValues & {
+  trainingStart: string;
+  trainingEnd: string;
+  reportsSince: string;
+  subdivisionCode: string;
+  ihkLink: string;
+};
 
 export default function SettingsPage() {
   const { t } = useTranslation();
   const runtime = useAppRuntime();
   const toast = useToastController();
   const settingsSnapshot = useSettingsSnapshot();
-  const [formValues, setFormValues] = useState<UiSettingsValues | null>(null);
+  const [formValues, setFormValues] = useState<SettingsFormValues | null>(null);
   const [preview, setPreview] = useState<SettingsImportPreview | null>(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -32,7 +46,21 @@ export default function SettingsPage() {
       return;
     }
 
-    setFormValues(parseUiSettings(settingsSnapshot.value.values));
+    const parsedUiSettings = parseUiSettings(settingsSnapshot.value.values);
+    const trainingPeriod = parseOnboardingTrainingPeriod(
+      settingsSnapshot.value.values,
+    );
+    const workplace = parseOnboardingWorkplace(settingsSnapshot.value.values);
+    const region = parseOnboardingRegion(settingsSnapshot.value.values);
+
+    setFormValues({
+      ...parsedUiSettings,
+      trainingStart: trainingPeriod.trainingStart ?? '',
+      trainingEnd: trainingPeriod.trainingEnd ?? '',
+      reportsSince: trainingPeriod.reportsSince ?? '',
+      subdivisionCode: region.subdivisionCode ?? '',
+      ihkLink: workplace.ihkLink ?? '',
+    });
   }, [settingsSnapshot.value]);
 
   if (!formValues) {
@@ -52,12 +80,103 @@ export default function SettingsPage() {
     setIsPending(true);
 
     try {
-      const merged = mergeUiSettings(settingsSnapshot.value.values, formValues);
-      await runtime.api.setSettingsValues(merged);
+      const trainingPeriod = parseOnboardingStepValues('training-period', {
+        trainingStart: formValues.trainingStart,
+        trainingEnd: formValues.trainingEnd,
+        reportsSince: formValues.reportsSince,
+      }) as {
+        trainingStart: string;
+        trainingEnd: string;
+        reportsSince: string | null;
+      };
+      const workplace = parseOnboardingStepValues('workplace', {
+        department: formValues.defaultDepartment,
+        trainerEmail: formValues.supervisorEmailPrimary,
+        ihkLink: formValues.ihkLink,
+      }) as {
+        department: string;
+        trainerEmail: string;
+        ihkLink: string | null;
+      };
+      const region = parseOnboardingStepValues('region', {
+        subdivisionCode: formValues.subdivisionCode,
+      }) as {
+        subdivisionCode: string;
+      };
+      const withUiSettings = mergeUiSettings(
+        settingsSnapshot.value.values,
+        formValues,
+      );
+      const mergedSettings = mergeOnboardingSettings({
+        values: withUiSettings,
+        trainingPeriod: {
+          trainingStart: trainingPeriod.trainingStart,
+          trainingEnd: trainingPeriod.trainingEnd,
+          reportsSince: trainingPeriod.reportsSince,
+        },
+        workplace: {
+          department: workplace.department,
+          trainerEmail: workplace.trainerEmail,
+          ihkLink: workplace.ihkLink,
+        },
+        region: {
+          subdivisionCode: region.subdivisionCode,
+        },
+      });
+
+      await runtime.api.setSettingsValues(mergedSettings);
       await runtime.refresh();
       await settingsSnapshot.refresh();
       toast.success(t('settings.feedback.saved'));
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        const code = error.issues[0]?.message;
+
+        if (code === 'invalid-range') {
+          toast.error(
+            t('settings.feedback.saveError'),
+            t('onboarding.steps.trainingPeriod.validationRange'),
+          );
+        } else if (code === 'invalid-reports-since-range') {
+          toast.error(
+            t('settings.feedback.saveError'),
+            t('onboarding.steps.trainingPeriod.validationReportsSinceRange'),
+          );
+        } else if (code === 'invalid-subdivision') {
+          toast.error(
+            t('settings.feedback.saveError'),
+            t('onboarding.steps.region.validationSubdivision'),
+          );
+        } else if (code === 'required-department') {
+          toast.error(
+            t('settings.feedback.saveError'),
+            t('onboarding.steps.workplace.validationDepartmentRequired'),
+          );
+        } else if (code === 'required-trainer-email') {
+          toast.error(
+            t('settings.feedback.saveError'),
+            t('onboarding.steps.workplace.validationTrainerEmailRequired'),
+          );
+        } else if (code === 'invalid-email') {
+          toast.error(
+            t('settings.feedback.saveError'),
+            t('onboarding.steps.workplace.validationEmail'),
+          );
+        } else if (code === 'invalid-url') {
+          toast.error(
+            t('settings.feedback.saveError'),
+            t('onboarding.steps.workplace.validationUrl'),
+          );
+        } else {
+          toast.error(
+            t('settings.feedback.saveError'),
+            t('onboarding.validation.generic'),
+          );
+        }
+
+        return;
+      }
+
       const message =
         error instanceof Error ? error.message : t('common.errors.unknown');
       toast.error(t('settings.feedback.saveError'), message);
@@ -152,23 +271,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title={t('settings.title')}
-        description={t('settings.description')}
-        action={
-          <Button
-            type="button"
-            disabled={isPending}
-            className="bg-primary text-primary-contrast hover:bg-primary-shade"
-            onClick={() => {
-              saveSettings();
-            }}
-          >
-            {isPending ? t('common.loading') : t('settings.save')}
-          </Button>
-        }
-      />
+    <div className="space-y-4 pb-24">
       <SectionCard
         title={t('settings.general.title')}
         description={t('settings.general.description')}
@@ -225,7 +328,107 @@ export default function SettingsPage() {
               }
             />
           </FormField>
+          <FormField id="ihk-link" label={t('settings.general.ihkLink')}>
+            <Input
+              id="ihk-link"
+              type="url"
+              value={formValues.ihkLink}
+              onChange={(event) =>
+                setFormValues((current) =>
+                  current
+                    ? { ...current, ihkLink: event.target.value }
+                    : current,
+                )
+              }
+            />
+          </FormField>
         </div>
+      </SectionCard>
+      <SectionCard
+        title={t('settings.trainingPeriod.title')}
+        description={t('settings.trainingPeriod.description')}
+        className="border-primary-tint bg-white"
+      >
+        <div className="grid gap-4 md:grid-cols-3">
+          <FormField
+            id="training-start"
+            label={t('settings.trainingPeriod.start')}
+          >
+            <Input
+              id="training-start"
+              type="date"
+              value={formValues.trainingStart}
+              onChange={(event) =>
+                setFormValues((current) =>
+                  current
+                    ? { ...current, trainingStart: event.target.value }
+                    : current,
+                )
+              }
+            />
+          </FormField>
+          <FormField id="training-end" label={t('settings.trainingPeriod.end')}>
+            <Input
+              id="training-end"
+              type="date"
+              value={formValues.trainingEnd}
+              onChange={(event) =>
+                setFormValues((current) =>
+                  current
+                    ? { ...current, trainingEnd: event.target.value }
+                    : current,
+                )
+              }
+            />
+          </FormField>
+          <FormField
+            id="reports-since"
+            label={t('settings.trainingPeriod.reportsSince')}
+          >
+            <Input
+              id="reports-since"
+              type="date"
+              value={formValues.reportsSince}
+              onChange={(event) =>
+                setFormValues((current) =>
+                  current
+                    ? { ...current, reportsSince: event.target.value }
+                    : current,
+                )
+              }
+            />
+          </FormField>
+        </div>
+      </SectionCard>
+      <SectionCard
+        title={t('settings.region.title')}
+        description={t('settings.region.description')}
+        className="border-primary-tint bg-white"
+      >
+        <FormField
+          id="region-subdivision"
+          label={t('settings.region.subdivisionCode')}
+        >
+          <select
+            id="region-subdivision"
+            className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+            value={formValues.subdivisionCode}
+            onChange={(event) =>
+              setFormValues((current) =>
+                current
+                  ? { ...current, subdivisionCode: event.target.value }
+                  : current,
+              )
+            }
+          >
+            <option value="">{t('settings.region.placeholder')}</option>
+            {germanSubdivisions.map((entry) => (
+              <option key={entry.code} value={entry.code}>
+                {t(`onboarding.steps.region.options.${entry.code}`)}
+              </option>
+            ))}
+          </select>
+        </FormField>
       </SectionCard>
       <SectionCard
         title={t('settings.exchange.title')}
@@ -313,6 +516,20 @@ export default function SettingsPage() {
           </div>
         </SectionCard>
       ) : null}
+      <div className="sticky bottom-3 z-20 rounded-xl border border-primary-tint/75 bg-white/95 p-3 shadow-sm backdrop-blur">
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            disabled={isPending}
+            className="bg-primary text-primary-contrast hover:bg-primary-shade"
+            onClick={() => {
+              saveSettings();
+            }}
+          >
+            {isPending ? t('common.loading') : t('settings.save')}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

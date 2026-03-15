@@ -1,7 +1,9 @@
 export const appRoutes = {
   home: '/',
   dailyReport: '/daily-report',
+  absences: '/absences',
   weeklyReport: '/weekly-report',
+  sendWeeklyReport: '/send-weekly-report',
   weeklyReportPdf: '/weekly-report-pdf',
   reportsOverview: '/reports-overview',
   timeTable: '/timetable',

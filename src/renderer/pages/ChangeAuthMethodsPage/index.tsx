@@ -8,6 +8,7 @@ import PasswordInput from '@/renderer/components/app/PasswordInput';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -151,7 +152,7 @@ export default function ChangeAuthMethodsPage() {
         className="border-primary-tint bg-white"
       >
         <div className="space-y-4">
-          <Badge className="bg-primary-tint text-text-color">
+          <Badge className="bg-primary text-primary-contrast">
             {hasLinkedGoogleAccount
               ? runtime.state.drive.connectedAccountEmail
               : t('authMethods.google.notLinked')}
@@ -181,9 +182,12 @@ export default function ChangeAuthMethodsPage() {
             </Button>
           </div>
           {!isGoogleOauthConfigured ? (
-            <p className="text-sm text-text-color/70">
-              {t('authMethods.google.unavailable')}
-            </p>
+            <Alert className="border-primary-tint bg-primary-tint/30">
+              <AlertTitle>{t('authMethods.google.title')}</AlertTitle>
+              <AlertDescription>
+                {t('authMethods.google.unavailable')}
+              </AlertDescription>
+            </Alert>
           ) : null}
         </div>
       </SectionCard>

@@ -1,11 +1,14 @@
 import { z } from 'zod';
 
+import { isGermanSubdivisionCode } from '@/shared/absence/german-subdivisions';
 import { JsonObject } from '@/shared/common/json';
+import { trainingPeriodStepSchema } from '@/shared/onboarding/training-period';
 
 export type OnboardingStepId =
   | 'google'
   | 'identity'
   | 'training-period'
+  | 'region'
   | 'workplace';
 
 const googleSchema = z.object({
@@ -28,28 +31,29 @@ const identitySchema = z.object({
   lastName: z.string().trim().min(1),
 });
 
-const trainingPeriodSchema = z
-  .object({
-    trainingStart: z.string().date(),
-    trainingEnd: z.string().date(),
-  })
-  .superRefine((value, context) => {
-    if (value.trainingEnd < value.trainingStart) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['trainingEnd'],
-        message: 'invalid-range',
-      });
-    }
-  });
+const trainingPeriodSchema = trainingPeriodStepSchema;
+
+const regionSchema = z.object({
+  subdivisionCode: z
+    .string()
+    .trim()
+    .refine((value) => isGermanSubdivisionCode(value), {
+      message: 'invalid-subdivision',
+    }),
+});
 
 const workplaceSchema = z.object({
-  department: z.string().trim().max(120),
+  department: z
+    .string()
+    .trim()
+    .min(1, { message: 'required-department' })
+    .max(120),
   trainerEmail: z
     .string()
     .trim()
+    .min(1, { message: 'required-trainer-email' })
     .max(320)
-    .refine((value) => !value || z.string().email().safeParse(value).success, {
+    .refine((value) => z.string().email().safeParse(value).success, {
       message: 'invalid-email',
     }),
   ihkLink: z
@@ -65,13 +69,11 @@ export const onboardingStepOrder: OnboardingStepId[] = [
   'google',
   'identity',
   'training-period',
+  'region',
   'workplace',
 ];
 
-export const optionalOnboardingSteps: OnboardingStepId[] = [
-  'google',
-  'workplace',
-];
+export const optionalOnboardingSteps: OnboardingStepId[] = ['google'];
 
 export function parseOnboardingStepValues(
   stepId: OnboardingStepId,
@@ -94,6 +96,10 @@ export function parseOnboardingStepValues(
 
   if (stepId === 'training-period') {
     return trainingPeriodSchema.parse(value);
+  }
+
+  if (stepId === 'region') {
+    return regionSchema.parse(value);
   }
 
   return workplaceSchema.parse(value);
@@ -125,6 +131,10 @@ export function getOnboardingStepDefaults(input: {
         typeof input.source.trainingEnd === 'string'
           ? input.source.trainingEnd
           : '',
+      reportsSince:
+        typeof input.source.reportsSince === 'string'
+          ? input.source.reportsSince
+          : '',
     };
   }
 
@@ -136,6 +146,15 @@ export function getOnboardingStepDefaults(input: {
     return {
       linked: linked ? 'true' : 'false',
       email: typeof input.source.email === 'string' ? input.source.email : '',
+    };
+  }
+
+  if (input.stepId === 'region') {
+    return {
+      subdivisionCode:
+        typeof input.source.subdivisionCode === 'string'
+          ? input.source.subdivisionCode
+          : '',
     };
   }
 

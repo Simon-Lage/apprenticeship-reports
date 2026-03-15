@@ -12,7 +12,8 @@ import { GoogleOAuthService } from '@/main/services/GoogleOAuthService';
 import { WeeklyReportHashService } from '@/main/services/WeeklyReportHashService';
 import { PasswordAuthService } from '@/main/services/PasswordAuthService';
 import { DesktopFileDialogService } from '@/main/services/DesktopFileDialogService';
-import { defaultOnboardingSteps } from '@/shared/onboarding/default-steps';
+import OpenHolidaysService from '@/main/services/OpenHolidaysService';
+import defaultOnboardingSteps from '@/shared/onboarding/default-steps';
 
 class AppUpdater {
   constructor(mainWindow: BrowserWindow) {
@@ -102,6 +103,7 @@ function createAppKernel(): AppKernel {
     oauthService: googleOAuthService,
   });
   const passwordAuthService = new PasswordAuthService(repository);
+  const openHolidaysService = new OpenHolidaysService();
 
   return new AppKernel(repository, new WeeklyReportHashService(), {
     driveScopes: getConfiguredDriveScopes(),
@@ -111,6 +113,7 @@ function createAppKernel(): AppKernel {
     passwordAuthService,
     googleOAuthService,
     googleDriveService,
+    openHolidaysService,
   });
 }
 
@@ -132,6 +135,7 @@ async function createWindow(): Promise<void> {
     height: 860,
     minWidth: 1100,
     minHeight: 760,
+    fullscreen: true,
     autoHideMenuBar: true,
     icon: getAssetPath('apprenticeship-reports-logo-small.png'),
     webPreferences: {

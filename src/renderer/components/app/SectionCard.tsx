@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card';
 
 type SectionCardProps = PropsWithChildren<{
-  title: string;
+  title?: string;
   description?: string;
   action?: ReactNode;
   className?: string;
@@ -27,28 +27,34 @@ function SectionCard({
   titleClassName,
   children,
 }: SectionCardProps) {
+  const hasHeader = Boolean(title || description || action);
+
   return (
     <Card className={cn('overflow-hidden rounded-xl shadow-sm', className)}>
-      <CardHeader className="border-b border-primary-tint/60 px-5 py-4">
-        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-          <div className="space-y-1">
-            <CardTitle
-              className={cn(
-                'text-base text-text-color md:text-lg',
-                titleClassName,
-              )}
-            >
-              {title}
-            </CardTitle>
-            {description ? (
-              <CardDescription className="text-text-color/70">
-                {description}
-              </CardDescription>
-            ) : null}
+      {hasHeader ? (
+        <CardHeader className="border-b border-primary-tint/60 px-5 py-4">
+          <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+            <div className="space-y-1">
+              {title ? (
+                <CardTitle
+                  className={cn(
+                    'text-base text-text-color md:text-lg',
+                    titleClassName,
+                  )}
+                >
+                  {title}
+                </CardTitle>
+              ) : null}
+              {description ? (
+                <CardDescription className="text-text-color/70">
+                  {description}
+                </CardDescription>
+              ) : null}
+            </div>
+            {action}
           </div>
-          {action}
-        </div>
-      </CardHeader>
+        </CardHeader>
+      ) : null}
       <CardContent className={cn('px-5 py-4', contentClassName)}>
         {children}
       </CardContent>
@@ -57,6 +63,7 @@ function SectionCard({
 }
 
 SectionCard.defaultProps = {
+  title: undefined,
   description: undefined,
   action: undefined,
   className: undefined,

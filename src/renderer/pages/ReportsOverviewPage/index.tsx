@@ -120,7 +120,7 @@ export default function ReportsOverviewPage() {
         title={t('reportsOverview.table.title')}
         className="border-primary-tint bg-white"
       >
-        <div className="max-h-[70vh] overflow-auto rounded-md border border-primary-tint/70">
+        <div className="overflow-x-auto rounded-md border border-primary-tint/70">
           <Table>
             <TableHeader>
               <TableRow className="bg-primary-tint/35">

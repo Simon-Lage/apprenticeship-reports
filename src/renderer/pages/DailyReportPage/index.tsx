@@ -10,7 +10,10 @@ import {
   useReportsState,
   useSettingsSnapshot,
 } from '@/renderer/hooks/useKernelData';
-import { parseUiSettings } from '@/renderer/lib/app-settings';
+import {
+  parseOnboardingTrainingPeriod,
+  parseUiSettings,
+} from '@/renderer/lib/app-settings';
 import {
   collectActivitySuggestions,
   dayTypeValues,
@@ -21,11 +24,17 @@ import {
 import {
   DailyReportFormState,
   defaultDailyReportFormState,
-  toDayKey,
 } from '@/renderer/pages/DailyReportPage/components/form-model';
+import {
+  resolveDayKey,
+  resolveInitialDailyReportDate,
+  resolveWeekRangeForDate,
+} from '@/renderer/pages/DailyReportPage/components/date-logic';
+import { resolveAutoDayType } from '@/renderer/pages/DailyReportPage/components/day-type-defaults';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { parseAbsenceSettings } from '@/shared/absence/settings';
 
 export default function DailyReportPage() {
   const { t } = useTranslation();
@@ -42,6 +51,65 @@ export default function DailyReportPage() {
     () => parseUiSettings(settingsSnapshot.value?.values ?? {}),
     [settingsSnapshot.value?.values],
   );
+  const trainingPeriod = useMemo(
+    () => parseOnboardingTrainingPeriod(settingsSnapshot.value?.values ?? {}),
+    [settingsSnapshot.value?.values],
+  );
+  const absenceSettings = useMemo(
+    () => parseAbsenceSettings(settingsSnapshot.value?.values ?? {}),
+    [settingsSnapshot.value?.values],
+  );
+  const selectedWeekRange = useMemo(
+    () => resolveWeekRangeForDate(form.date),
+    [form.date],
+  );
+  const autoDayType = useMemo(() => {
+    if (!form.date) {
+      return null;
+    }
+
+    return resolveAutoDayType({
+      date: form.date,
+      uiSettings,
+      absenceSettings,
+      currentYear: new Date(form.date).getUTCFullYear(),
+    });
+  }, [absenceSettings, form.date, uiSettings]);
+  const autoReasonText = useMemo(() => {
+    if (!autoDayType) {
+      return null;
+    }
+
+    if (autoDayType.reason.kind === 'public-holiday') {
+      return t('dailyReport.auto.reasonPublicHoliday', {
+        name: autoDayType.reason.name,
+      });
+    }
+
+    if (autoDayType.reason.kind === 'sick') {
+      return t('dailyReport.auto.reasonSick', {
+        name: autoDayType.reason.label ?? '-',
+      });
+    }
+
+    if (autoDayType.reason.kind === 'vacation') {
+      return t('dailyReport.auto.reasonVacation', {
+        name: autoDayType.reason.label ?? '-',
+      });
+    }
+
+    if (autoDayType.reason.kind === 'school-holiday') {
+      return t('dailyReport.auto.reasonSchoolHoliday', {
+        name: autoDayType.reason.name,
+      });
+    }
+
+    return t(
+      autoDayType.reason.base === 'school'
+        ? 'dailyReport.auto.reasonBaseSchool'
+        : 'dailyReport.auto.reasonBaseWork',
+    );
+  }, [autoDayType, t]);
   const suggestions = useMemo(
     () =>
       reportsState.value
@@ -51,12 +119,13 @@ export default function DailyReportPage() {
   );
 
   const currentDailyReport = useMemo(() => {
-    if (!reportsState.value || !form.weekStart || !form.weekEnd || !form.date) {
+    if (!reportsState.value || !selectedWeekRange || !form.date) {
       return null;
     }
     const weeklyReport = Object.values(reportsState.value.weeklyReports).find(
       (report) =>
-        report.weekStart === form.weekStart && report.weekEnd === form.weekEnd,
+        report.weekStart === selectedWeekRange.weekStart &&
+        report.weekEnd === selectedWeekRange.weekEnd,
     );
     if (!weeklyReport) {
       return null;
@@ -64,7 +133,31 @@ export default function DailyReportPage() {
     return weeklyReport.dailyReportIds
       .map((dailyReportId) => reportsState.value?.dailyReports[dailyReportId])
       .find((dailyReport) => dailyReport?.date === form.date);
-  }, [form.date, form.weekEnd, form.weekStart, reportsState.value]);
+  }, [form.date, reportsState.value, selectedWeekRange]);
+
+  useEffect(() => {
+    if (form.date || !settingsSnapshot.value || !reportsState.value) {
+      return;
+    }
+
+    const initialDate = resolveInitialDailyReportDate({
+      reportsState: reportsState.value,
+      trainingStart: trainingPeriod.trainingStart,
+      trainingEnd: trainingPeriod.trainingEnd,
+      reportsSince: trainingPeriod.reportsSince,
+    });
+    setForm((current) => ({
+      ...current,
+      date: initialDate,
+    }));
+  }, [
+    form.date,
+    reportsState.value,
+    settingsSnapshot.value,
+    trainingPeriod.reportsSince,
+    trainingPeriod.trainingEnd,
+    trainingPeriod.trainingStart,
+  ]);
 
   useEffect(() => {
     if (!currentDailyReport) {
@@ -83,10 +176,22 @@ export default function DailyReportPage() {
   }, [currentDailyReport]);
 
   useEffect(() => {
+    if (!form.date || currentDailyReport || !autoDayType) {
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      dayType: autoDayType.dayType,
+      freeReason: autoDayType.dayType === 'free' ? autoDayType.freeReason : '',
+    }));
+  }, [autoDayType, currentDailyReport, form.date]);
+
+  useEffect(() => {
     if (form.dayType !== 'school' || form.lessons.length > 0 || !form.date) {
       return;
     }
-    const dayKey = toDayKey(form.date);
+    const dayKey = resolveDayKey(form.date);
     if (!dayKey) {
       return;
     }
@@ -121,7 +226,7 @@ export default function DailyReportPage() {
       return;
     }
 
-    if (!form.weekStart || !form.weekEnd || !form.date) {
+    if (!form.date || !selectedWeekRange) {
       toast.error(t('dailyReport.feedback.missingDates'));
       return;
     }
@@ -140,8 +245,8 @@ export default function DailyReportPage() {
       };
 
       await runtime.api.upsertDailyReport({
-        weekStart: form.weekStart,
-        weekEnd: form.weekEnd,
+        weekStart: selectedWeekRange.weekStart,
+        weekEnd: selectedWeekRange.weekEnd,
         date: form.date,
         values,
       });
@@ -158,7 +263,7 @@ export default function DailyReportPage() {
   }
 
   async function handleDelete() {
-    if (!runtime.api || !currentDailyReport) {
+    if (!runtime.api || !currentDailyReport || !selectedWeekRange) {
       return;
     }
 
@@ -166,8 +271,8 @@ export default function DailyReportPage() {
 
     try {
       await runtime.api.deleteDailyReport({
-        weekStart: form.weekStart,
-        weekEnd: form.weekEnd,
+        weekStart: selectedWeekRange.weekStart,
+        weekEnd: selectedWeekRange.weekEnd,
         date: form.date,
       });
       await runtime.refresh();
@@ -203,33 +308,7 @@ export default function DailyReportPage() {
           description={t('dailyReport.meta.description')}
           className="border-primary-tint bg-white"
         >
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <FormField id="week-start" label={t('dailyReport.meta.weekStart')}>
-              <Input
-                id="week-start"
-                type="date"
-                value={form.weekStart}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    weekStart: event.target.value,
-                  }))
-                }
-              />
-            </FormField>
-            <FormField id="week-end" label={t('dailyReport.meta.weekEnd')}>
-              <Input
-                id="week-end"
-                type="date"
-                value={form.weekEnd}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    weekEnd: event.target.value,
-                  }))
-                }
-              />
-            </FormField>
+          <div className="grid gap-4 md:grid-cols-2">
             <FormField id="report-date" label={t('dailyReport.meta.date')}>
               <Input
                 id="report-date"
@@ -263,6 +342,9 @@ export default function DailyReportPage() {
               </select>
             </FormField>
           </div>
+          {autoReasonText ? (
+            <p className="mt-3 text-xs text-text-color/70">{autoReasonText}</p>
+          ) : null}
         </SectionCard>
         {form.dayType === 'free' ? (
           <SectionCard
@@ -314,7 +396,7 @@ export default function DailyReportPage() {
                       {t('common.add')}
                     </Button>
                   </div>
-                  <ul className="max-h-56 space-y-2 overflow-auto pr-1">
+                  <ul className="space-y-2">
                     {form.activities.map((activity) => (
                       <li
                         key={activity}
@@ -369,7 +451,7 @@ export default function DailyReportPage() {
                       {t('common.add')}
                     </Button>
                   </div>
-                  <ul className="max-h-56 space-y-2 overflow-auto pr-1">
+                  <ul className="space-y-2">
                     {form.trainings.map((training) => (
                       <li
                         key={training}
@@ -403,7 +485,7 @@ export default function DailyReportPage() {
                 description={t('dailyReport.school.description')}
                 className="border-primary-tint bg-white"
               >
-                <div className="max-h-[46vh] space-y-2 overflow-auto pr-1">
+                <div className="space-y-2">
                   {form.lessons.map((lesson, index) => (
                     <div
                       key={`${lesson.lesson}-${lesson.subject}-${lesson.teacher}-${lesson.topic}`}

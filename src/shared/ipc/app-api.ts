@@ -39,6 +39,7 @@ export const AppIpcChannel = {
   uploadBackupToDrive: 'app:upload-backup-to-drive',
   listDriveBackups: 'app:list-drive-backups',
   prepareDriveBackupImport: 'app:prepare-drive-backup-import',
+  syncAbsenceCatalog: 'app:sync-absence-catalog',
   requestManualBackup: 'app:request-manual-backup',
   recordDailyReport: 'app:record-daily-report',
   registerBackupSuccess: 'app:register-backup-success',
@@ -279,6 +280,7 @@ export type AppApi = {
   prepareDriveBackupImport: (
     input: PrepareDriveBackupImportInput,
   ) => Promise<DatabaseBackupImportPreview>;
+  syncAbsenceCatalog: () => Promise<AppBootstrapState>;
   requestManualBackup: () => Promise<AppBootstrapState>;
   recordDailyReport: () => Promise<AppBootstrapState>;
   registerBackupSuccess: () => Promise<AppBootstrapState>;
