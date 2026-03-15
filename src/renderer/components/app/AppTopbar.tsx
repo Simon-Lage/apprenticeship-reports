@@ -1,63 +1,127 @@
-import { NavLink } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
+import {
+  FiCalendar,
+  FiFileText,
+  FiGrid,
+  FiHome,
+  FiList,
+  FiSettings,
+  FiShield,
+  FiUpload,
+  FiDownload,
+} from 'react-icons/fi';
+import { IconType } from 'react-icons';
 
-import { Badge } from '@/components/ui/badge';
 import { appRoutes } from '@/renderer/lib/app-routes';
 import { cn } from '@/renderer/lib/utils';
-
-type AppTopbarProps = {
-  authenticatedEmail: string | null;
-};
 
 type NavItem = {
   path: string;
   labelKey: string;
+  icon: IconType;
 };
 
 const navItems: NavItem[] = [
-  { path: appRoutes.home, labelKey: 'navigation.home' },
-  { path: appRoutes.dailyReport, labelKey: 'navigation.dailyReport' },
-  { path: appRoutes.weeklyReport, labelKey: 'navigation.weeklyReport' },
-  { path: appRoutes.reportsOverview, labelKey: 'navigation.reportsOverview' },
-  { path: appRoutes.timeTable, labelKey: 'navigation.timeTable' },
-  { path: appRoutes.import, labelKey: 'navigation.import' },
-  { path: appRoutes.export, labelKey: 'navigation.export' },
-  { path: appRoutes.settings, labelKey: 'navigation.settings' },
+  { path: appRoutes.home, labelKey: 'navigation.home', icon: FiHome },
+  {
+    path: appRoutes.dailyReport,
+    labelKey: 'navigation.dailyReport',
+    icon: FiFileText,
+  },
+  {
+    path: appRoutes.weeklyReport,
+    labelKey: 'navigation.weeklyReport',
+    icon: FiCalendar,
+  },
+  {
+    path: appRoutes.reportsOverview,
+    labelKey: 'navigation.reportsOverview',
+    icon: FiList,
+  },
+  { path: appRoutes.timeTable, labelKey: 'navigation.timeTable', icon: FiGrid },
+  { path: appRoutes.import, labelKey: 'navigation.import', icon: FiDownload },
+  { path: appRoutes.export, labelKey: 'navigation.export', icon: FiUpload },
+  {
+    path: appRoutes.settings,
+    labelKey: 'navigation.settings',
+    icon: FiSettings,
+  },
   {
     path: appRoutes.changeAuthMethods,
     labelKey: 'navigation.changeAuthMethods',
+    icon: FiShield,
   },
 ];
 
-export function AppTopbar({ authenticatedEmail }: AppTopbarProps) {
+export default function AppTopbar() {
   const { t } = useTranslation();
+  const location = useLocation();
+
+  function isActivePath(path: string): boolean {
+    if (path === appRoutes.home) {
+      return location.pathname === appRoutes.home;
+    }
+
+    return (
+      location.pathname === path || location.pathname.startsWith(`${path}/`)
+    );
+  }
 
   return (
-    <nav className="sticky top-4 z-40 mb-6 rounded-xl border border-primary-tint bg-white/90 p-3 shadow-sm backdrop-blur">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="font-semibold text-text-color">{t('navigation.title')}</p>
-        <Badge className="bg-primary-shade text-primary-contrast">
-          {authenticatedEmail ?? t('navigation.localSession')}
-        </Badge>
+    <motion.nav
+      initial={{ y: -14, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.24, ease: [0.2, 0.8, 0.2, 1] }}
+      className="z-30 mb-4 rounded-xl border border-primary-tint/60 bg-white/88 shadow-sm backdrop-blur-md"
+    >
+      <div className="flex w-full items-center gap-3 px-4 py-3 lg:px-5">
+        <Link
+          to={appRoutes.home}
+          className="shrink-0 text-sm font-semibold tracking-tight text-text-color"
+        >
+          {t('navigation.brand')}
+        </Link>
+        <div className="min-w-0 flex-1 overflow-x-auto">
+          <ul className="flex min-w-max items-center gap-1">
+            {navItems.map((item) => {
+              const isActive = isActivePath(item.path);
+              const Icon = item.icon;
+
+              return (
+                <li key={item.path}>
+                  <Link
+                    to={item.path}
+                    className={cn(
+                      'relative inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                      isActive
+                        ? 'text-primary-contrast'
+                        : 'text-text-color/80 hover:bg-primary-tint/35 hover:text-text-color',
+                    )}
+                  >
+                    {isActive ? (
+                      <motion.span
+                        layoutId="topbar-active-link"
+                        className="absolute inset-0 rounded-md bg-primary"
+                        transition={{
+                          type: 'spring',
+                          stiffness: 360,
+                          damping: 32,
+                        }}
+                      />
+                    ) : null}
+                    <span className="relative z-10 flex items-center gap-2 whitespace-nowrap">
+                      <Icon className="size-4 shrink-0" />
+                      {t(item.labelKey)}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </div>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) =>
-              cn(
-                'rounded-md border border-primary-tint px-3 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary text-primary-contrast'
-                  : 'bg-primary-tint/40 text-text-color hover:bg-primary-shade hover:text-primary-contrast',
-              )
-            }
-          >
-            {t(item.labelKey)}
-          </NavLink>
-        ))}
-      </div>
-    </nav>
+    </motion.nav>
   );
 }

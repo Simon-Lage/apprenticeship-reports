@@ -245,6 +245,9 @@ export class AppKernelCore {
       now: this.now(),
       session: currentSession,
       passwordConfigured: this.passwordConfigured,
+      googleAuthConfigured: Boolean(
+        this.googleOAuthService && this.googleOAuthService.isConfigured(),
+      ),
       drive: currentState.drive,
       backup: currentState.backup,
       pendingBackupImportId:
@@ -259,6 +262,7 @@ export class AppKernelCore {
         isConfigured: onboardingState.isConfigured,
         isComplete: onboardingState.isComplete,
         nextStepId: onboardingState.nextStepId,
+        activeStepIds: onboardingState.activeStepIds,
         remainingStepIds: onboardingState.remainingStepIds,
         skippedStepIds: onboardingState.skippedStepIds,
       },

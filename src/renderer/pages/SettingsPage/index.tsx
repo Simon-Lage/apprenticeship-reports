@@ -152,7 +152,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={t('settings.title')}
         description={t('settings.description')}
@@ -299,7 +299,7 @@ export default function SettingsPage() {
               incomingTitle={`${t('settings.compare.incomingTitle')} (${preview.incoming.capturedAt})`}
             />
             {preview.differences.length ? (
-              <ul className="space-y-2 text-sm">
+              <ul className="max-h-56 space-y-2 overflow-auto pr-1 text-sm">
                 {preview.differences.slice(0, 12).map((difference) => (
                   <li
                     key={`${difference.path}-${difference.kind}`}

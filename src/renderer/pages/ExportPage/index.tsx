@@ -90,85 +90,89 @@ export default function ExportPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={t('export.title')}
         description={t('export.description')}
       />
-      <SectionCard
-        title={t('export.local.title')}
-        description={t('export.local.description')}
-        className="border-primary-tint bg-white"
-      >
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            className="bg-primary text-primary-contrast hover:bg-primary-shade"
-            onClick={() => {
-              exportReportsJson();
-            }}
-          >
-            {t('export.local.reports')}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="border-primary-tint"
-            onClick={() => {
-              exportSettingsJson();
-            }}
-          >
-            {t('export.local.settings')}
-          </Button>
-        </div>
-      </SectionCard>
-      <SectionCard
-        title={t('export.drive.title')}
-        description={t('export.drive.description')}
-        className="border-primary-tint bg-white"
-      >
-        <div className="space-y-3">
-          <Badge
-            className={
-              driveReady
-                ? 'bg-primary text-primary-contrast'
-                : 'bg-primary-tint text-text-color'
-            }
-          >
-            {driveReady ? t('export.drive.ready') : t('export.drive.notReady')}
-          </Badge>
-          {!driveReady ? (
-            <Alert className="border-primary-tint bg-primary-tint/30">
-              <AlertTitle>{t('export.drive.warningTitle')}</AlertTitle>
-              <AlertDescription>
-                {t('export.drive.warningDescription')}
-              </AlertDescription>
-            </Alert>
-          ) : null}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <SectionCard
+          title={t('export.local.title')}
+          description={t('export.local.description')}
+          className="border-primary-tint bg-white"
+        >
           <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              className="bg-primary text-primary-contrast hover:bg-primary-shade"
+              onClick={() => {
+                exportReportsJson();
+              }}
+            >
+              {t('export.local.reports')}
+            </Button>
             <Button
               type="button"
               variant="outline"
               className="border-primary-tint"
               onClick={() => {
-                connectDrive();
+                exportSettingsJson();
               }}
             >
-              {t('export.drive.connect')}
-            </Button>
-            <Button
-              type="button"
-              disabled={!driveReady}
-              className="bg-primary text-primary-contrast hover:bg-primary-shade"
-              onClick={() => {
-                exportToDrive();
-              }}
-            >
-              {t('export.drive.export')}
+              {t('export.local.settings')}
             </Button>
           </div>
-        </div>
-      </SectionCard>
+        </SectionCard>
+        <SectionCard
+          title={t('export.drive.title')}
+          description={t('export.drive.description')}
+          className="border-primary-tint bg-white"
+        >
+          <div className="space-y-3">
+            <Badge
+              className={
+                driveReady
+                  ? 'bg-primary text-primary-contrast'
+                  : 'bg-primary-tint text-text-color'
+              }
+            >
+              {driveReady
+                ? t('export.drive.ready')
+                : t('export.drive.notReady')}
+            </Badge>
+            {!driveReady ? (
+              <Alert className="border-primary-tint bg-primary-tint/30">
+                <AlertTitle>{t('export.drive.warningTitle')}</AlertTitle>
+                <AlertDescription>
+                  {t('export.drive.warningDescription')}
+                </AlertDescription>
+              </Alert>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="border-primary-tint"
+                onClick={() => {
+                  connectDrive();
+                }}
+              >
+                {t('export.drive.connect')}
+              </Button>
+              <Button
+                type="button"
+                disabled={!driveReady}
+                className="bg-primary text-primary-contrast hover:bg-primary-shade"
+                onClick={() => {
+                  exportToDrive();
+                }}
+              >
+                {t('export.drive.export')}
+              </Button>
+            </div>
+          </div>
+        </SectionCard>
+      </div>
     </div>
   );
 }

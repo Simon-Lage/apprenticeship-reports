@@ -23,8 +23,7 @@ const deTranslation = {
     },
   },
   navigation: {
-    title: 'Navigation',
-    localSession: 'Lokale Sitzung',
+    brand: 'Apprenticeship Reports',
     home: 'Home',
     dailyReport: 'Tagesbericht',
     weeklyReport: 'Wochenbericht',
@@ -47,6 +46,7 @@ const deTranslation = {
     googleTitle: 'Google-Anmeldung',
     googleSubmit: 'Mit Google anmelden',
     googleDisabledHint: 'Es wurde noch kein Google-Konto hinterlegt.',
+    googleUnavailableHint: 'Google OAuth ist nicht konfiguriert.',
     validation: {
       passwordRequired: 'Bitte ein Passwort eingeben.',
     },
@@ -59,15 +59,30 @@ const deTranslation = {
   },
   onboarding: {
     welcome: {
-      title: 'Willkommen',
-      description: 'Richte die Anwendung in wenigen Schritten ein.',
-      hint: 'Der erste Schritt ist das lokale Passwort.',
+      kicker: 'Apprenticeship Reports',
+      title: 'Willkommen bei Apprenticeship Reports',
+      description:
+        'Diese Anwendung hilft dir, Tages- und Wochenberichte strukturiert zu erfassen, zu exportieren und sicher zu sichern.',
       start: 'Los geht’s',
+      features: {
+        dailyTitle: 'Tagesberichte',
+        dailyDescription:
+          'Dokumentiere jeden Tag präzise mit Tätigkeiten, Schulthemen und Schulungen.',
+        weeklyTitle: 'Wochenberichte',
+        weeklyDescription:
+          'Erstelle vollständige Wochenberichte mit klarer Struktur und PDF-Ausgabe.',
+        syncTitle: 'Import & Export',
+        syncDescription:
+          'Nutze JSON-Import/Export und sichere Datenflüsse mit Vergleichsansicht.',
+        setupTitle: 'Sicherer Start',
+        setupDescription:
+          'Im nächsten Schritt richtest du dein verpflichtendes lokales Passwort ein.',
+      },
     },
     password: {
-      title: 'Passwort',
-      passwordLabel: 'Neues Passwort',
-      confirmLabel: 'Passwort bestätigen',
+      title: 'Passwort festlegen',
+      passwordLabel: 'Passwort festlegen',
+      confirmLabel: 'Passwort wiederholen',
       submit: 'Passwort speichern',
       requirementsTitle: 'Passwort-Anforderungen',
       validationRules: 'Bitte erfülle alle Passwort-Anforderungen.',
@@ -78,11 +93,15 @@ const deTranslation = {
         uppercase: 'Mindestens ein Großbuchstabe',
         number: 'Mindestens eine Zahl',
         special: 'Mindestens ein Sonderzeichen',
+        repeatMatches: 'Passwort wiederholen entspricht dem Passwort',
       },
     },
     progress: {
       title: 'Fortschritt',
       counter: '{{done}} von {{total}} Schritten',
+      stateDone: 'Erledigt',
+      stateCurrent: 'Aktuell',
+      statePending: 'Offen',
     },
     completed: {
       title: 'Onboarding abgeschlossen',
@@ -92,9 +111,9 @@ const deTranslation = {
       generic: 'Bitte prüfe die Eingaben.',
     },
     actions: {
-      saveDraft: 'Zwischenstand speichern',
-      completeStep: 'Schritt abschließen',
-      skipStep: 'Schritt überspringen',
+      back: 'Zurück',
+      next: 'Weiter',
+      finish: 'Abschließen',
     },
     feedback: {
       passwordSetupSuccess: 'Passwort wurde eingerichtet.',
@@ -109,10 +128,9 @@ const deTranslation = {
       google: {
         title: 'Google',
         description: 'Optionales Google-Konto für alternative Anmeldung.',
-        statusTitle: 'Google-Status',
-        statusLinked: 'Google ist verbunden: {{email}}',
-        statusNotLinked: 'Es ist noch kein Google-Konto verbunden.',
-        noEmail: 'E-Mail unbekannt',
+        unavailableTitle: 'Google derzeit nicht verfügbar',
+        unavailableDescription:
+          'Google OAuth ist in dieser Umgebung nicht konfiguriert. Du kannst diesen optionalen Schritt überspringen.',
         browserHint:
           'Beim Verbinden wird der Browser geöffnet. Danach kehrst du automatisch zurück.',
         connect: 'Google verbinden',
@@ -180,7 +198,9 @@ const deTranslation = {
       title: 'Google-Konto',
       description: 'Google-Konto verbinden, wechseln oder entfernen.',
       notLinked: 'Kein Google-Konto verknüpft',
-      connect: 'Google verbinden/wechseln',
+      unavailable: 'Google OAuth ist nicht konfiguriert.',
+      connect: 'Google verbinden',
+      switch: 'Google wechseln',
       remove: 'Google entfernen',
     },
     feedback: {

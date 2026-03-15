@@ -5,7 +5,6 @@ import {
   FiBriefcase,
   FiCalendar,
   FiCheckCircle,
-  FiCircle,
   FiUser,
 } from 'react-icons/fi';
 
@@ -39,16 +38,15 @@ export default function OnboardingProgress({
   skippedStepIds,
 }: OnboardingProgressProps) {
   const { t } = useTranslation();
-  const completedStepIds = useMemo(
-    () => new Set(skippedStepIds),
-    [skippedStepIds],
-  );
   const completedCount = useMemo(
     () =>
       stepOrder.filter((stepId) => !remainingStepIds.includes(stepId)).length,
     [remainingStepIds, stepOrder],
   );
-  const progress = Math.round((completedCount / stepOrder.length) * 100);
+  const progress =
+    stepOrder.length === 0
+      ? 0
+      : Math.round((completedCount / stepOrder.length) * 100);
 
   return (
     <div className="space-y-4 rounded-xl border border-primary-tint bg-white p-4">
@@ -69,39 +67,59 @@ export default function OnboardingProgress({
           style={{ width: `${progress}%` }}
         />
       </div>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="space-y-3">
         {stepOrder.map((stepId) => {
           const StepIcon = getStepIcon(stepId);
           const isActive = currentStepId === stepId;
           const isDone =
-            completedStepIds.has(stepId) || !remainingStepIds.includes(stepId);
-          let stepClasses =
-            'border-primary-tint/70 bg-white text-text-color/80';
-
-          if (isDone) {
-            stepClasses =
-              'border-primary-tint bg-primary-tint/35 text-text-color';
-          }
-
-          if (isActive) {
-            stepClasses = 'border-primary bg-primary text-primary-contrast';
-          }
+            skippedStepIds.includes(stepId) || !remainingStepIds.includes(stepId);
+          const stateLabel = isDone
+            ? t('onboarding.progress.stateDone')
+            : isActive
+              ? t('onboarding.progress.stateCurrent')
+              : t('onboarding.progress.statePending');
 
           return (
             <div
               key={stepId}
               className={cn(
-                'flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors',
-                stepClasses,
+                'flex items-center justify-between gap-3 rounded-md border border-primary-tint/70 px-3 py-2',
+                isActive ? 'bg-primary-tint/40' : 'bg-white',
               )}
             >
-              {isDone ? (
-                <FiCheckCircle className="size-4 shrink-0" />
-              ) : (
-                <FiCircle className="size-4 shrink-0" />
-              )}
-              <StepIcon className="size-4 shrink-0" />
-              <span>{t(`onboarding.steps.${stepId}.title`)}</span>
+              <div className="flex items-center gap-2 text-sm text-text-color">
+                {isDone ? (
+                  <FiCheckCircle className="size-4 shrink-0 text-primary" />
+                ) : (
+                  <span className="inline-flex size-4 shrink-0 rounded-full border border-primary-tint" />
+                )}
+                <StepIcon
+                  className={cn(
+                    'size-4 shrink-0',
+                    isActive ? 'text-primary-shade' : 'text-text-color/70',
+                  )}
+                />
+                <span
+                  className={cn(
+                    'font-medium',
+                    isActive ? 'text-text-color' : 'text-text-color/80',
+                  )}
+                >
+                  {t(`onboarding.steps.${stepId}.title`)}
+                </span>
+              </div>
+              <span
+                className={cn(
+                  'text-xs',
+                  isDone
+                    ? 'text-primary-shade'
+                    : isActive
+                      ? 'text-text-color'
+                      : 'text-text-color/65',
+                )}
+              >
+                {stateLabel}
+              </span>
             </div>
           );
         })}

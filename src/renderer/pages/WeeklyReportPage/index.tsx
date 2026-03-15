@@ -7,7 +7,10 @@ import { PageHeader } from '@/renderer/components/app/PageHeader';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
-import { useReportsState, useSettingsSnapshot } from '@/renderer/hooks/useKernelData';
+import {
+  useReportsState,
+  useSettingsSnapshot,
+} from '@/renderer/hooks/useKernelData';
 import { appRoutes } from '@/renderer/lib/app-routes';
 import { parseUiSettings } from '@/renderer/lib/app-settings';
 import {
@@ -76,7 +79,8 @@ export default function WeeklyReportPage() {
     [settingsSnapshot.value?.values],
   );
   const weeksWithDailyReports = useMemo(
-    () => (reportsState.value ? listWeeksWithDailyReports(reportsState.value) : []),
+    () =>
+      reportsState.value ? listWeeksWithDailyReports(reportsState.value) : [],
     [reportsState.value],
   );
   const currentWeek = useMemo(
@@ -97,10 +101,16 @@ export default function WeeklyReportPage() {
         supervisorEmailPrimary:
           current.supervisorEmailPrimary || uiSettings.supervisorEmailPrimary,
         supervisorEmailSecondary:
-          current.supervisorEmailSecondary || uiSettings.supervisorEmailSecondary,
+          current.supervisorEmailSecondary ||
+          uiSettings.supervisorEmailSecondary,
       }));
     }
-  }, [form.supervisorEmailPrimary, uiSettings.defaultDepartment, uiSettings.supervisorEmailPrimary, uiSettings.supervisorEmailSecondary]);
+  }, [
+    form.supervisorEmailPrimary,
+    uiSettings.defaultDepartment,
+    uiSettings.supervisorEmailPrimary,
+    uiSettings.supervisorEmailSecondary,
+  ]);
 
   useEffect(() => {
     if (!currentWeek) {
@@ -211,7 +221,7 @@ export default function WeeklyReportPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={t('weeklyReport.title')}
         description={t('weeklyReport.description')}
@@ -221,7 +231,9 @@ export default function WeeklyReportPage() {
               type="button"
               variant="outline"
               className="border-primary-tint"
-              onClick={importDailyData}
+              onClick={() => {
+                importDailyData();
+              }}
             >
               {t('weeklyReport.actions.importDailyData')}
             </Button>
@@ -230,18 +242,25 @@ export default function WeeklyReportPage() {
               disabled={!currentWeek || isPending}
               className="bg-primary text-primary-contrast hover:bg-primary-shade"
               onClick={() => {
-                void registerHash();
+                registerHash().catch(() => undefined);
               }}
             >
               {t('weeklyReport.actions.registerHash')}
             </Button>
-            <Button asChild type="button" variant="outline" className="border-primary-tint">
-              <Link to={appRoutes.weeklyReportPdf}>{t('weeklyReport.actions.openPdf')}</Link>
+            <Button
+              asChild
+              type="button"
+              variant="outline"
+              className="border-primary-tint"
+            >
+              <Link to={appRoutes.weeklyReportPdf}>
+                {t('weeklyReport.actions.openPdf')}
+              </Link>
             </Button>
           </div>
         }
       />
-      <form className="space-y-6" onSubmit={saveWeeklyReport}>
+      <form className="space-y-4 pb-24" onSubmit={saveWeeklyReport}>
         <SectionCard
           title={t('weeklyReport.meta.title')}
           description={t('weeklyReport.meta.description')}
@@ -254,7 +273,10 @@ export default function WeeklyReportPage() {
                 type="date"
                 value={form.weekStart}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, weekStart: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    weekStart: event.target.value,
+                  }))
                 }
               />
             </FormField>
@@ -264,17 +286,26 @@ export default function WeeklyReportPage() {
                 type="date"
                 value={form.weekEnd}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, weekEnd: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    weekEnd: event.target.value,
+                  }))
                 }
               />
             </FormField>
-            <FormField id="report-date" label={t('weeklyReport.meta.reportDate')}>
+            <FormField
+              id="report-date"
+              label={t('weeklyReport.meta.reportDate')}
+            >
               <Input
                 id="report-date"
                 type="date"
                 value={form.reportDate}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, reportDate: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    reportDate: event.target.value,
+                  }))
                 }
               />
             </FormField>
@@ -283,11 +314,17 @@ export default function WeeklyReportPage() {
                 id="area"
                 value={form.area}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, area: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    area: event.target.value,
+                  }))
                 }
               />
             </FormField>
-            <FormField id="email-primary" label={t('weeklyReport.meta.supervisorPrimary')}>
+            <FormField
+              id="email-primary"
+              label={t('weeklyReport.meta.supervisorPrimary')}
+            >
               <Input
                 id="email-primary"
                 type="email"
@@ -300,7 +337,10 @@ export default function WeeklyReportPage() {
                 }
               />
             </FormField>
-            <FormField id="email-secondary" label={t('weeklyReport.meta.supervisorSecondary')}>
+            <FormField
+              id="email-secondary"
+              label={t('weeklyReport.meta.supervisorSecondary')}
+            >
               <Input
                 id="email-secondary"
                 type="email"
@@ -327,7 +367,10 @@ export default function WeeklyReportPage() {
                 }
               />
             </div>
-            <FormField id="submitted-email" label={t('weeklyReport.meta.submittedEmail')}>
+            <FormField
+              id="submitted-email"
+              label={t('weeklyReport.meta.submittedEmail')}
+            >
               <Input
                 id="submitted-email"
                 type="email"
@@ -342,55 +385,84 @@ export default function WeeklyReportPage() {
             </FormField>
           </div>
         </SectionCard>
-        <SectionCard title={t('weeklyReport.sections.work')} className="border-primary-tint bg-white">
-          <Textarea
-            value={form.workActivities}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, workActivities: event.target.value }))
-            }
-            rows={5}
-          />
-        </SectionCard>
-        <SectionCard title={t('weeklyReport.sections.school')} className="border-primary-tint bg-white">
-          <Textarea
-            value={form.schoolTopics}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, schoolTopics: event.target.value }))
-            }
-            rows={5}
-          />
-        </SectionCard>
-        <SectionCard title={t('weeklyReport.sections.training')} className="border-primary-tint bg-white">
-          <Textarea
-            value={form.trainings}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, trainings: event.target.value }))
-            }
-            rows={5}
-          />
-        </SectionCard>
-        <SectionCard title={t('weeklyReport.sections.notes')} className="border-primary-tint bg-white">
-          <Textarea
-            value={form.notes}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, notes: event.target.value }))
-            }
-            rows={6}
-          />
-        </SectionCard>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            type="submit"
-            disabled={isPending}
-            className="bg-primary text-primary-contrast hover:bg-primary-shade"
+        <div className="grid gap-4 xl:grid-cols-2">
+          <SectionCard
+            title={t('weeklyReport.sections.work')}
+            className="border-primary-tint bg-white"
           >
-            {isPending ? t('common.loading') : t('weeklyReport.actions.save')}
-          </Button>
-          {currentWeek ? (
-            <Badge className="bg-primary-tint text-text-color">
-              {currentWeek.dailyReports.length} {t('weeklyReport.meta.daysTracked')}
-            </Badge>
-          ) : null}
+            <Textarea
+              value={form.workActivities}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  workActivities: event.target.value,
+                }))
+              }
+              rows={4}
+            />
+          </SectionCard>
+          <SectionCard
+            title={t('weeklyReport.sections.school')}
+            className="border-primary-tint bg-white"
+          >
+            <Textarea
+              value={form.schoolTopics}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  schoolTopics: event.target.value,
+                }))
+              }
+              rows={4}
+            />
+          </SectionCard>
+          <SectionCard
+            title={t('weeklyReport.sections.training')}
+            className="border-primary-tint bg-white"
+          >
+            <Textarea
+              value={form.trainings}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  trainings: event.target.value,
+                }))
+              }
+              rows={4}
+            />
+          </SectionCard>
+          <SectionCard
+            title={t('weeklyReport.sections.notes')}
+            className="border-primary-tint bg-white"
+          >
+            <Textarea
+              value={form.notes}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  notes: event.target.value,
+                }))
+              }
+              rows={4}
+            />
+          </SectionCard>
+        </div>
+        <div className="sticky bottom-3 z-20 rounded-xl border border-primary-tint/75 bg-white/95 p-3 shadow-sm backdrop-blur">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="bg-primary text-primary-contrast hover:bg-primary-shade"
+            >
+              {isPending ? t('common.loading') : t('weeklyReport.actions.save')}
+            </Button>
+            {currentWeek ? (
+              <Badge className="bg-primary-tint text-text-color">
+                {currentWeek.dailyReports.length}{' '}
+                {t('weeklyReport.meta.daysTracked')}
+              </Badge>
+            ) : null}
+          </div>
         </div>
       </form>
     </div>

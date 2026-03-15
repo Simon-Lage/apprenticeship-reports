@@ -18,7 +18,7 @@ export default function JsonDiffViewer({
   incomingTitle,
 }: JsonDiffViewerProps) {
   return (
-    <div className="overflow-hidden rounded-md border border-primary-tint/80">
+    <div className="max-h-[52vh] overflow-auto rounded-md border border-primary-tint/80">
       <ReactDiffViewer
         oldValue={stringify(currentValue)}
         newValue={stringify(incomingValue)}

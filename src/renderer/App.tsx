@@ -2,11 +2,14 @@ import { Navigate, Route, Routes, HashRouter } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { AppStateView } from '@/renderer/components/app/AppStateView';
-import { AppTopbar } from '@/renderer/components/app/AppTopbar';
-import { AppRuntimeProvider, useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
+import AppTopbar from '@/renderer/components/app/AppTopbar';
+import {
+  AppRuntimeProvider,
+  useAppRuntime,
+} from '@/renderer/contexts/AppRuntimeContext';
 import { ToastControllerProvider } from '@/renderer/contexts/ToastControllerContext';
-import { AuthLayout } from '@/renderer/layouts/AuthLayout';
-import { DefaultLayout } from '@/renderer/layouts/DefaultLayout';
+import AuthLayout from '@/renderer/layouts/AuthLayout';
+import DefaultLayout from '@/renderer/layouts/DefaultLayout';
 import { appRoutes } from '@/renderer/lib/app-routes';
 import ChangeAuthMethodsPage from '@/renderer/pages/ChangeAuthMethodsPage';
 import DailyReportPage from '@/renderer/pages/DailyReportPage';
@@ -18,8 +21,10 @@ import OnboardingPage from '@/renderer/pages/OnboardingPage';
 import ReportsOverviewPage from '@/renderer/pages/ReportsOverviewPage';
 import SettingsPage from '@/renderer/pages/SettingsPage';
 import TimeTablePage from '@/renderer/pages/TimeTablePage';
+import WelcomePage from '@/renderer/pages/WelcomePage';
 import WeeklyReportPage from '@/renderer/pages/WeeklyReportPage';
 import WeeklyReportPDFPage from '@/renderer/pages/WeeklyReportPDFPage';
+import { hasSeenOnboardingWelcome } from '@/renderer/lib/onboarding-welcome';
 import '@/renderer/i18n';
 import './globals.css';
 import './App.css';
@@ -30,16 +35,49 @@ function AuthenticatedAppRoutes() {
       <Route path={appRoutes.home} element={<HomePage />} />
       <Route path={appRoutes.dailyReport} element={<DailyReportPage />} />
       <Route path={appRoutes.weeklyReport} element={<WeeklyReportPage />} />
-      <Route path={appRoutes.weeklyReportPdf} element={<WeeklyReportPDFPage />} />
-      <Route path={appRoutes.reportsOverview} element={<ReportsOverviewPage />} />
+      <Route
+        path={appRoutes.weeklyReportPdf}
+        element={<WeeklyReportPDFPage />}
+      />
+      <Route
+        path={appRoutes.reportsOverview}
+        element={<ReportsOverviewPage />}
+      />
       <Route path={appRoutes.timeTable} element={<TimeTablePage />} />
       <Route path={appRoutes.import} element={<ImportPage />} />
       <Route path={appRoutes.export} element={<ExportPage />} />
       <Route path={appRoutes.settings} element={<SettingsPage />} />
-      <Route path={appRoutes.changeAuthMethods} element={<ChangeAuthMethodsPage />} />
-      <Route path={appRoutes.login} element={<Navigate to={appRoutes.home} replace />} />
-      <Route path={appRoutes.onboarding} element={<Navigate to={appRoutes.home} replace />} />
+      <Route
+        path={appRoutes.changeAuthMethods}
+        element={<ChangeAuthMethodsPage />}
+      />
+      <Route
+        path={appRoutes.welcome}
+        element={<Navigate to={appRoutes.home} replace />}
+      />
+      <Route
+        path={appRoutes.login}
+        element={<Navigate to={appRoutes.home} replace />}
+      />
+      <Route
+        path={appRoutes.onboarding}
+        element={<Navigate to={appRoutes.home} replace />}
+      />
       <Route path="*" element={<Navigate to={appRoutes.home} replace />} />
+    </Routes>
+  );
+}
+
+function PasswordSetupRoutes() {
+  const defaultRoute = hasSeenOnboardingWelcome()
+    ? appRoutes.onboarding
+    : appRoutes.welcome;
+
+  return (
+    <Routes>
+      <Route path={appRoutes.welcome} element={<WelcomePage />} />
+      <Route path={appRoutes.onboarding} element={<OnboardingPage />} />
+      <Route path="*" element={<Navigate to={defaultRoute} replace />} />
     </Routes>
   );
 }
@@ -73,14 +111,16 @@ function RuntimeRouter() {
         description={runtime.error}
         actionLabel={t('appState.retry')}
         onAction={() => {
-          void runtime.refresh();
+          runtime.refresh().catch(() => undefined);
         }}
       />
     );
   }
 
   const needsPasswordSetup = !runtime.state.auth.passwordConfigured;
-  const needsLogin = runtime.state.auth.passwordConfigured && !runtime.state.auth.isAuthenticated;
+  const needsLogin =
+    runtime.state.auth.passwordConfigured &&
+    !runtime.state.auth.isAuthenticated;
   const needsOnboarding =
     runtime.state.auth.passwordConfigured &&
     runtime.state.auth.isAuthenticated &&
@@ -88,9 +128,13 @@ function RuntimeRouter() {
 
   if (needsPasswordSetup) {
     return (
-      <AuthLayout>
-        <OnboardingPage />
-      </AuthLayout>
+      <DefaultLayout>
+        <main className="min-h-0 flex-1 overflow-y-auto">
+          <div className="mx-auto flex min-h-full w-full max-w-6xl items-center justify-center py-2">
+            <PasswordSetupRoutes />
+          </div>
+        </main>
+      </DefaultLayout>
     );
   }
 
@@ -112,8 +156,10 @@ function RuntimeRouter() {
 
   return (
     <DefaultLayout>
-      <AppTopbar authenticatedEmail={runtime.state.drive.connectedAccountEmail} />
-      <AuthenticatedAppRoutes />
+      <AppTopbar />
+      <main className="min-h-0 flex-1 overflow-y-auto pb-4">
+        <AuthenticatedAppRoutes />
+      </main>
     </DefaultLayout>
   );
 }

@@ -17,6 +17,7 @@ export type AppBootstrapState = {
   timestamp: string;
   auth: ReturnType<typeof deriveSessionState> & {
     passwordConfigured: boolean;
+    googleAuthConfigured: boolean;
   };
   drive: ReturnType<typeof deriveDriveAccessState>;
   database: {
@@ -34,6 +35,7 @@ export type AppBootstrapState = {
     isConfigured: boolean;
     isComplete: boolean;
     nextStepId: string | null;
+    activeStepIds: string[];
     remainingStepIds: string[];
     skippedStepIds: string[];
   };
@@ -58,6 +60,7 @@ type ResolvedOnboardingState = {
   isConfigured: boolean;
   isComplete: boolean;
   nextStepId: string | null;
+  activeStepIds: string[];
   remainingStepIds: string[];
   skippedStepIds: string[];
 };
@@ -66,6 +69,7 @@ export function deriveAppBootstrapState(input: {
   now: string;
   session: AppSession | null;
   passwordConfigured: boolean;
+  googleAuthConfigured: boolean;
   drive: DrivePermissionState;
   backup: BackupState;
   pendingBackupImportId: string | null;
@@ -98,6 +102,7 @@ export function deriveAppBootstrapState(input: {
         ? fallbackRemainingStepIds.length === 0
         : false,
     nextStepId: fallbackRemainingStepIds[0] ?? null,
+    activeStepIds: onboardingStepIds,
     remainingStepIds: fallbackRemainingStepIds,
     skippedStepIds: input.onboardingState.skippedStepIds ?? [],
   };
@@ -124,6 +129,7 @@ export function deriveAppBootstrapState(input: {
     auth: {
       ...auth,
       passwordConfigured: input.passwordConfigured,
+      googleAuthConfigured: input.googleAuthConfigured,
     },
     drive,
     database: {

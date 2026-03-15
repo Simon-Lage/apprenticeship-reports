@@ -19,6 +19,16 @@ export default function ChangeAuthMethodsPage() {
   const [nextPassword, setNextPassword] = useState('');
   const [isPasswordPending, setIsPasswordPending] = useState(false);
   const [isGooglePending, setIsGooglePending] = useState(false);
+  const isGoogleOauthConfigured = runtime.state.auth.googleAuthConfigured;
+  const hasLinkedGoogleAccount = Boolean(
+    runtime.state.drive.connectedAccountEmail,
+  );
+  let googleButtonLabel = t('authMethods.google.connect');
+  if (isGooglePending) {
+    googleButtonLabel = t('common.loading');
+  } else if (hasLinkedGoogleAccount) {
+    googleButtonLabel = t('authMethods.google.switch');
+  }
 
   async function handlePasswordChange(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -142,29 +152,25 @@ export default function ChangeAuthMethodsPage() {
       >
         <div className="space-y-4">
           <Badge className="bg-primary-tint text-text-color">
-            {runtime.state.drive.connectedAccountEmail
+            {hasLinkedGoogleAccount
               ? runtime.state.drive.connectedAccountEmail
               : t('authMethods.google.notLinked')}
           </Badge>
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
-              disabled={isGooglePending}
+              disabled={isGooglePending || !isGoogleOauthConfigured}
               className="bg-primary text-primary-contrast hover:bg-primary-shade"
               onClick={() => {
                 handleGoogleConnect();
               }}
             >
               <FaGoogle className="size-4" />
-              {isGooglePending
-                ? t('common.loading')
-                : t('authMethods.google.connect')}
+              {googleButtonLabel}
             </Button>
             <Button
               type="button"
-              disabled={
-                isGooglePending || !runtime.state.drive.connectedAccountEmail
-              }
+              disabled={isGooglePending || !hasLinkedGoogleAccount}
               variant="outline"
               className="border-primary-tint"
               onClick={() => {
@@ -174,6 +180,11 @@ export default function ChangeAuthMethodsPage() {
               {t('authMethods.google.remove')}
             </Button>
           </div>
+          {!isGoogleOauthConfigured ? (
+            <p className="text-sm text-text-color/70">
+              {t('authMethods.google.unavailable')}
+            </p>
+          ) : null}
         </div>
       </SectionCard>
     </div>

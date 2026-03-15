@@ -6,7 +6,10 @@ import { PageHeader } from '@/renderer/components/app/PageHeader';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
-import { useReportsState, useSettingsSnapshot } from '@/renderer/hooks/useKernelData';
+import {
+  useReportsState,
+  useSettingsSnapshot,
+} from '@/renderer/hooks/useKernelData';
 import { parseUiSettings } from '@/renderer/lib/app-settings';
 import {
   collectActivitySuggestions,
@@ -52,7 +55,8 @@ export default function DailyReportPage() {
       return null;
     }
     const weeklyReport = Object.values(reportsState.value.weeklyReports).find(
-      (report) => report.weekStart === form.weekStart && report.weekEnd === form.weekEnd,
+      (report) =>
+        report.weekStart === form.weekStart && report.weekEnd === form.weekEnd,
     );
     if (!weeklyReport) {
       return null;
@@ -93,7 +97,10 @@ export default function DailyReportPage() {
     setForm((current) => ({ ...current, lessons: preset }));
   }, [form.date, form.dayType, form.lessons.length, uiSettings.timetable]);
 
-  function appendListValue(key: 'activities' | 'trainings' | 'schoolTopics', draftKey: 'activityDraft' | 'trainingDraft' | 'schoolTopicDraft') {
+  function appendListValue(
+    key: 'activities' | 'trainings' | 'schoolTopics',
+    draftKey: 'activityDraft' | 'trainingDraft' | 'schoolTopicDraft',
+  ) {
     const draft = form[draftKey].trim();
     if (!draft.length) {
       return;
@@ -185,12 +192,12 @@ export default function DailyReportPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={t('dailyReport.title')}
         description={t('dailyReport.description')}
       />
-      <form className="space-y-6" onSubmit={handleSubmit}>
+      <form className="space-y-4 pb-24" onSubmit={handleSubmit}>
         <SectionCard
           title={t('dailyReport.meta.title')}
           description={t('dailyReport.meta.description')}
@@ -203,7 +210,10 @@ export default function DailyReportPage() {
                 type="date"
                 value={form.weekStart}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, weekStart: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    weekStart: event.target.value,
+                  }))
                 }
               />
             </FormField>
@@ -213,7 +223,10 @@ export default function DailyReportPage() {
                 type="date"
                 value={form.weekEnd}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, weekEnd: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    weekEnd: event.target.value,
+                  }))
                 }
               />
             </FormField>
@@ -223,7 +236,10 @@ export default function DailyReportPage() {
                 type="date"
                 value={form.date}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, date: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    date: event.target.value,
+                  }))
                 }
               />
             </FormField>
@@ -249,78 +265,148 @@ export default function DailyReportPage() {
           </div>
         </SectionCard>
         {form.dayType === 'free' ? (
-          <SectionCard title={t('dailyReport.freeDay.title')} className="border-primary-tint bg-white">
+          <SectionCard
+            title={t('dailyReport.freeDay.title')}
+            className="border-primary-tint bg-white"
+          >
             <FormField id="free-reason" label={t('dailyReport.freeDay.reason')}>
               <Textarea
                 id="free-reason"
                 value={form.freeReason}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, freeReason: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    freeReason: event.target.value,
+                  }))
                 }
               />
             </FormField>
           </SectionCard>
         ) : (
           <>
-            <SectionCard
-              title={t('dailyReport.activities.title')}
-              description={t('dailyReport.activities.description')}
-              className="border-primary-tint bg-white"
-            >
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <Input
-                    value={form.activityDraft}
-                    list="activity-suggestions"
-                    placeholder={t('dailyReport.activities.placeholder')}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, activityDraft: event.target.value }))
-                    }
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="border-primary-tint"
-                    onClick={() => appendListValue('activities', 'activityDraft')}
-                  >
-                    {t('common.add')}
-                  </Button>
-                </div>
-                <ul className="space-y-2">
-                  {form.activities.map((activity) => (
-                    <li
-                      key={activity}
-                      className="flex items-center justify-between rounded-md border border-primary-tint/70 px-3 py-2 text-sm"
+            <div className="grid gap-4 lg:grid-cols-2">
+              <SectionCard
+                title={t('dailyReport.activities.title')}
+                description={t('dailyReport.activities.description')}
+                className="border-primary-tint bg-white"
+              >
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      value={form.activityDraft}
+                      list="activity-suggestions"
+                      placeholder={t('dailyReport.activities.placeholder')}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          activityDraft: event.target.value,
+                        }))
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-primary-tint"
+                      onClick={() =>
+                        appendListValue('activities', 'activityDraft')
+                      }
                     >
-                      {activity}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="h-7 px-2 text-xs"
-                        onClick={() =>
-                          setForm((current) => ({
-                            ...current,
-                            activities: current.activities.filter((item) => item !== activity),
-                          }))
-                        }
+                      {t('common.add')}
+                    </Button>
+                  </div>
+                  <ul className="max-h-56 space-y-2 overflow-auto pr-1">
+                    {form.activities.map((activity) => (
+                      <li
+                        key={activity}
+                        className="flex items-center justify-between rounded-md border border-primary-tint/70 px-3 py-2 text-sm"
                       >
-                        {t('common.remove')}
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </SectionCard>
+                        {activity}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs"
+                          onClick={() =>
+                            setForm((current) => ({
+                              ...current,
+                              activities: current.activities.filter(
+                                (item) => item !== activity,
+                              ),
+                            }))
+                          }
+                        >
+                          {t('common.remove')}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </SectionCard>
+              <SectionCard
+                title={t('dailyReport.trainings.title')}
+                description={t('dailyReport.trainings.description')}
+                className="border-primary-tint bg-white"
+              >
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      value={form.trainingDraft}
+                      placeholder={t('dailyReport.trainings.placeholder')}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          trainingDraft: event.target.value,
+                        }))
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-primary-tint"
+                      onClick={() =>
+                        appendListValue('trainings', 'trainingDraft')
+                      }
+                    >
+                      {t('common.add')}
+                    </Button>
+                  </div>
+                  <ul className="max-h-56 space-y-2 overflow-auto pr-1">
+                    {form.trainings.map((training) => (
+                      <li
+                        key={training}
+                        className="flex items-center justify-between rounded-md border border-primary-tint/70 px-3 py-2 text-sm"
+                      >
+                        {training}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs"
+                          onClick={() =>
+                            setForm((current) => ({
+                              ...current,
+                              trainings: current.trainings.filter(
+                                (item) => item !== training,
+                              ),
+                            }))
+                          }
+                        >
+                          {t('common.remove')}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </SectionCard>
+            </div>
             {form.dayType === 'school' ? (
               <SectionCard
                 title={t('dailyReport.school.title')}
                 description={t('dailyReport.school.description')}
                 className="border-primary-tint bg-white"
               >
-                <div className="space-y-2">
+                <div className="max-h-[46vh] space-y-2 overflow-auto pr-1">
                   {form.lessons.map((lesson, index) => (
                     <div
-                      key={`${lesson.lesson}-${index}`}
+                      key={`${lesson.lesson}-${lesson.subject}-${lesson.teacher}-${lesson.topic}`}
                       className="grid gap-2 rounded-md border border-primary-tint/70 p-3 md:grid-cols-4"
                     >
                       <Input
@@ -330,7 +416,9 @@ export default function DailyReportPage() {
                             const nextLessons = [...current.lessons];
                             nextLessons[index] = {
                               ...nextLessons[index],
-                              lesson: Number(event.target.value || lesson.lesson),
+                              lesson: Number(
+                                event.target.value || lesson.lesson,
+                              ),
                             };
                             return { ...current, lessons: nextLessons };
                           })
@@ -383,90 +471,50 @@ export default function DailyReportPage() {
                 </div>
               </SectionCard>
             ) : null}
-            <SectionCard
-              title={t('dailyReport.trainings.title')}
-              description={t('dailyReport.trainings.description')}
-              className="border-primary-tint bg-white"
-            >
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <Input
-                    value={form.trainingDraft}
-                    placeholder={t('dailyReport.trainings.placeholder')}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, trainingDraft: event.target.value }))
-                    }
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="border-primary-tint"
-                    onClick={() => appendListValue('trainings', 'trainingDraft')}
-                  >
-                    {t('common.add')}
-                  </Button>
-                </div>
-                <ul className="space-y-2">
-                  {form.trainings.map((training) => (
-                    <li
-                      key={training}
-                      className="flex items-center justify-between rounded-md border border-primary-tint/70 px-3 py-2 text-sm"
-                    >
-                      {training}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="h-7 px-2 text-xs"
-                        onClick={() =>
-                          setForm((current) => ({
-                            ...current,
-                            trainings: current.trainings.filter((item) => item !== training),
-                          }))
-                        }
-                      >
-                        {t('common.remove')}
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </SectionCard>
           </>
         )}
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="submit"
-            disabled={isPending}
-            className="bg-primary text-primary-contrast hover:bg-primary-shade"
-          >
-            {isPending ? t('common.loading') : t('dailyReport.actions.save')}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="border-primary-tint"
-            disabled={!currentDailyReport || isPending}
-            onClick={() => {
-              void handleDelete();
-            }}
-          >
-            {t('dailyReport.actions.delete')}
-          </Button>
+        <div className="sticky bottom-3 z-20 rounded-xl border border-primary-tint/75 bg-white/95 p-3 shadow-sm backdrop-blur">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="bg-primary text-primary-contrast hover:bg-primary-shade"
+            >
+              {isPending ? t('common.loading') : t('dailyReport.actions.save')}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-primary-tint"
+              disabled={!currentDailyReport || isPending}
+              onClick={() => {
+                handleDelete().catch(() => undefined);
+              }}
+            >
+              {t('dailyReport.actions.delete')}
+            </Button>
+          </div>
         </div>
       </form>
       <datalist id="activity-suggestions">
         {suggestions.map((value) => (
-          <option key={value} value={value} />
+          <option key={value} value={value}>
+            {value}
+          </option>
         ))}
       </datalist>
       <datalist id="teacher-suggestions">
         {uiSettings.teachers.map((teacher) => (
-          <option key={teacher} value={teacher} />
+          <option key={teacher} value={teacher}>
+            {teacher}
+          </option>
         ))}
       </datalist>
       <datalist id="subject-suggestions">
         {uiSettings.subjects.map((subject) => (
-          <option key={subject} value={subject} />
+          <option key={subject} value={subject}>
+            {subject}
+          </option>
         ))}
       </datalist>
     </div>

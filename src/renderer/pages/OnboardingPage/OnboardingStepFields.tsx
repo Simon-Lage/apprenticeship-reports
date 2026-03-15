@@ -13,7 +13,7 @@ type OnboardingStepFieldsProps = {
   stepValues: Record<string, string>;
   setStepValues: Dispatch<SetStateAction<Record<string, string>>>;
   isPending: boolean;
-  googleEmail: string | null;
+  isGoogleOauthConfigured: boolean;
   onConnectGoogle: () => void;
 };
 
@@ -22,7 +22,7 @@ export default function OnboardingStepFields({
   stepValues,
   setStepValues,
   isPending,
-  googleEmail,
+  isGoogleOauthConfigured,
   onConnectGoogle,
 }: OnboardingStepFieldsProps) {
   const { t } = useTranslation();
@@ -159,22 +159,20 @@ export default function OnboardingStepFields({
 
   return (
     <>
-      <Alert className="border-primary-tint bg-primary-tint/30">
-        <AlertTitle>{t('onboarding.steps.google.statusTitle')}</AlertTitle>
-        <AlertDescription>
-          {stepValues.linked === 'true'
-            ? t('onboarding.steps.google.statusLinked', {
-                email: googleEmail ?? t('onboarding.steps.google.noEmail'),
-              })
-            : t('onboarding.steps.google.statusNotLinked')}
-        </AlertDescription>
-      </Alert>
+      {!isGoogleOauthConfigured ? (
+        <Alert className="border-primary-tint bg-primary-tint/35">
+          <AlertTitle>{t('onboarding.steps.google.unavailableTitle')}</AlertTitle>
+          <AlertDescription>
+            {t('onboarding.steps.google.unavailableDescription')}
+          </AlertDescription>
+        </Alert>
+      ) : null}
       <p className="text-sm text-text-color/75">
         {t('onboarding.steps.google.browserHint')}
       </p>
       <Button
         type="button"
-        disabled={isPending}
+        disabled={isPending || !isGoogleOauthConfigured}
         className="bg-primary text-primary-contrast hover:bg-primary-shade"
         onClick={onConnectGoogle}
       >

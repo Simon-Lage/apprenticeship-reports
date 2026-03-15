@@ -157,48 +157,56 @@ export function deriveOnboardingState(
 ) {
   const persistedCompletedStepIdSet = new Set(progress.completedStepIds);
   const skippedStepIdSet = new Set(progress.skippedStepIds);
-  const completedStepIds = definitions
-    .filter((definition) => {
-      const isSkipped = Boolean(
-        definition.optional && skippedStepIdSet.has(definition.id),
-      );
-      const persistedValue = valuesByStep[definition.id];
-      const draftValue = progress.drafts[definition.id];
-      const hasValidPersistedValue =
-        typeof persistedValue !== 'undefined' &&
-        definition.schema.safeParse(persistedValue).success;
-      const hasValidDraftValue =
-        typeof draftValue !== 'undefined' &&
-        definition.schema.safeParse(draftValue).success;
-      const requiresPersistedValue = persistedCompletedStepIdSet.has(
-        definition.id,
-      );
-      const hasValidValue = requiresPersistedValue
-        ? hasValidPersistedValue
-        : hasValidPersistedValue || hasValidDraftValue;
+  const isStepCompleted = (definition: OnboardingStepDefinition): boolean => {
+    const isSkipped = Boolean(
+      definition.optional && skippedStepIdSet.has(definition.id),
+    );
+    const persistedValue = valuesByStep[definition.id];
+    const draftValue = progress.drafts[definition.id];
+    const hasValidPersistedValue =
+      typeof persistedValue !== 'undefined' &&
+      definition.schema.safeParse(persistedValue).success;
+    const hasValidDraftValue =
+      typeof draftValue !== 'undefined' &&
+      definition.schema.safeParse(draftValue).success;
+    const requiresPersistedValue = persistedCompletedStepIdSet.has(
+      definition.id,
+    );
+    const hasValidValue = requiresPersistedValue
+      ? hasValidPersistedValue
+      : hasValidPersistedValue || hasValidDraftValue;
 
-      return isSkipped || hasValidValue;
-    })
+    return isSkipped || hasValidValue;
+  };
+  const completedStepIds = definitions
+    .filter((definition) => isStepCompleted(definition))
     .map((definition) => definition.id);
   const completedStepIdSet = new Set(completedStepIds);
-  const requiredStepIds = definitions
-    .filter((definition) => !definition.optional)
-    .map((definition) => definition.id);
-  const nextStep = definitions.find(
+  const requiredDefinitions = definitions.filter(
+    (definition) => !definition.optional,
+  );
+  const isComplete = requiredDefinitions.every((definition) =>
+    completedStepIdSet.has(definition.id),
+  );
+  const shouldHideOptionalSteps = Boolean(progress.completedAt) || isComplete;
+  const activeDefinitions = shouldHideOptionalSteps
+    ? requiredDefinitions
+    : definitions;
+  const activeStepIds = activeDefinitions.map((definition) => definition.id);
+  const nextStep = activeDefinitions.find(
     (definition) => !completedStepIdSet.has(definition.id),
   );
-  const isComplete = requiredStepIds.every((stepId) =>
-    completedStepIdSet.has(stepId),
-  );
+  const remainingStepIds = activeDefinitions
+    .filter((definition) => !completedStepIdSet.has(definition.id))
+    .map((definition) => definition.id);
 
   return {
     isConfigured: definitions.length > 0,
     isComplete,
     nextStepId: isComplete ? null : (nextStep?.id ?? null),
+    activeStepIds,
     completedStepIds,
-    remainingStepIds: definitions
-      .filter((definition) => !completedStepIdSet.has(definition.id))
-      .map((definition) => definition.id),
+    remainingStepIds,
     skippedStepIds: Array.from(skippedStepIdSet),
   };
 }

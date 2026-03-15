@@ -18,7 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-const lessonCount = 8;
+const lessonCount = 10;
 
 function updateSlots(
   slots: TimetableSlot[],
@@ -158,7 +158,7 @@ export default function TimeTablePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={t('timeTable.title')}
         description={t('timeTable.description')}
@@ -168,7 +168,7 @@ export default function TimeTablePage() {
             disabled={isPending}
             className="bg-primary text-primary-contrast hover:bg-primary-shade"
             onClick={() => {
-              void saveTimeTable();
+              saveTimeTable().catch(() => undefined);
             }}
           >
             {isPending ? t('common.loading') : t('timeTable.save')}
@@ -180,7 +180,7 @@ export default function TimeTablePage() {
         description={t('timeTable.schedule.description')}
         className="border-primary-tint bg-white"
       >
-        <div className="overflow-x-auto">
+        <div className="max-h-[58vh] overflow-auto rounded-md border border-primary-tint/60">
           <table className="w-full min-w-[900px] border-separate border-spacing-2">
             <thead>
               <tr>
@@ -217,18 +217,32 @@ export default function TimeTablePage() {
                           <div className="grid gap-2">
                             <Input
                               value={slot?.subject ?? ''}
-                              placeholder={t('timeTable.schedule.subjectPlaceholder')}
+                              placeholder={t(
+                                'timeTable.schedule.subjectPlaceholder',
+                              )}
                               list="subjects-list"
                               onChange={(event) =>
-                                updateSlot(day, lesson, 'subject', event.target.value)
+                                updateSlot(
+                                  day,
+                                  lesson,
+                                  'subject',
+                                  event.target.value,
+                                )
                               }
                             />
                             <Input
                               value={slot?.teacher ?? ''}
-                              placeholder={t('timeTable.schedule.teacherPlaceholder')}
+                              placeholder={t(
+                                'timeTable.schedule.teacherPlaceholder',
+                              )}
                               list="teachers-list"
                               onChange={(event) =>
-                                updateSlot(day, lesson, 'teacher', event.target.value)
+                                updateSlot(
+                                  day,
+                                  lesson,
+                                  'teacher',
+                                  event.target.value,
+                                )
                               }
                             />
                           </div>
@@ -253,7 +267,10 @@ export default function TimeTablePage() {
           </summary>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <div className="space-y-3">
-              <FormField id="new-teacher" label={t('timeTable.config.newTeacher')}>
+              <FormField
+                id="new-teacher"
+                label={t('timeTable.config.newTeacher')}
+              >
                 <div className="flex gap-2">
                   <Input
                     id="new-teacher"
@@ -273,7 +290,7 @@ export default function TimeTablePage() {
                   </Button>
                 </div>
               </FormField>
-              <ul className="space-y-1 text-sm">
+              <ul className="max-h-60 space-y-1 overflow-auto pr-1 text-sm">
                 {teacherOptions.map((teacher) => (
                   <li
                     key={teacher}
@@ -304,7 +321,10 @@ export default function TimeTablePage() {
               </ul>
             </div>
             <div className="space-y-3">
-              <FormField id="new-subject" label={t('timeTable.config.newSubject')}>
+              <FormField
+                id="new-subject"
+                label={t('timeTable.config.newSubject')}
+              >
                 <div className="flex gap-2">
                   <Input
                     id="new-subject"
@@ -324,7 +344,7 @@ export default function TimeTablePage() {
                   </Button>
                 </div>
               </FormField>
-              <ul className="space-y-1 text-sm">
+              <ul className="max-h-60 space-y-1 overflow-auto pr-1 text-sm">
                 {subjectOptions.map((subject) => (
                   <li
                     key={subject}
@@ -359,12 +379,16 @@ export default function TimeTablePage() {
       </SectionCard>
       <datalist id="teachers-list">
         {teacherOptions.map((teacher) => (
-          <option key={teacher} value={teacher} />
+          <option key={teacher} value={teacher}>
+            {teacher}
+          </option>
         ))}
       </datalist>
       <datalist id="subjects-list">
         {subjectOptions.map((subject) => (
-          <option key={subject} value={subject} />
+          <option key={subject} value={subject}>
+            {subject}
+          </option>
         ))}
       </datalist>
     </div>

@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FiCheckCircle, FiLock, FiXCircle } from 'react-icons/fi';
+import { FiKey } from 'react-icons/fi';
 import { z } from 'zod';
 
 import { SectionCard } from '@/renderer/components/app/SectionCard';
@@ -8,6 +9,8 @@ import PasswordInput from '@/renderer/components/app/PasswordInput';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
 import { useSettingsSnapshot } from '@/renderer/hooks/useKernelData';
+import { appRoutes } from '@/renderer/lib/app-routes';
+import { hasSeenOnboardingWelcome } from '@/renderer/lib/onboarding-welcome';
 import {
   evaluatePasswordRules,
   isPasswordStrong,
@@ -18,7 +21,6 @@ import {
   getOnboardingStepDefaults,
   onboardingStepOrder,
   OnboardingStepId,
-  optionalOnboardingSteps,
   parseOnboardingStepValues,
 } from '@/renderer/pages/OnboardingPage/schema';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -26,22 +28,8 @@ import { Button } from '@/components/ui/button';
 import { FormField } from '@/renderer/components/app/FormField';
 import { JsonObject } from '@/shared/common/json';
 
-const welcomeStorageKey = 'apprenticeship-reports.onboarding.welcome-seen.v1';
-
-function readWelcomeSeen(): boolean {
-  try {
-    return window.localStorage.getItem(welcomeStorageKey) === 'true';
-  } catch {
-    return false;
-  }
-}
-
-function persistWelcomeSeen(): void {
-  try {
-    window.localStorage.setItem(welcomeStorageKey, 'true');
-  } catch {
-    return;
-  }
+function isGoogleOauthMissingError(message: string): boolean {
+  return message.includes('Google OAuth ist nicht konfiguriert');
 }
 
 export default function OnboardingPage() {
@@ -53,25 +41,84 @@ export default function OnboardingPage() {
   const [stepValues, setStepValues] = useState<Record<string, string>>({});
   const [isPending, setIsPending] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [welcomeSeen, setWelcomeSeen] = useState(() => readWelcomeSeen());
   const hasPassword = runtime.state.auth.passwordConfigured;
   const stepSettings = useSettingsSnapshot(
     hasPassword && runtime.state.auth.isAuthenticated,
   );
-  const currentStepId = useMemo<OnboardingStepId | null>(() => {
+  const activeStepOrder = useMemo<OnboardingStepId[]>(() => {
+    const allowedStepIds = new Set(
+      runtime.state.onboarding.activeStepIds.filter((stepId) =>
+        onboardingStepOrder.includes(stepId as OnboardingStepId),
+      ),
+    );
+
+    return onboardingStepOrder.filter((stepId) => allowedStepIds.has(stepId));
+  }, [runtime.state.onboarding.activeStepIds]);
+  const backendStepId = useMemo<OnboardingStepId | null>(() => {
     const next = runtime.state.onboarding.nextStepId;
-    if (!next) {
-      return onboardingStepOrder[0] ?? null;
-    }
-    if (onboardingStepOrder.includes(next as OnboardingStepId)) {
+
+    if (next && onboardingStepOrder.includes(next as OnboardingStepId)) {
       return next as OnboardingStepId;
     }
-    return null;
-  }, [runtime.state.onboarding.nextStepId]);
+
+    const fallbackStepId =
+      activeStepOrder.find((stepId) =>
+        runtime.state.onboarding.remainingStepIds.includes(stepId),
+      ) ?? null;
+
+    if (fallbackStepId) {
+      return fallbackStepId;
+    }
+
+    return runtime.state.onboarding.isComplete
+      ? null
+      : (activeStepOrder[0] ?? null);
+  }, [
+    activeStepOrder,
+    runtime.state.onboarding.isComplete,
+    runtime.state.onboarding.nextStepId,
+    runtime.state.onboarding.remainingStepIds,
+  ]);
+  const [selectedStepId, setSelectedStepId] = useState<OnboardingStepId | null>(
+    backendStepId,
+  );
+  const currentStepId = useMemo<OnboardingStepId | null>(() => {
+    if (!selectedStepId) {
+      return backendStepId;
+    }
+
+    return activeStepOrder.includes(selectedStepId)
+      ? selectedStepId
+      : backendStepId;
+  }, [activeStepOrder, backendStepId, selectedStepId]);
   const passwordRules = useMemo(
     () => evaluatePasswordRules(password),
     [password],
   );
+  const hasPasswordInput = password.trim().length > 0;
+  const isPasswordRepeatValid =
+    passwordConfirm.trim().length > 0 && password === passwordConfirm;
+  const currentStepIndex = currentStepId
+    ? activeStepOrder.indexOf(currentStepId)
+    : -1;
+  const canGoBack = currentStepIndex > 0;
+  const isLastStep =
+    currentStepIndex >= 0 && currentStepIndex === activeStepOrder.length - 1;
+  const nextButtonLabel = useMemo(() => {
+    if (isPending) {
+      return t('common.loading');
+    }
+
+    if (isLastStep) {
+      return t('onboarding.actions.finish');
+    }
+
+    return t('onboarding.actions.next');
+  }, [isLastStep, isPending, t]);
+
+  useEffect(() => {
+    setSelectedStepId(backendStepId);
+  }, [backendStepId]);
 
   useEffect(() => {
     if (!currentStepId || !stepSettings.value) {
@@ -130,7 +177,7 @@ export default function OnboardingPage() {
     }
   }
 
-  async function handleStepSave(completeStep: boolean) {
+  async function handleContinue() {
     if (!runtime.api || !currentStepId) {
       return;
     }
@@ -152,17 +199,16 @@ export default function OnboardingPage() {
         values: parsed,
       });
 
-      if (completeStep) {
-        await runtime.api.completeOnboardingStep(currentStepId);
-      }
+      await runtime.api.completeOnboardingStep(currentStepId);
 
       await runtime.refresh();
       await stepSettings.refresh();
-      toast.success(
-        completeStep
-          ? t('onboarding.feedback.stepCompleted')
-          : t('onboarding.feedback.stepSaved'),
-      );
+      if (isLastStep) {
+        toast.success(t('onboarding.feedback.stepCompleted'));
+      } else {
+        const nextStepId = activeStepOrder[currentStepIndex + 1] ?? null;
+        setSelectedStepId(nextStepId);
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         const issue = error.issues[0];
@@ -188,86 +234,66 @@ export default function OnboardingPage() {
     }
   }
 
-  async function handleSkipStep() {
-    if (!runtime.api || !currentStepId) {
-      return;
-    }
-
-    setIsPending(true);
-    try {
-      await runtime.api.skipOnboardingStep(currentStepId);
-      await runtime.refresh();
-      await stepSettings.refresh();
-      toast.info(t('onboarding.feedback.stepSkipped'));
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : t('common.errors.unknown');
-      toast.error(t('onboarding.feedback.stepError'), message);
-    } finally {
-      setIsPending(false);
-    }
-  }
-
   async function handleGoogleConnect() {
-    if (!runtime.api) {
+    if (!runtime.api || !currentStepId || currentStepId !== 'google') {
       return;
     }
 
+    setValidationError(null);
     setIsPending(true);
+
     try {
-      await runtime.api.authenticateWithGoogle({ rememberMe: true });
+      const bootstrapAfterGoogle = await runtime.api.authenticateWithGoogle({
+        rememberMe: true,
+      });
+      await runtime.api.saveOnboardingDraft({
+        stepId: 'google',
+        values: {
+          linked: true,
+          email: bootstrapAfterGoogle.drive.connectedAccountEmail,
+        },
+      });
+      await runtime.api.completeOnboardingStep('google');
       setStepValues((current) => ({
         ...current,
         linked: 'true',
       }));
       await runtime.refresh();
+      await stepSettings.refresh();
+      const googleStepIndex = activeStepOrder.indexOf('google');
+      if (
+        googleStepIndex >= 0 &&
+        googleStepIndex < activeStepOrder.length - 1
+      ) {
+        setSelectedStepId(activeStepOrder[googleStepIndex + 1] ?? null);
+      }
       toast.success(t('onboarding.feedback.googleLinked'));
     } catch (error) {
       const message =
         error instanceof Error ? error.message : t('common.errors.unknown');
-      toast.error(t('onboarding.feedback.stepError'), message);
+
+      if (isGoogleOauthMissingError(message)) {
+        setValidationError(t('onboarding.steps.google.unavailableDescription'));
+      } else {
+        toast.error(t('onboarding.feedback.stepError'), message);
+      }
     } finally {
       setIsPending(false);
     }
   }
 
-  if (!hasPassword && !welcomeSeen) {
-    return (
-      <SectionCard
-        title={t('onboarding.welcome.title')}
-        description={t('onboarding.welcome.description')}
-        className="w-full max-w-2xl border-primary-tint bg-white"
-      >
-        <div className="space-y-6">
-          <div className="rounded-md border border-primary-tint/80 bg-primary-tint/25 p-4 text-sm text-text-color/85">
-            {t('onboarding.welcome.hint')}
-          </div>
-          <Button
-            type="button"
-            className="bg-primary text-primary-contrast hover:bg-primary-shade"
-            onClick={() => {
-              persistWelcomeSeen();
-              setWelcomeSeen(true);
-            }}
-          >
-            {t('onboarding.welcome.start')}
-          </Button>
-        </div>
-      </SectionCard>
-    );
-  }
-
   if (!hasPassword) {
+    if (!hasSeenOnboardingWelcome()) {
+      return <Navigate to={appRoutes.welcome} replace />;
+    }
+
     return (
       <SectionCard
         title={t('onboarding.password.title')}
         className="w-full max-w-2xl border-primary-tint bg-white"
+        titleClassName="text-xl md:text-2xl"
       >
         <form className="space-y-4" onSubmit={handlePasswordSetup}>
-          <div className="flex items-center gap-2 rounded-md border border-primary-tint/80 bg-primary-tint/25 px-3 py-2 text-sm text-text-color">
-            <FiLock className="size-4" />
-            <span>{t('onboarding.password.requirementsTitle')}</span>
-          </div>
           <FormField
             id="onboarding-password"
             label={t('onboarding.password.passwordLabel')}
@@ -295,28 +321,43 @@ export default function OnboardingPage() {
               hideLabel={t('common.password.hide')}
             />
           </FormField>
-          <ul className="space-y-2 rounded-md border border-primary-tint/80 bg-primary-tint/15 p-3 text-sm">
+          <ul className="space-y-1 text-xs leading-5">
             {passwordRules.map((rule) => (
               <li
                 key={rule.id}
-                className={`flex items-center gap-2 ${
-                  rule.isValid ? 'text-emerald-700' : 'text-red-600'
-                }`}
+                className={[
+                  !hasPasswordInput ? 'text-primary-tint' : '',
+                  hasPasswordInput && rule.isValid ? 'text-text-color/70' : '',
+                  hasPasswordInput && !rule.isValid ? 'text-red-600' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
               >
-                {rule.isValid ? (
-                  <FiCheckCircle className="size-4 shrink-0" />
-                ) : (
-                  <FiXCircle className="size-4 shrink-0" />
-                )}
                 <span>{t(`onboarding.password.rules.${rule.id}`)}</span>
               </li>
             ))}
+            <li
+              className={[
+                !hasPasswordInput ? 'text-primary-tint' : '',
+                hasPasswordInput && isPasswordRepeatValid
+                  ? 'text-text-color/70'
+                  : '',
+                hasPasswordInput && !isPasswordRepeatValid
+                  ? 'text-red-600'
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              {t('onboarding.password.rules.repeatMatches')}
+            </li>
           </ul>
           <Button
             type="submit"
             disabled={isPending}
             className="w-full bg-primary text-primary-contrast hover:bg-primary-shade"
           >
+            <FiKey className="size-4" />
             {isPending ? t('common.loading') : t('onboarding.password.submit')}
           </Button>
         </form>
@@ -336,13 +377,12 @@ export default function OnboardingPage() {
   }
 
   const { remainingStepIds, skippedStepIds } = runtime.state.onboarding;
-  const isOptional = optionalOnboardingSteps.includes(currentStepId);
 
   return (
     <div className="w-full max-w-3xl space-y-5">
       <OnboardingProgress
         currentStepId={currentStepId}
-        stepOrder={onboardingStepOrder}
+        stepOrder={activeStepOrder}
         remainingStepIds={remainingStepIds}
         skippedStepIds={skippedStepIds}
       />
@@ -350,6 +390,7 @@ export default function OnboardingPage() {
         title={t(`onboarding.steps.${currentStepId}.title`)}
         description={t(`onboarding.steps.${currentStepId}.description`)}
         className="border-primary-tint bg-white"
+        titleClassName="text-xl md:text-2xl"
       >
         <div className="space-y-4">
           <OnboardingStepFields
@@ -357,7 +398,7 @@ export default function OnboardingPage() {
             stepValues={stepValues}
             setStepValues={setStepValues}
             isPending={isPending}
-            googleEmail={runtime.state.drive.connectedAccountEmail}
+            isGoogleOauthConfigured={runtime.state.auth.googleAuthConfigured}
             onConnectGoogle={() => {
               handleGoogleConnect();
             }}
@@ -368,40 +409,30 @@ export default function OnboardingPage() {
             </Alert>
           ) : null}
           <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              disabled={isPending}
-              variant="outline"
-              className="border-primary-tint"
-              onClick={() => {
-                handleStepSave(false);
-              }}
-            >
-              {t('onboarding.actions.saveDraft')}
-            </Button>
-            <Button
-              type="button"
-              disabled={isPending}
-              className="bg-primary text-primary-contrast hover:bg-primary-shade"
-              onClick={() => {
-                handleStepSave(true);
-              }}
-            >
-              {t('onboarding.actions.completeStep')}
-            </Button>
-            {isOptional ? (
+            {canGoBack ? (
               <Button
                 type="button"
                 disabled={isPending}
                 variant="outline"
                 className="border-primary-tint"
                 onClick={() => {
-                  handleSkipStep();
+                  const previousStepId = activeStepOrder[currentStepIndex - 1];
+                  setSelectedStepId(previousStepId ?? null);
                 }}
               >
-                {t('onboarding.actions.skipStep')}
+                {t('onboarding.actions.back')}
               </Button>
             ) : null}
+            <Button
+              type="button"
+              disabled={isPending}
+              className="bg-primary text-primary-contrast hover:bg-primary-shade"
+              onClick={() => {
+                handleContinue();
+              }}
+            >
+              {nextButtonLabel}
+            </Button>
           </div>
         </div>
       </SectionCard>

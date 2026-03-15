@@ -13,23 +13,29 @@ export default function HomePage() {
   const runtime = useAppRuntime();
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={t('home.title')}
-        description={t('home.description')}
-      />
+    <div className="space-y-4">
+      <PageHeader title={t('home.title')} description={t('home.description')} />
       <div className="grid gap-4 md:grid-cols-3">
-        <SectionCard title={t('home.stats.dailyReports')} className="border-primary-tint bg-white">
+        <SectionCard
+          title={t('home.stats.dailyReports')}
+          className="border-primary-tint bg-white"
+        >
           <p className="text-3xl font-semibold text-primary">
             {runtime.state.reports.dailyReportCount}
           </p>
         </SectionCard>
-        <SectionCard title={t('home.stats.weeklyReports')} className="border-primary-tint bg-white">
+        <SectionCard
+          title={t('home.stats.weeklyReports')}
+          className="border-primary-tint bg-white"
+        >
           <p className="text-3xl font-semibold text-primary">
             {runtime.state.reports.weeklyReportCount}
           </p>
         </SectionCard>
-        <SectionCard title={t('home.stats.backupStatus')} className="border-primary-tint bg-white">
+        <SectionCard
+          title={t('home.stats.backupStatus')}
+          className="border-primary-tint bg-white"
+        >
           <Badge className="bg-primary-tint text-text-color">
             {runtime.state.backup.isBackupRequired
               ? t('home.backup.required')
@@ -43,11 +49,18 @@ export default function HomePage() {
         className="border-primary-tint bg-white"
       >
         <div className="flex flex-wrap gap-2">
-          <Button asChild className="bg-primary text-primary-contrast hover:bg-primary-shade">
-            <Link to={appRoutes.dailyReport}>{t('home.quickActions.newDaily')}</Link>
+          <Button
+            asChild
+            className="bg-primary text-primary-contrast hover:bg-primary-shade"
+          >
+            <Link to={appRoutes.dailyReport}>
+              {t('home.quickActions.newDaily')}
+            </Link>
           </Button>
           <Button asChild variant="outline" className="border-primary-tint">
-            <Link to={appRoutes.weeklyReport}>{t('home.quickActions.weekly')}</Link>
+            <Link to={appRoutes.weeklyReport}>
+              {t('home.quickActions.weekly')}
+            </Link>
           </Button>
           <Button asChild variant="outline" className="border-primary-tint">
             <Link to={appRoutes.import}>{t('home.quickActions.import')}</Link>

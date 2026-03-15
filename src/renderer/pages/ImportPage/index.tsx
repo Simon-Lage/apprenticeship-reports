@@ -189,19 +189,19 @@ export default function ImportPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={t('import.title')}
         description={t('import.description')}
       />
-      <Tabs defaultValue="reports" className="space-y-4">
-        <TabsList className="bg-primary-tint/40">
+      <Tabs defaultValue="reports" className="space-y-3">
+        <TabsList className="bg-primary-tint/35">
           <TabsTrigger value="reports">{t('import.tabs.reports')}</TabsTrigger>
           <TabsTrigger value="settings">
             {t('import.tabs.settings')}
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="reports" className="space-y-4">
+        <TabsContent value="reports" className="space-y-3">
           <SectionCard
             title={t('import.reports.title')}
             description={t('import.reports.description')}
@@ -230,7 +230,7 @@ export default function ImportPage() {
               </Button>
             </div>
             {driveBackups.length ? (
-              <ul className="mt-3 space-y-2 text-sm">
+              <ul className="mt-3 max-h-52 space-y-2 overflow-auto pr-1 text-sm">
                 {driveBackups.map((backup) => (
                   <li
                     key={backup.id}
@@ -293,67 +293,69 @@ export default function ImportPage() {
                       .conflictingDailyReportCount,
                   })}
                 </p>
-                {backupPreview.conflictingWeeks.length ? (
-                  <ul className="space-y-2">
-                    {backupPreview.conflictingWeeks.map((week) => (
-                      <li
-                        key={week.weekIdentity}
-                        className={`rounded-md border p-3 ${
-                          selectedConflictId === week.weekIdentity
-                            ? 'border-primary bg-primary-tint/25'
-                            : 'border-primary-tint/70'
-                        }`}
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <button
-                            type="button"
-                            className="text-left font-semibold text-text-color"
-                            onClick={() =>
-                              setSelectedConflictId(week.weekIdentity)
-                            }
-                          >
-                            {week.weekStart} - {week.weekEnd}
-                          </button>
-                          <select
-                            className="border-input bg-background h-8 rounded-md border px-2 text-sm"
-                            value={
-                              backupStrategies[week.weekIdentity] ??
-                              week.defaultStrategy
-                            }
-                            onChange={(event) =>
-                              setBackupStrategies((current) => ({
-                                ...current,
-                                [week.weekIdentity]: event.target
-                                  .value as BackupConflictStrategy,
-                              }))
-                            }
-                          >
-                            {backupPreview.availableConflictStrategies.map(
-                              (strategy) => (
-                                <option key={strategy} value={strategy}>
-                                  {strategyLabels[strategy]}
-                                </option>
-                              ),
-                            )}
-                          </select>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-                {selectedConflict ? (
-                  <JsonDiffViewer
-                    currentValue={selectedConflict.current}
-                    incomingValue={selectedConflict.incoming}
-                    currentTitle={t('import.reports.currentWeek')}
-                    incomingTitle={t('import.reports.incomingWeek')}
-                  />
-                ) : null}
+                <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
+                  {backupPreview.conflictingWeeks.length ? (
+                    <ul className="max-h-[52vh] space-y-2 overflow-auto pr-1">
+                      {backupPreview.conflictingWeeks.map((week) => (
+                        <li
+                          key={week.weekIdentity}
+                          className={`rounded-md border p-3 ${
+                            selectedConflictId === week.weekIdentity
+                              ? 'border-primary bg-primary-tint/25'
+                              : 'border-primary-tint/70'
+                          }`}
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <button
+                              type="button"
+                              className="text-left font-semibold text-text-color"
+                              onClick={() =>
+                                setSelectedConflictId(week.weekIdentity)
+                              }
+                            >
+                              {week.weekStart} - {week.weekEnd}
+                            </button>
+                            <select
+                              className="border-input bg-background h-8 rounded-md border px-2 text-sm"
+                              value={
+                                backupStrategies[week.weekIdentity] ??
+                                week.defaultStrategy
+                              }
+                              onChange={(event) =>
+                                setBackupStrategies((current) => ({
+                                  ...current,
+                                  [week.weekIdentity]: event.target
+                                    .value as BackupConflictStrategy,
+                                }))
+                              }
+                            >
+                              {backupPreview.availableConflictStrategies.map(
+                                (strategy) => (
+                                  <option key={strategy} value={strategy}>
+                                    {strategyLabels[strategy]}
+                                  </option>
+                                ),
+                              )}
+                            </select>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {selectedConflict ? (
+                    <JsonDiffViewer
+                      currentValue={selectedConflict.current}
+                      incomingValue={selectedConflict.incoming}
+                      currentTitle={t('import.reports.currentWeek')}
+                      incomingTitle={t('import.reports.incomingWeek')}
+                    />
+                  ) : null}
+                </div>
               </div>
             </SectionCard>
           ) : null}
         </TabsContent>
-        <TabsContent value="settings" className="space-y-4">
+        <TabsContent value="settings" className="space-y-3">
           <SectionCard
             title={t('import.settings.title')}
             description={t('import.settings.description')}

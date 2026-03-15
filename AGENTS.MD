@@ -31,6 +31,9 @@ Bitte beachte folgende Punkte:
   - `text-color`
 - Alle UI-Flächen, Texte, Borders und States nutzen diese Token-basierten Tailwind-Klassen, damit das Farbschema später global anpassbar bleibt.
 - Neue UI-Komponenten werden nur eingeführt, wenn sie mindestens an zwei Stellen sinnvoll wiederverwendbar sind oder Verantwortlichkeiten klar trennen.
+- Framer Motion ist die vorgesehene Animationsbibliothek für UI-Motion; Animationen werden konsistent und nicht ad hoc umgesetzt.
+- Motion wird gezielt eingesetzt (Transitions, Zustandswechsel, Kontextwechsel) und darf Lesbarkeit/Bedienbarkeit nicht beeinträchtigen.
+- Vor dem finalen UI-Polish wird pro Seite geprüft, welche Motion-Patterns sinnvoll sind (Seitenübergänge, aktive Navigation, Panel/Modal-Einblendung, Listenänderungen, Feedback-States).
 
 ---
 
@@ -135,9 +138,10 @@ Bitte beachte folgende Punkte:
 
 - UI-Seitenanforderungen (Planungsstand):
   - Allgemein: Wenn kein lokales Passwort existiert, startet Onboarding direkt; sobald ein lokales Passwort existiert, ist ohne Authentifizierung immer Login vorgeschaltet und die App bis dahin gesperrt.
+  - Allgemein: Für den finalen UI-Polish sollen sinnvolle, dezente Framer-Motion-Animationen pro Seite eingeplant und konsistent umgesetzt werden.
   - Navigation: Topbar-Navigation ist im authentifizierten App-Bereich sichtbar und wird auf Login- sowie Onboarding-Seiten ausgeblendet.
   - `ChangeAuthMethodsPage`: Nur authentifiziert erreichbar; lokales Passwort ändern sowie optionales Google-Konto verbinden, wechseln oder hinzufügen, ohne die Pflicht eines lokalen Passworts aufzuheben.
-  - `DailyReportPage`: UI strikt abhängig vom Tagestyp; Arbeitstag mit editierbarer Tätigkeitsliste aus searchable Dropdown mit Vorschlägen aus bisherigen gleichartigen Einträgen; freier Tag ohne Inhaltserfassung mit Anzeige des Freigrunds; Schultag mit Stundenplan-Preset und pro Stunde anpassbarem Lehrer/Fach. Wenn bei zwei Stunden gleiches Fach und gleicher Lehrer gelten und nur eine Stunde Inhalt hat, wird dieser für die andere Stunde übernommen. Unterweisungen/betrieblicher Unterricht/sonstige Schulungen sind getrennt von normalen Tätigkeiten erfassbar.
+  - `DailyReportPage`: UI strikt abhängig vom Tagestyp; Arbeitstag mit editierbarer Tätigkeitsliste aus searchable Dropdown mit Vorschlägen aus bisherigen gleichartigen Einträgen; freier Tag ohne Inhaltserfassung mit Anzeige des Freigrunds; Schultag mit Stundenplan-Preset und pro Stunde anpassbarem Lehrer/Fach. Wenn bei zwei Stunden gleiches Fach und gleicher Lehrer gelten und nur eine Stunde Inhalt hat, wird dieser für die andere Stunde übernommen. Unterweisungen/betrieblicher Unterricht/sonstige Schulungen sind getrennt von normalen Tätigkeiten erfassbar. Für Schultage und Presets sind bis zu 10 Schulstunden pro Tag zu unterstützen.
   - `ExportPage`: Export von Settings oder Reports als JSON entweder lokal über Dateidialog oder nach Google Drive; wenn Google-Konto oder Drive-Rechte fehlen, klare Ursache anzeigen und direkte Möglichkeit zum Nachrüsten anbieten.
   - `HomePage`: Als letzte Seite umsetzen; am Ende kompakte Startübersicht mit wichtigsten Einstiegen und Kennzahlen (z. B. Tagesbericht anlegen, letzter Tagesbericht, Anzahl Tagesberichte).
   - `ImportPage`: Import von Settings oder Reports mit nachvollziehbaren Fehlermeldungen; bei überschreibenden Änderungen immer Git-Diff-artige Vergleichsansicht mit zwei Seiten, synchronem Scrolling und farblicher Differenzmarkierung, nur für tatsächlich unterschiedliche Daten.
@@ -145,6 +149,6 @@ Bitte beachte folgende Punkte:
   - `OnboardingPage`: Erster Schritt Passwort setzen, zweiter Schritt optional Google verknüpfen, weitere Schritte danach; unterbrochenes Onboarding wird fortgesetzt und zeigt nur noch fehlende Schritte.
   - `ReportsOverviewPage`: Lange scrollbare Tagesliste ohne Pagination mit Such-/Filtermöglichkeiten; visuelle Wochenabgrenzung zwischen Sonntag und Montag; pro Woche zusätzliche Felder für gesendet-Status, Empfänger-E-Mail und Abteilung.
   - `SettingsPage`: Anforderungen aus Settings-Spezifikation, erweiterbar um künftige Settings; Settings-Import/-Export bleibt getrennt von Reports-Backups.
-  - `TimeTablePage`: Stundenplan mit searchable Lehrer-/Fach-Auswahl; integrierte aufklappbare Konfiguration auf derselben Seite mit zwei getrennten Listen (Lehrer, Fächer) ohne Duplikate; neue Werte können direkt aus Stundenplan- oder Tagesreport-Eingaben übernommen werden und dienen als Presets.
+  - `TimeTablePage`: Stundenplan mit searchable Lehrer-/Fach-Auswahl; integrierte aufklappbare Konfiguration auf derselben Seite mit zwei getrennten Listen (Lehrer, Fächer) ohne Duplikate; neue Werte können direkt aus Stundenplan- oder Tagesreport-Eingaben übernommen werden und dienen als Presets. Der Stundenplan muss pro Tag bis zu 10 Schulstunden abbilden.
   - `WeeklyReportPage`: Felder für Zeitraum, Datum, Ausbildungsabschnitt/Abteilung und zwei Betreuer-E-Mail-Felder (Defaults aus Settings, überschreibbar); getrennte Erfassung von Arbeitstätigkeiten, Berufsschule-Unterrichtsthemen sowie Unterweisungen/betrieblichem Unterricht/sonstigen Schulungen; bei Schultagen sind optionale Arbeitseinträge möglich.
   - `WeeklyReportPDFPage`: Vorschau eines einseitigen Weekly-Report-PDF und Export über Dateidialog.

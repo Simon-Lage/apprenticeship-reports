@@ -32,10 +32,11 @@ export default function LoginPage() {
   const [isPasswordPending, setIsPasswordPending] = useState(false);
   const [isGooglePending, setIsGooglePending] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const canUseGoogle = useMemo(
+  const hasGoogleAccount = useMemo(
     () => Boolean(runtime.state.drive.connectedAccountEmail),
     [runtime.state.drive.connectedAccountEmail],
   );
+  const canUseGoogle = hasGoogleAccount && runtime.state.auth.googleAuthConfigured;
 
   async function handlePasswordLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -163,7 +164,11 @@ export default function LoginPage() {
                 </div>
               </TooltipTrigger>
               {!canUseGoogle ? (
-                <TooltipContent>{t('login.googleDisabledHint')}</TooltipContent>
+                <TooltipContent>
+                  {hasGoogleAccount
+                    ? t('login.googleUnavailableHint')
+                    : t('login.googleDisabledHint')}
+                </TooltipContent>
               ) : null}
             </Tooltip>
           </TooltipProvider>

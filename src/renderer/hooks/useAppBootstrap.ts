@@ -14,6 +14,7 @@ function createFallbackBootstrapState(): AppBootstrapState {
       provider: null,
       expiresAt: null,
       passwordConfigured: false,
+      googleAuthConfigured: false,
     },
     drive: {
       status: 'not-configured',
@@ -47,6 +48,7 @@ function createFallbackBootstrapState(): AppBootstrapState {
       isConfigured: false,
       isComplete: false,
       nextStepId: null,
+      activeStepIds: [],
       remainingStepIds: [],
       skippedStepIds: [],
     },

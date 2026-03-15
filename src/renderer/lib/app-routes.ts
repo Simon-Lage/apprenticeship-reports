@@ -9,6 +9,7 @@ export const appRoutes = {
   export: '/export',
   settings: '/settings',
   changeAuthMethods: '/change-auth-methods',
+  welcome: '/welcome',
   onboarding: '/onboarding',
   login: '/login',
 } as const;

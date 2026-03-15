@@ -4,7 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { PageHeader } from '@/renderer/components/app/PageHeader';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
 import { useReportsState } from '@/renderer/hooks/useKernelData';
-import { listWeeksWithDailyReports, parseDailyReportValues, parseWeeklyReportValues } from '@/renderer/lib/report-values';
+import {
+  listWeeksWithDailyReports,
+  parseDailyReportValues,
+  parseWeeklyReportValues,
+} from '@/renderer/lib/report-values';
 import {
   Table,
   TableBody,
@@ -19,44 +23,51 @@ export default function ReportsOverviewPage() {
   const { t } = useTranslation();
   const reportsState = useReportsState();
   const [search, setSearch] = useState('');
-  const [dayTypeFilter, setDayTypeFilter] = useState<'all' | 'work' | 'school' | 'free'>('all');
+  const [dayTypeFilter, setDayTypeFilter] = useState<
+    'all' | 'work' | 'school' | 'free'
+  >('all');
 
   const rows = useMemo(() => {
     if (!reportsState.value) {
       return [];
     }
-    return listWeeksWithDailyReports(reportsState.value).flatMap((week, index) => {
-      const weeklyValues = parseWeeklyReportValues(week.weeklyReport.values);
-      return week.dailyReports.map((dailyReport, dayIndex) => {
-        const parsed = parseDailyReportValues(dailyReport.values);
-        const searchableContent = [
-          dailyReport.date,
-          ...parsed.activities,
-          ...parsed.schoolTopics,
-          ...parsed.trainings,
-          parsed.freeReason,
-        ]
-          .join(' ')
-          .toLowerCase();
-        return {
-          id: dailyReport.id,
-          date: dailyReport.date,
-          dayType: parsed.dayType,
-          summary:
-            parsed.dayType === 'free'
-              ? parsed.freeReason || '-'
-              : [...parsed.activities, ...parsed.schoolTopics, ...parsed.trainings].join(', ') ||
-                '-',
-          weekStart: week.weeklyReport.weekStart,
-          weekEnd: week.weeklyReport.weekEnd,
-          submitted: weeklyValues.submitted,
-          submittedToEmail: weeklyValues.submittedToEmail ?? '-',
-          area: weeklyValues.area || '-',
-          isWeekStart: dayIndex === 0 && index > 0,
-          searchableContent,
-        };
-      });
-    });
+    return listWeeksWithDailyReports(reportsState.value).flatMap(
+      (week, index) => {
+        const weeklyValues = parseWeeklyReportValues(week.weeklyReport.values);
+        return week.dailyReports.map((dailyReport, dayIndex) => {
+          const parsed = parseDailyReportValues(dailyReport.values);
+          const searchableContent = [
+            dailyReport.date,
+            ...parsed.activities,
+            ...parsed.schoolTopics,
+            ...parsed.trainings,
+            parsed.freeReason,
+          ]
+            .join(' ')
+            .toLowerCase();
+          return {
+            id: dailyReport.id,
+            date: dailyReport.date,
+            dayType: parsed.dayType,
+            summary:
+              parsed.dayType === 'free'
+                ? parsed.freeReason || '-'
+                : [
+                    ...parsed.activities,
+                    ...parsed.schoolTopics,
+                    ...parsed.trainings,
+                  ].join(', ') || '-',
+            weekStart: week.weeklyReport.weekStart,
+            weekEnd: week.weeklyReport.weekEnd,
+            submitted: weeklyValues.submitted,
+            submittedToEmail: weeklyValues.submittedToEmail ?? '-',
+            area: weeklyValues.area || '-',
+            isWeekStart: dayIndex === 0 && index > 0,
+            searchableContent,
+          };
+        });
+      },
+    );
   }, [reportsState.value]);
 
   const filteredRows = useMemo(
@@ -74,7 +85,7 @@ export default function ReportsOverviewPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={t('reportsOverview.title')}
         description={t('reportsOverview.description')}
@@ -93,7 +104,9 @@ export default function ReportsOverviewPage() {
             className="border-input bg-background h-9 rounded-md border px-3 text-sm"
             value={dayTypeFilter}
             onChange={(event) =>
-              setDayTypeFilter(event.target.value as 'all' | 'work' | 'school' | 'free')
+              setDayTypeFilter(
+                event.target.value as 'all' | 'work' | 'school' | 'free',
+              )
             }
           >
             <option value="all">{t('reportsOverview.filters.allTypes')}</option>
@@ -126,11 +139,15 @@ export default function ReportsOverviewPage() {
                   className={row.isWeekStart ? 'border-t-4 border-primary' : ''}
                 >
                   <TableCell>{row.date}</TableCell>
-                  <TableCell>{t(`dailyReport.dayTypes.${row.dayType}`)}</TableCell>
+                  <TableCell>
+                    {t(`dailyReport.dayTypes.${row.dayType}`)}
+                  </TableCell>
                   <TableCell className="max-w-[420px] whitespace-normal">
                     {row.summary}
                   </TableCell>
-                  <TableCell>{row.submitted ? t('common.yes') : t('common.no')}</TableCell>
+                  <TableCell>
+                    {row.submitted ? t('common.yes') : t('common.no')}
+                  </TableCell>
                   <TableCell>{row.submittedToEmail}</TableCell>
                   <TableCell>{row.area}</TableCell>
                 </TableRow>
