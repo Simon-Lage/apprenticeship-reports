@@ -111,7 +111,7 @@ export default function ChangeAuthMethodsPage() {
     setIsGooglePending(true);
 
     try {
-      await runtime.api.connectGoogleDrive();
+      await runtime.api.authenticateWithGoogle({ rememberMe: true });
       await runtime.refresh();
       toast.success(t('authMethods.feedback.googleLinked'));
     } catch (error) {

@@ -14,6 +14,7 @@ export const appRoutes = {
   welcome: '/welcome',
   onboarding: '/onboarding',
   login: '/login',
+  setupDrive: '/setup-drive',
 } as const;
 
 export type AppRouteKey = keyof typeof appRoutes;

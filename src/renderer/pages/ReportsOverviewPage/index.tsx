@@ -167,10 +167,7 @@ export default function ReportsOverviewPage() {
           </select>
         </div>
       </SectionCard>
-      <SectionCard
-        title={t('reportsOverview.table.title')}
-        className="border-primary-tint bg-white"
-      >
+      <SectionCard className="border-primary-tint bg-white">
         <div className="overflow-x-auto rounded-md border border-primary-tint/70">
           <Table>
             <TableHeader>

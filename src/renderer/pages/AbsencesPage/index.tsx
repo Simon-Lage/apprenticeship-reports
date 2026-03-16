@@ -1,6 +1,7 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { cn } from '@/renderer/lib/utils';
 import { FormField } from '@/renderer/components/app/FormField';
 import { PageHeader } from '@/renderer/components/app/PageHeader';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
@@ -83,6 +84,8 @@ export default function AbsencesPage() {
   const [form, setForm] = useState<ManualAbsenceFormState>(
     defaultManualAbsenceFormState,
   );
+  const [publicCollapsed, setPublicCollapsed] = useState(false);
+  const [schoolCollapsed, setSchoolCollapsed] = useState(false);
 
   const absenceSettings = useMemo(
     () => parseAbsenceSettings(settingsSnapshot.value?.values ?? {}),
@@ -261,7 +264,7 @@ export default function AbsencesPage() {
           </Button>
         }
       >
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-x-6 gap-y-2 md:grid-cols-2">
           <p className="text-sm text-text-color/80">
             <strong>{t('absences.sync.stateLabel')}:</strong>{' '}
             {subdivisionCode ?? '-'}
@@ -269,13 +272,17 @@ export default function AbsencesPage() {
           <p className="text-sm text-text-color/80">
             <strong>{t('absences.sync.currentYear')}:</strong> {currentYear}
           </p>
-          <p className="text-sm text-text-color/80">
+          <p className="col-span-full text-sm text-text-color/80">
             <strong>{t('absences.sync.syncedAt')}:</strong>{' '}
-            {absenceSettings.lastSyncedAt ?? '-'}
-          </p>
-          <p className="text-sm text-text-color/80">
-            <strong>{t('absences.sync.lastError')}:</strong>{' '}
-            {absenceSettings.lastSyncError ?? '-'}
+            {absenceSettings.lastSyncedAt
+              ? new Date(absenceSettings.lastSyncedAt).toLocaleString('de-DE', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : '-'}
           </p>
         </div>
       </SectionCard>
@@ -443,44 +450,110 @@ export default function AbsencesPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <SectionCard
           title={t('absences.catalog.publicTitle')}
-          className="border-primary-tint bg-white"
-        >
-          {currentCatalog?.publicHolidays.length ? (
-            <ul className="max-h-80 space-y-2 overflow-auto pr-1">
-              {currentCatalog.publicHolidays.map((entry) => (
-                <li
-                  key={entry.id}
-                  className="rounded-md border border-primary-tint/80 bg-primary-tint/20 px-3 py-2 text-sm"
+          className="h-fit border-primary-tint bg-white"
+          action={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setPublicCollapsed(!publicCollapsed)}
+            >
+              <div
+                className={cn(
+                  'transition-transform duration-200',
+                  publicCollapsed ? '-rotate-90' : 'rotate-0',
+                )}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  {entry.startDate} - {entry.endDate} | {entry.name}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-text-color/70">
-              {t('absences.catalog.empty')}
-            </p>
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </div>
+            </Button>
+          }
+        >
+          {!publicCollapsed && (
+            <div className="mt-2">
+              {currentCatalog?.publicHolidays.length ? (
+                <ul className="space-y-2 pr-1">
+                  {currentCatalog.publicHolidays.map((entry) => (
+                    <li
+                      key={entry.id}
+                      className="rounded-md border border-primary-tint/80 bg-primary-tint/20 px-3 py-2 text-sm"
+                    >
+                      {entry.startDate} - {entry.endDate} | {entry.name}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-text-color/70">
+                  {t('absences.catalog.empty')}
+                </p>
+              )}
+            </div>
           )}
         </SectionCard>
         <SectionCard
           title={t('absences.catalog.schoolTitle')}
-          className="border-primary-tint bg-white"
-        >
-          {currentCatalog?.schoolHolidays.length ? (
-            <ul className="max-h-80 space-y-2 overflow-auto pr-1">
-              {currentCatalog.schoolHolidays.map((entry) => (
-                <li
-                  key={entry.id}
-                  className="rounded-md border border-primary-tint/80 bg-primary-tint/20 px-3 py-2 text-sm"
+          className="h-fit border-primary-tint bg-white"
+          action={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setSchoolCollapsed(!schoolCollapsed)}
+            >
+              <div
+                className={cn(
+                  'transition-transform duration-200',
+                  schoolCollapsed ? '-rotate-90' : 'rotate-0',
+                )}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  {entry.startDate} - {entry.endDate} | {entry.name}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-text-color/70">
-              {t('absences.catalog.empty')}
-            </p>
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </div>
+            </Button>
+          }
+        >
+          {!schoolCollapsed && (
+            <div className="mt-2">
+              {currentCatalog?.schoolHolidays.length ? (
+                <ul className="space-y-2 pr-1">
+                  {currentCatalog.schoolHolidays.map((entry) => (
+                    <li
+                      key={entry.id}
+                      className="rounded-md border border-primary-tint/80 bg-primary-tint/20 px-3 py-2 text-sm"
+                    >
+                      {entry.startDate} - {entry.endDate} | {entry.name}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-text-color/70">
+                  {t('absences.catalog.empty')}
+                </p>
+              )}
+            </div>
           )}
         </SectionCard>
       </div>

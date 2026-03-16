@@ -489,6 +489,7 @@ export default function WeeklyReportPage() {
                 <Input
                   id="weekly-area"
                   value={form.area}
+                  readOnly={currentWeeklyValues?.submitted}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
@@ -505,6 +506,7 @@ export default function WeeklyReportPage() {
                   id="weekly-supervisor"
                   type="email"
                   value={form.supervisorEmail}
+                  readOnly={currentWeeklyValues?.submitted}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
@@ -601,6 +603,7 @@ export default function WeeklyReportPage() {
                   isPending ||
                   !form.weekStart ||
                   !form.weekEnd ||
+                  !hasEditableChanges ||
                   isAutoFillingWeek
                 }
                 className="bg-primary text-primary-contrast hover:bg-primary-shade"

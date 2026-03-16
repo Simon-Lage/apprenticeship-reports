@@ -1,6 +1,6 @@
 import { AppMetadata } from '@/shared/app/state';
 import { deriveGoogleSessionState, GoogleSession } from '@/shared/auth/session';
-import { deriveDriveAccessState } from '@/shared/drive/permissions';
+
 
 import { OnboardingResolver } from '@/main/services/OnboardingResolver';
 
@@ -44,13 +44,6 @@ export class AppAccessGuard {
 
   assertDatabaseUnlocked(currentState: AppMetadata): void {
     this.assertAuthenticated(currentState);
-    const driveState = deriveDriveAccessState(currentState.drive, true);
-
-    if (driveState.isLocked) {
-      throw new Error(
-        'Google-Drive-Berechtigungen fehlen. Die Anwendung bleibt bis zur Freigabe gesperrt.',
-      );
-    }
   }
 
   assertOnboardingAccessible(currentState: AppMetadata): void {

@@ -8,6 +8,7 @@ import {
   FiSlash,
   FiSettings,
   FiUpload,
+  FiArrowRight,
 } from 'react-icons/fi';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -86,54 +87,76 @@ export default function HomePage() {
 
   const dailyCount = runtime.state.reports.dailyReportCount;
   const weeklyCount = runtime.state.reports.weeklyReportCount;
-  const totalCount = dailyCount + weeklyCount;
+  const reportedDays = dailyCount;
 
   return (
     <div className="space-y-5">
       <section className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-        <Card className="border-primary-tint bg-white py-5">
-          <CardHeader>
-            <CardDescription className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-shade">
-              {t('home.hero.kicker')}
-            </CardDescription>
-            <CardTitle className="text-3xl text-text-color">
-              {t('home.hero.title')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-text-color/80">
+        <Card className="flex flex-col border-primary-tint bg-white p-6 shadow-sm">
+          <div className="flex-1 space-y-4">
+            <div>
+              <CardDescription className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-shade">
+                {t('home.hero.kicker')}
+              </CardDescription>
+              <CardTitle className="mt-1 text-3xl font-bold text-text-color">
+                {t('home.hero.title')}
+              </CardTitle>
+            </div>
+            <p className="max-w-md text-sm leading-relaxed text-text-color/75">
               {t('home.hero.description')}
             </p>
-          </CardContent>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <Link
+                to={appRoutes.dailyReport}
+                className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-shade"
+              >
+                <FiFileText className="size-4" />
+                <span>Tag erfassen</span>
+                <FiArrowRight className="size-4" />
+              </Link>
+              <Link
+                to={appRoutes.reportsOverview}
+                className="flex items-center gap-2 rounded-lg border border-primary-tint px-4 py-2 text-sm font-medium text-text-color transition-colors hover:bg-primary-tint/10"
+              >
+                <span>Alle Berichte</span>
+              </Link>
+            </div>
+          </div>
         </Card>
         <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
-          <Card className="border-primary-tint bg-white py-5">
-            <CardHeader>
-              <CardDescription>{t('home.stats.dailyReports')}</CardDescription>
+          <Card className="border-primary-tint bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+            <CardHeader className="p-0">
+              <CardDescription className="text-sm font-medium">
+                {t('home.stats.dailyReports')}
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-semibold text-primary">
+            <CardContent className="mt-2 p-0">
+              <p className="text-4xl font-bold tracking-tight text-primary">
                 {dailyCount}
               </p>
             </CardContent>
           </Card>
-          <Card className="border-primary-tint bg-white py-5">
-            <CardHeader>
-              <CardDescription>{t('home.stats.weeklyReports')}</CardDescription>
+          <Card className="border-primary-tint bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+            <CardHeader className="p-0">
+              <CardDescription className="text-sm font-medium">
+                {t('home.stats.weeklyReports')}
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-semibold text-primary">
+            <CardContent className="mt-2 p-0">
+              <p className="text-4xl font-bold tracking-tight text-primary">
                 {weeklyCount}
               </p>
             </CardContent>
           </Card>
-          <Card className="border-primary-tint bg-white py-5">
-            <CardHeader>
-              <CardDescription>{t('home.stats.totalEntries')}</CardDescription>
+          <Card className="border-primary-tint bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+            <CardHeader className="p-0">
+              <CardDescription className="text-sm font-medium">
+                {t('home.stats.totalEntries')}
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-semibold text-primary">
-                {totalCount}
+            <CardContent className="mt-2 p-0">
+              <p className="text-4xl font-bold tracking-tight text-primary">
+                {reportedDays}
               </p>
             </CardContent>
           </Card>
@@ -153,20 +176,21 @@ export default function HomePage() {
               }}
               className="block"
             >
-              <Card className="group border-primary-tint bg-white py-5 transition-colors hover:border-primary hover:bg-primary">
-                <CardHeader className="space-y-2">
-                  <div className="flex items-center gap-2 text-primary-shade transition-colors group-hover:text-primary-contrast">
-                    <Icon className="size-4" />
-                    <CardTitle className="text-lg text-text-color transition-colors group-hover:text-primary-contrast">
+              <Card className="group relative overflow-hidden border-primary-tint bg-white p-6 transition-all hover:border-primary hover:shadow-md active:scale-[0.98]">
+                <div className="absolute top-0 right-0 p-4 opacity-5 transition-transform group-hover:scale-110">
+                  <Icon className="size-20" />
+                </div>
+                <div className="relative flex flex-col space-y-2">
+                  <div className="flex items-center gap-3 text-primary-shade transition-colors group-hover:text-primary">
+                    <Icon className="size-5" />
+                    <CardTitle className="text-lg font-semibold text-text-color tracking-tight">
                       {t(areaCard.titleKey)}
                     </CardTitle>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-text-color/75 transition-colors group-hover:text-primary-contrast/90">
+                  <p className="text-sm leading-relaxed text-text-color/70">
                     {t(areaCard.descriptionKey)}
                   </p>
-                </CardContent>
+                </div>
               </Card>
             </Link>
           );

@@ -247,6 +247,9 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
 
     return this.saveGoogleSession({
       account: result.account,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken ?? undefined,
+      grantedScopes: result.grantedScopes,
       rememberMe: input.rememberMe,
     });
   }

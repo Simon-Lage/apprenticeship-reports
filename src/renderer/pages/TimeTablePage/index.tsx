@@ -444,10 +444,24 @@ export default function TimeTablePage() {
         ))}
       </datalist>
       <div className="sticky bottom-3 z-20 rounded-xl border border-primary-tint/75 bg-white/95 p-3 shadow-sm backdrop-blur">
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-3">
           <Button
             type="button"
-            disabled={isPending}
+            variant="outline"
+            disabled={isPending || !isDirty}
+            className="border-primary-tint"
+            onClick={() => {
+              if (baselineUiSettings) {
+                setUiSettings(baselineUiSettings);
+                toast.info(t('timeTable.reset'));
+              }
+            }}
+          >
+            {t('timeTable.reset')}
+          </Button>
+          <Button
+            type="button"
+            disabled={isPending || !isDirty}
             className="bg-primary text-primary-contrast hover:bg-primary-shade"
             onClick={() => {
               saveTimeTable().catch(() => undefined);

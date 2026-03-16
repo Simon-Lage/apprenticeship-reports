@@ -229,7 +229,7 @@ const deTranslation = {
     stats: {
       dailyReports: 'Tagesberichte',
       weeklyReports: 'Wochenberichte',
-      totalEntries: 'Gesamteinträge',
+      totalEntries: 'Berichtstage',
     },
     areas: {
       daily: {
@@ -274,7 +274,7 @@ const deTranslation = {
     sync: {
       title: 'Feiertage und Ferien',
       description:
-        'Beim ersten Anmelden oder am 1. Januar automatisch synchronisiert. Zusätzlich jederzeit manuell synchronisierbar.',
+        'Wird beim ersten Anmelden, bei einer Änderung des Bundeslandes oder am 1. Januar automatisch synchronisiert. Zusätzlich jederzeit manuell synchronisierbar.',
       stateLabel: 'Bundesland',
       syncedAt: 'Letzte Synchronisierung',
       lastError: 'Letzter Fehler',
@@ -426,6 +426,7 @@ const deTranslation = {
     title: 'Stundenplan',
     description: 'Preset-Stundenplan inklusive Lehrer- und Fächerlisten.',
     save: 'Stundenplan speichern',
+    reset: 'Stundenplan zurücksetzen',
     days: {
       monday: 'Montag',
       tuesday: 'Dienstag',
@@ -690,7 +691,7 @@ const deTranslation = {
         'Google-Konto oder Drive-Rechte fehlen. Bitte verknüpfen und Berechtigungen erteilen.',
       oauthUnavailable: 'Google OAuth ist nicht konfiguriert.',
       connectedAccount: 'Verknüpftes Konto: {{email}}',
-      changeAccountLink: 'Google-Konto wechseln',
+      changeAccountLink: 'Google Drive-Konto wechseln',
       connect: 'Drive verbinden',
       export: 'Backup zu Drive',
     },
@@ -705,6 +706,22 @@ const deTranslation = {
       driveError: 'Drive-Export fehlgeschlagen.',
     },
   },
+  setupDrive: {
+    title: 'Google Drive verbinden',
+    description:
+      'Google Drive ermöglicht optionale automatische Backups deiner Daten.',
+    backupExplanation:
+      'Mit einer Google Drive-Verbindung kannst du automatische Backups aktivieren. Du kannst die Verbindung und die Auto-Backup-Einstellungen jederzeit in den Einstellungen ändern.',
+    missingPermissions: 'Fehlende Berechtigungen',
+    connectButton: 'Jetzt mit Google Drive verbinden',
+    oauthUnavailableTitle: 'Google OAuth nicht konfiguriert',
+    oauthUnavailableDescription:
+      'In dieser Umgebung sind keine Google OAuth-Zugangsdaten hinterlegt. Drive-Verbindung ist daher nicht möglich.',
+    feedback: {
+      connectError: 'Google Drive konnte nicht verbunden werden.',
+    },
+  },
 } as const;
 
 export default deTranslation;
+

@@ -15,7 +15,6 @@ import {
   mergeUiSettings,
   parseOnboardingRegion,
   parseOnboardingTrainingPeriod,
-  parseOnboardingWorkplace,
   parseUiSettings,
   UiSettingsValues,
 } from '@/renderer/lib/app-settings';
@@ -38,7 +37,6 @@ type SettingsFormValues = UiSettingsValues & {
 function resolveSettingsFormValues(values: JsonObject): SettingsFormValues {
   const parsedUiSettings = parseUiSettings(values);
   const trainingPeriod = parseOnboardingTrainingPeriod(values);
-  const workplace = parseOnboardingWorkplace(values);
   const region = parseOnboardingRegion(values);
 
   return {
@@ -47,7 +45,7 @@ function resolveSettingsFormValues(values: JsonObject): SettingsFormValues {
     trainingEnd: trainingPeriod.trainingEnd ?? '',
     reportsSince: trainingPeriod.reportsSince ?? '',
     subdivisionCode: region.subdivisionCode ?? '',
-    ihkLink: workplace.ihkLink ?? '',
+    ihkLink: '',
   };
 }
 
@@ -74,20 +72,6 @@ export default function SettingsPage() {
 
     setFormValues(resolveSettingsFormValues(settingsSnapshot.value.values));
   }, [settingsSnapshot.value]);
-
-  const unsavedChangesGuard = useUnsavedChangesGuard({
-    isDirty,
-    onSave: async () => saveSettings(),
-  });
-
-  if (!formValues) {
-    return (
-      <Alert className="border-primary-tint bg-primary-tint/30">
-        <AlertTitle>{t('settings.loadingTitle')}</AlertTitle>
-        <AlertDescription>{t('settings.loadingDescription')}</AlertDescription>
-      </Alert>
-    );
-  }
 
   async function saveSettings() {
     if (!runtime.api || !settingsSnapshot.value || !formValues) {
@@ -202,6 +186,20 @@ export default function SettingsPage() {
     } finally {
       setIsPending(false);
     }
+  }
+
+  const unsavedChangesGuard = useUnsavedChangesGuard({
+    isDirty,
+    onSave: async () => saveSettings(),
+  });
+
+  if (!formValues) {
+    return (
+      <Alert className="border-primary-tint bg-primary-tint/30">
+        <AlertTitle>{t('settings.loadingTitle')}</AlertTitle>
+        <AlertDescription>{t('settings.loadingDescription')}</AlertDescription>
+      </Alert>
+    );
   }
 
   async function handleSettingsExport() {
@@ -429,6 +427,7 @@ export default function SettingsPage() {
           </select>
         </FormField>
       </SectionCard>
+
       <SectionCard
         title={t('settings.exchange.title')}
         description={t('settings.exchange.description')}
