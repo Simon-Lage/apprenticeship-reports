@@ -1,4 +1,4 @@
-codex resume 019be14a-30a8-7ee0-80d8-6aa3766233e4
+C:\Users\simon.lage\PhpstormProjects\apprenticeship-reports\temp hier kommen temporäre test-scripts oä hin.
 
 # 1 Projektinfos
 
@@ -207,6 +207,6 @@ codex resume 019be14a-30a8-7ee0-80d8-6aa3766233e4
 
 ---
 
-
 Passwort:
 fsdDf4etw$rge4rt4
+12345Ab!

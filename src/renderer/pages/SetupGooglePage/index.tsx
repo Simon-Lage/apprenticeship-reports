@@ -35,7 +35,10 @@ export default function SetupGooglePage() {
     if (message.includes('timeout')) {
       return 'setupGoogle.errors.timeout';
     }
-    if (message.includes('id_token_missing') || message.includes('invalid_id_token')) {
+    if (
+      message.includes('id_token_missing') ||
+      message.includes('invalid_id_token')
+    ) {
       return 'setupGoogle.errors.invalidToken';
     }
     return 'setupGoogle.errors.generic';
@@ -110,7 +113,12 @@ export default function SetupGooglePage() {
         <Button onClick={handleLink} disabled={loading}>
           {t('setupGoogle.link')}
         </Button>
-        <Button type="button" variant="outline" onClick={handleSkip} disabled={loading}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleSkip}
+          disabled={loading}
+        >
           {t('setupGoogle.skip')}
         </Button>
       </div>
