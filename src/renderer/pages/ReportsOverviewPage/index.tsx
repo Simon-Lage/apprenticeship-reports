@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import { FiCheck, FiX } from 'react-icons/fi';
 
 import { PageHeader } from '@/renderer/components/app/PageHeader';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
 import { useReportsState } from '@/renderer/hooks/useKernelData';
+import { appRoutes } from '@/renderer/lib/app-routes';
 import {
-  listWeeksWithDailyReports,
+  listWeekDates,
   parseDailyReportValues,
   parseWeeklyReportValues,
 } from '@/renderer/lib/report-values';
@@ -18,11 +21,28 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+
+function toDisplayDate(dateValue: string): string {
+  const [year, month, day] = dateValue.split('-');
+
+  if (!year || !month || !day) {
+    return dateValue;
+  }
+
+  return `${day}.${month}.${year}`;
+}
 
 export default function ReportsOverviewPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const reportsState = useReportsState();
   const [search, setSearch] = useState('');
+  const [hoveredWeekKey, setHoveredWeekKey] = useState<string | null>(null);
   const [dayTypeFilter, setDayTypeFilter] = useState<
     'all' | 'work' | 'school' | 'free'
   >('all');
@@ -31,43 +51,74 @@ export default function ReportsOverviewPage() {
     if (!reportsState.value) {
       return [];
     }
-    return listWeeksWithDailyReports(reportsState.value).flatMap(
-      (week, index) => {
-        const weeklyValues = parseWeeklyReportValues(week.weeklyReport.values);
-        return week.dailyReports.map((dailyReport, dayIndex) => {
-          const parsed = parseDailyReportValues(dailyReport.values);
+
+    const sortedWeeks = Object.values(reportsState.value.weeklyReports).sort(
+      (left, right) => left.weekStart.localeCompare(right.weekStart),
+    );
+
+    return sortedWeeks.flatMap((weeklyReport, weekIndex) => {
+      const weeklyValues = parseWeeklyReportValues(weeklyReport.values);
+      const dailyByDate = new Map(
+        weeklyReport.dailyReportIds
+          .map(
+            (dailyReportId) => reportsState.value?.dailyReports[dailyReportId],
+          )
+          .filter(
+            (dailyReport): dailyReport is NonNullable<typeof dailyReport> =>
+              Boolean(dailyReport),
+          )
+          .map((dailyReport) => [dailyReport.date, dailyReport]),
+      );
+
+      return listWeekDates(weeklyReport.weekStart, weeklyReport.weekEnd).map(
+        (date, rowIndex) => {
+          const dailyReport = dailyByDate.get(date) ?? null;
+          const parsed = dailyReport
+            ? parseDailyReportValues(dailyReport.values)
+            : null;
+          let summary = '-';
+
+          if (parsed) {
+            if (parsed.dayType === 'free') {
+              summary = parsed.freeReason || '-';
+            } else {
+              summary =
+                [
+                  ...parsed.activities,
+                  ...parsed.schoolTopics,
+                  ...parsed.trainings,
+                ].join(', ') || '-';
+            }
+          }
+
           const searchableContent = [
-            dailyReport.date,
-            ...parsed.activities,
-            ...parsed.schoolTopics,
-            ...parsed.trainings,
-            parsed.freeReason,
+            date,
+            summary,
+            weeklyValues.submittedToEmail ?? '',
+            weeklyValues.area ?? '',
           ]
             .join(' ')
             .toLowerCase();
+
           return {
-            id: dailyReport.id,
-            date: dailyReport.date,
-            dayType: parsed.dayType,
-            summary:
-              parsed.dayType === 'free'
-                ? parsed.freeReason || '-'
-                : [
-                    ...parsed.activities,
-                    ...parsed.schoolTopics,
-                    ...parsed.trainings,
-                  ].join(', ') || '-',
-            weekStart: week.weeklyReport.weekStart,
-            weekEnd: week.weeklyReport.weekEnd,
+            id: dailyReport?.id ?? null,
+            date,
+            dayType: parsed?.dayType ?? null,
+            summary,
+            weekStart: weeklyReport.weekStart,
+            weekEnd: weeklyReport.weekEnd,
+            weekKey: `${weeklyReport.weekStart}-${weeklyReport.weekEnd}`,
             submitted: weeklyValues.submitted,
             submittedToEmail: weeklyValues.submittedToEmail ?? '-',
             area: weeklyValues.area || '-',
-            isWeekStart: dayIndex === 0 && index > 0,
+            isWeekStart: rowIndex === 0 && weekIndex > 0,
+            isWeekFirstRow: rowIndex === 0,
+            weekRowSpan: 7,
             searchableContent,
           };
-        });
-      },
-    );
+        },
+      );
+    });
   }, [reportsState.value]);
 
   const filteredRows = useMemo(
@@ -127,29 +178,197 @@ export default function ReportsOverviewPage() {
                 <TableHead>{t('reportsOverview.table.date')}</TableHead>
                 <TableHead>{t('reportsOverview.table.dayType')}</TableHead>
                 <TableHead>{t('reportsOverview.table.entries')}</TableHead>
-                <TableHead>{t('reportsOverview.table.submitted')}</TableHead>
-                <TableHead>{t('reportsOverview.table.submittedTo')}</TableHead>
-                <TableHead>{t('reportsOverview.table.area')}</TableHead>
+                <TableHead className="border-l border-primary-tint/70">
+                  {t('reportsOverview.table.submitted')}
+                </TableHead>
+                <TableHead className="border-l border-primary-tint/70">
+                  {t('reportsOverview.table.submittedTo')}
+                </TableHead>
+                <TableHead className="border-l border-primary-tint/70">
+                  {t('reportsOverview.table.area')}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredRows.map((row) => (
                 <TableRow
-                  key={row.id}
-                  className={row.isWeekStart ? 'border-t-4 border-primary' : ''}
+                  key={`${row.date}-${row.id ?? 'empty'}`}
+                  className={
+                    row.isWeekStart
+                      ? 'border-t-4 border-primary hover:bg-transparent'
+                      : 'hover:bg-transparent'
+                  }
                 >
-                  <TableCell>{row.date}</TableCell>
-                  <TableCell>
-                    {t(`dailyReport.dayTypes.${row.dayType}`)}
+                  <TableCell
+                    className={
+                      row.id ? 'cursor-pointer hover:bg-primary-tint/15' : ''
+                    }
+                    onClick={() => {
+                      if (!row.id) {
+                        return;
+                      }
+
+                      navigate(
+                        `${appRoutes.dailyReport}?date=${encodeURIComponent(row.date)}`,
+                      );
+                    }}
+                  >
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>{toDisplayDate(row.date)}</span>
+                      </TooltipTrigger>
+                      {row.id ? (
+                        <TooltipContent side="top" sideOffset={8}>
+                          {t('reportsOverview.table.openDailyTooltip', {
+                            date: toDisplayDate(row.date),
+                          })}
+                        </TooltipContent>
+                      ) : null}
+                    </Tooltip>
                   </TableCell>
-                  <TableCell className="max-w-[420px] whitespace-normal">
+                  <TableCell
+                    className={
+                      row.id ? 'cursor-pointer hover:bg-primary-tint/15' : ''
+                    }
+                    onClick={() => {
+                      if (!row.id) {
+                        return;
+                      }
+
+                      navigate(
+                        `${appRoutes.dailyReport}?date=${encodeURIComponent(row.date)}`,
+                      );
+                    }}
+                  >
+                    {row.dayType
+                      ? t(`dailyReport.dayTypes.${row.dayType}`)
+                      : '-'}
+                  </TableCell>
+                  <TableCell
+                    className={`max-w-[420px] whitespace-normal ${
+                      row.id ? 'cursor-pointer hover:bg-primary-tint/15' : ''
+                    }`}
+                    onClick={() => {
+                      if (!row.id) {
+                        return;
+                      }
+
+                      navigate(
+                        `${appRoutes.dailyReport}?date=${encodeURIComponent(row.date)}`,
+                      );
+                    }}
+                  >
                     {row.summary}
                   </TableCell>
-                  <TableCell>
-                    {row.submitted ? t('common.yes') : t('common.no')}
-                  </TableCell>
-                  <TableCell>{row.submittedToEmail}</TableCell>
-                  <TableCell>{row.area}</TableCell>
+                  {row.isWeekFirstRow ? (
+                    <>
+                      <TableCell
+                        rowSpan={row.weekRowSpan}
+                        className={`border-l border-primary-tint/70 ${
+                          hoveredWeekKey === row.weekKey
+                            ? 'bg-primary-tint/25'
+                            : ''
+                        } cursor-pointer`}
+                        onMouseEnter={() => {
+                          setHoveredWeekKey(row.weekKey);
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredWeekKey((current) =>
+                            current === row.weekKey ? null : current,
+                          );
+                        }}
+                        onClick={() => {
+                          navigate(
+                            `${appRoutes.weeklyReport}?weekStart=${encodeURIComponent(row.weekStart)}&weekEnd=${encodeURIComponent(row.weekEnd)}`,
+                          );
+                        }}
+                      >
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex w-full justify-center">
+                              {row.submitted ? (
+                                <FiCheck className="size-4 text-primary" />
+                              ) : (
+                                <FiX className="size-4 text-text-color/70" />
+                              )}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" sideOffset={8}>
+                            {t('reportsOverview.table.openWeeklyTooltip', {
+                              start: toDisplayDate(row.weekStart),
+                              end: toDisplayDate(row.weekEnd),
+                            })}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell
+                        rowSpan={row.weekRowSpan}
+                        className={`border-l border-primary-tint/70 ${
+                          hoveredWeekKey === row.weekKey
+                            ? 'bg-primary-tint/25'
+                            : ''
+                        } cursor-pointer`}
+                        onMouseEnter={() => {
+                          setHoveredWeekKey(row.weekKey);
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredWeekKey((current) =>
+                            current === row.weekKey ? null : current,
+                          );
+                        }}
+                        onClick={() => {
+                          navigate(
+                            `${appRoutes.weeklyReport}?weekStart=${encodeURIComponent(row.weekStart)}&weekEnd=${encodeURIComponent(row.weekEnd)}`,
+                          );
+                        }}
+                      >
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span>{row.submittedToEmail}</span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" sideOffset={8}>
+                            {t('reportsOverview.table.openWeeklyTooltip', {
+                              start: toDisplayDate(row.weekStart),
+                              end: toDisplayDate(row.weekEnd),
+                            })}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell
+                        rowSpan={row.weekRowSpan}
+                        className={`border-l border-primary-tint/70 ${
+                          hoveredWeekKey === row.weekKey
+                            ? 'bg-primary-tint/25'
+                            : ''
+                        } cursor-pointer`}
+                        onMouseEnter={() => {
+                          setHoveredWeekKey(row.weekKey);
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredWeekKey((current) =>
+                            current === row.weekKey ? null : current,
+                          );
+                        }}
+                        onClick={() => {
+                          navigate(
+                            `${appRoutes.weeklyReport}?weekStart=${encodeURIComponent(row.weekStart)}&weekEnd=${encodeURIComponent(row.weekEnd)}`,
+                          );
+                        }}
+                      >
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span>{row.area}</span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" sideOffset={8}>
+                            {t('reportsOverview.table.openWeeklyTooltip', {
+                              start: toDisplayDate(row.weekStart),
+                              end: toDisplayDate(row.weekEnd),
+                            })}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                    </>
+                  ) : null}
                 </TableRow>
               ))}
             </TableBody>

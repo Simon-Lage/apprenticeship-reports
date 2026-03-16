@@ -83,13 +83,37 @@ describe('daily report auto day type', () => {
     expect(result.reason.kind).toBe('public-holiday');
   });
 
-  it('keeps school day when vacation exists', () => {
+  it('prioritizes weekend over sick entries', () => {
+    const absenceSettings = createAbsenceSettings();
+    absenceSettings.manualAbsences.push({
+      id: 'm-weekend-sick',
+      type: 'sick',
+      startDate: '2026-02-01',
+      endDate: '2026-02-01',
+      label: 'Krank am Sonntag',
+      note: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+
+    const result = resolveAutoDayType({
+      date: '2026-02-01',
+      uiSettings: createUiSettings(),
+      absenceSettings,
+      currentYear: 2026,
+    });
+
+    expect(result.dayType).toBe('free');
+    expect(result.reason.kind).toBe('weekend');
+  });
+
+  it('keeps school day when vacation exists without school holiday', () => {
     const absenceSettings = createAbsenceSettings();
     absenceSettings.manualAbsences.push({
       id: 'm-2',
       type: 'vacation',
-      startDate: '2026-02-02',
-      endDate: '2026-02-02',
+      startDate: '2026-02-09',
+      endDate: '2026-02-09',
       label: 'Urlaub',
       note: null,
       createdAt: '2026-01-01T00:00:00.000Z',
@@ -97,14 +121,38 @@ describe('daily report auto day type', () => {
     });
 
     const result = resolveAutoDayType({
-      date: '2026-02-02',
+      date: '2026-02-09',
       uiSettings: createUiSettings(),
       absenceSettings,
       currentYear: 2026,
     });
 
-    expect(result.dayType).toBe('work');
-    expect(result.reason.kind).toBe('school-holiday');
+    expect(result.dayType).toBe('school');
+    expect(result.reason.kind).toBe('base');
+  });
+
+  it('applies vacation on school holidays after school-to-work conversion', () => {
+    const absenceSettings = createAbsenceSettings();
+    absenceSettings.manualAbsences.push({
+      id: 'm-vac-school-holiday',
+      type: 'vacation',
+      startDate: '2026-02-03',
+      endDate: '2026-02-03',
+      label: 'Urlaub',
+      note: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+
+    const result = resolveAutoDayType({
+      date: '2026-02-03',
+      uiSettings: createUiSettings(),
+      absenceSettings,
+      currentYear: 2026,
+    });
+
+    expect(result.dayType).toBe('free');
+    expect(result.reason.kind).toBe('vacation');
   });
 
   it('transforms school day to work day on school holiday', () => {

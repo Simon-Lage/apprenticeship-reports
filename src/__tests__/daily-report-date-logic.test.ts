@@ -91,6 +91,35 @@ describe('daily report date logic', () => {
     expect(selected).toBe('2026-03-04');
   });
 
+  it('skips weekends even when they are not persisted', () => {
+    const reportsState = createReportsState([]);
+
+    const selected = resolveInitialDailyReportDate({
+      reportsState,
+      trainingStart: '2026-01-31',
+      trainingEnd: '2026-12-31',
+      reportsSince: null,
+      now: new Date('2026-02-01T12:00:00.000Z'),
+    });
+
+    expect(selected).toBe('2026-02-02');
+  });
+
+  it('skips custom auto-entered dates such as public holidays', () => {
+    const reportsState = createReportsState([]);
+
+    const selected = resolveInitialDailyReportDate({
+      reportsState,
+      trainingStart: '2026-01-01',
+      trainingEnd: '2026-12-31',
+      reportsSince: null,
+      isAutoEnteredDate: (date) => date === '2026-01-01',
+      now: new Date('2026-01-02T12:00:00.000Z'),
+    });
+
+    expect(selected).toBe('2026-01-02');
+  });
+
   it('derives monday and sunday from a report date', () => {
     const weekRange = resolveWeekRangeForDate('2026-03-12');
 

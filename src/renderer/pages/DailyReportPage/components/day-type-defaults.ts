@@ -1,5 +1,8 @@
 import { UiSettingsValues } from '@/renderer/lib/app-settings';
-import { resolveDayKey } from '@/renderer/pages/DailyReportPage/components/date-logic';
+import {
+  isWeekendDate,
+  resolveDayKey,
+} from '@/renderer/pages/DailyReportPage/components/date-logic';
 import {
   AbsenceCatalogEntry,
   AbsenceSettings,
@@ -10,6 +13,7 @@ type BaseDayType = 'work' | 'school';
 
 export type AutoDayTypeReason =
   | { kind: 'public-holiday'; name: string }
+  | { kind: 'weekend' }
   | { kind: 'sick'; label: string | null }
   | { kind: 'vacation'; label: string | null }
   | { kind: 'school-holiday'; name: string }
@@ -147,6 +151,16 @@ export function resolveAutoDayType(input: {
     };
   }
 
+  if (isWeekendDate(input.date)) {
+    return {
+      dayType: 'free',
+      freeReason: '',
+      reason: {
+        kind: 'weekend',
+      },
+    };
+  }
+
   if (sickFromManual) {
     return {
       dayType: 'free',
@@ -158,7 +172,14 @@ export function resolveAutoDayType(input: {
     };
   }
 
-  if (vacationFromManual && baseDayType !== 'school') {
+  const schoolHolidayName =
+    schoolHolidayFromManual?.label.trim() ||
+    schoolHolidayFromCatalog?.name ||
+    null;
+  const effectiveBaseDayType: BaseDayType =
+    schoolHolidayName && baseDayType === 'school' ? 'work' : baseDayType;
+
+  if (vacationFromManual && effectiveBaseDayType !== 'school') {
     return {
       dayType: 'free',
       freeReason: vacationFromManual.label.trim(),
@@ -168,11 +189,6 @@ export function resolveAutoDayType(input: {
       },
     };
   }
-
-  const schoolHolidayName =
-    schoolHolidayFromManual?.label.trim() ||
-    schoolHolidayFromCatalog?.name ||
-    null;
 
   if (schoolHolidayName && baseDayType === 'school') {
     return {
@@ -186,11 +202,11 @@ export function resolveAutoDayType(input: {
   }
 
   return {
-    dayType: baseDayType,
+    dayType: effectiveBaseDayType,
     freeReason: '',
     reason: {
       kind: 'base',
-      base: baseDayType,
+      base: effectiveBaseDayType,
     },
   };
 }

@@ -9,12 +9,29 @@ import {
 export const dayTypeValues = ['work', 'school', 'free'] as const;
 export type DayTypeValue = (typeof dayTypeValues)[number];
 
-const schoolLessonSchema = z.object({
-  lesson: z.number().int().min(1).max(12),
-  subject: z.string().trim().max(120).default(''),
-  teacher: z.string().trim().max(120).default(''),
-  topic: z.string().trim().max(240).default(''),
-});
+function uniqValues(values: string[]): string[] {
+  return Array.from(
+    new Set(values.map((value) => value.trim()).filter(Boolean)),
+  );
+}
+
+const schoolLessonSchema = z
+  .object({
+    lesson: z.number().int().min(1).max(10),
+    subject: z.string().trim().max(120).default(''),
+    teacher: z.string().trim().max(120).default(''),
+    topic: z.string().trim().max(240).optional(),
+    topics: z.array(z.string().trim().min(1).max(240)).default([]),
+  })
+  .transform((value) => ({
+    lesson: value.lesson,
+    subject: value.subject,
+    teacher: value.teacher,
+    topics: uniqValues([
+      ...value.topics,
+      ...(value.topic?.trim().length ? [value.topic] : []),
+    ]),
+  }));
 
 const dailyReportValuesSchema = z.object({
   dayType: z.enum(dayTypeValues).default('work'),
@@ -42,42 +59,47 @@ export type DailyReportValues = z.infer<typeof dailyReportValuesSchema>;
 export type WeeklyReportValues = z.infer<typeof weeklyReportValuesSchema>;
 export type SchoolLessonInput = z.infer<typeof schoolLessonSchema>;
 
-function uniqValues(values: string[]): string[] {
-  return Array.from(
-    new Set(values.map((value) => value.trim()).filter(Boolean)),
-  );
-}
-
 export function normalizeLessons(
   lessons: SchoolLessonInput[],
 ): SchoolLessonInput[] {
-  const byLesson = [...lessons].sort(
-    (left, right) => left.lesson - right.lesson,
-  );
-  const result: SchoolLessonInput[] = [];
+  const byLesson = [...lessons]
+    .map((lesson) => schoolLessonSchema.parse(lesson))
+    .sort((left, right) => left.lesson - right.lesson);
 
-  byLesson.forEach((lesson) => {
-    const previous = result[result.length - 1];
-    const normalized = schoolLessonSchema.parse(lesson);
+  for (let pairStart = 1; pairStart <= 9; pairStart += 2) {
+    const firstIndex = byLesson.findIndex(
+      (lesson) => lesson.lesson === pairStart,
+    );
+    const secondIndex = byLesson.findIndex(
+      (lesson) => lesson.lesson === pairStart + 1,
+    );
 
-    if (
-      previous &&
-      !normalized.topic.trim().length &&
-      normalized.subject === previous.subject &&
-      normalized.teacher === previous.teacher &&
-      previous.topic.trim().length
-    ) {
-      result.push({
-        ...normalized,
-        topic: previous.topic,
-      });
-      return;
+    if (firstIndex >= 0 && secondIndex >= 0) {
+      const first = byLesson[firstIndex];
+      const second = byLesson[secondIndex];
+
+      if (
+        first.subject === second.subject &&
+        first.teacher === second.teacher
+      ) {
+        if (!first.topics.length && second.topics.length) {
+          byLesson[firstIndex] = {
+            ...first,
+            topics: second.topics,
+          };
+        }
+
+        if (!second.topics.length && first.topics.length) {
+          byLesson[secondIndex] = {
+            ...second,
+            topics: first.topics,
+          };
+        }
+      }
     }
+  }
 
-    result.push(normalized);
-  });
-
-  return result;
+  return byLesson;
 }
 
 export function parseDailyReportValues(values: unknown): DailyReportValues {
@@ -190,17 +212,13 @@ export function buildWeeklyAggregates(
       });
 
       parsed.lessons.forEach((lesson) => {
-        const topic = lesson.topic.trim();
-
-        if (!topic.length) {
-          return;
-        }
-
-        const value = `${lesson.subject}: ${topic}`;
-        if (!seenSchool.has(value)) {
-          seenSchool.add(value);
-          schoolTopics.push(value);
-        }
+        lesson.topics.forEach((topic) => {
+          const value = `${lesson.subject}: ${topic}`;
+          if (!seenSchool.has(value)) {
+            seenSchool.add(value);
+            schoolTopics.push(value);
+          }
+        });
       });
     });
 

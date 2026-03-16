@@ -5,8 +5,10 @@ import { z } from 'zod';
 import { FormField } from '@/renderer/components/app/FormField';
 import JsonDiffViewer from '@/renderer/components/app/JsonDiffViewer';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
+import UnsavedChangesDialog from '@/renderer/components/app/UnsavedChangesDialog';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
+import useUnsavedChangesGuard from '@/renderer/hooks/useUnsavedChangesGuard';
 import { useSettingsSnapshot } from '@/renderer/hooks/useKernelData';
 import {
   mergeOnboardingSettings,
@@ -22,6 +24,7 @@ import { germanSubdivisions } from '@/shared/absence/german-subdivisions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { JsonObject } from '@/shared/common/json';
 import { SettingsImportPreview } from '@/shared/settings/schema';
 
 type SettingsFormValues = UiSettingsValues & {
@@ -32,6 +35,22 @@ type SettingsFormValues = UiSettingsValues & {
   ihkLink: string;
 };
 
+function resolveSettingsFormValues(values: JsonObject): SettingsFormValues {
+  const parsedUiSettings = parseUiSettings(values);
+  const trainingPeriod = parseOnboardingTrainingPeriod(values);
+  const workplace = parseOnboardingWorkplace(values);
+  const region = parseOnboardingRegion(values);
+
+  return {
+    ...parsedUiSettings,
+    trainingStart: trainingPeriod.trainingStart ?? '',
+    trainingEnd: trainingPeriod.trainingEnd ?? '',
+    reportsSince: trainingPeriod.reportsSince ?? '',
+    subdivisionCode: region.subdivisionCode ?? '',
+    ihkLink: workplace.ihkLink ?? '',
+  };
+}
+
 export default function SettingsPage() {
   const { t } = useTranslation();
   const runtime = useAppRuntime();
@@ -40,28 +59,26 @@ export default function SettingsPage() {
   const [formValues, setFormValues] = useState<SettingsFormValues | null>(null);
   const [preview, setPreview] = useState<SettingsImportPreview | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const baselineFormValues = settingsSnapshot.value
+    ? resolveSettingsFormValues(settingsSnapshot.value.values)
+    : null;
+  const isDirty =
+    Boolean(formValues) &&
+    Boolean(baselineFormValues) &&
+    JSON.stringify(formValues) !== JSON.stringify(baselineFormValues);
 
   useEffect(() => {
     if (!settingsSnapshot.value) {
       return;
     }
 
-    const parsedUiSettings = parseUiSettings(settingsSnapshot.value.values);
-    const trainingPeriod = parseOnboardingTrainingPeriod(
-      settingsSnapshot.value.values,
-    );
-    const workplace = parseOnboardingWorkplace(settingsSnapshot.value.values);
-    const region = parseOnboardingRegion(settingsSnapshot.value.values);
-
-    setFormValues({
-      ...parsedUiSettings,
-      trainingStart: trainingPeriod.trainingStart ?? '',
-      trainingEnd: trainingPeriod.trainingEnd ?? '',
-      reportsSince: trainingPeriod.reportsSince ?? '',
-      subdivisionCode: region.subdivisionCode ?? '',
-      ihkLink: workplace.ihkLink ?? '',
-    });
+    setFormValues(resolveSettingsFormValues(settingsSnapshot.value.values));
   }, [settingsSnapshot.value]);
+
+  const unsavedChangesGuard = useUnsavedChangesGuard({
+    isDirty,
+    onSave: async () => saveSettings(),
+  });
 
   if (!formValues) {
     return (
@@ -74,7 +91,7 @@ export default function SettingsPage() {
 
   async function saveSettings() {
     if (!runtime.api || !settingsSnapshot.value || !formValues) {
-      return;
+      return false;
     }
 
     setIsPending(true);
@@ -128,6 +145,7 @@ export default function SettingsPage() {
       await runtime.refresh();
       await settingsSnapshot.refresh();
       toast.success(t('settings.feedback.saved'));
+      return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
         const code = error.issues[0]?.message;
@@ -174,12 +192,13 @@ export default function SettingsPage() {
           );
         }
 
-        return;
+        return false;
       }
 
       const message =
         error instanceof Error ? error.message : t('common.errors.unknown');
       toast.error(t('settings.feedback.saveError'), message);
+      return false;
     } finally {
       setIsPending(false);
     }
@@ -503,13 +522,22 @@ export default function SettingsPage() {
             disabled={isPending}
             className="bg-primary text-primary-contrast hover:bg-primary-shade"
             onClick={() => {
-              saveSettings();
+              saveSettings().catch(() => undefined);
             }}
           >
             {isPending ? t('common.loading') : t('settings.save')}
           </Button>
         </div>
       </div>
+      <UnsavedChangesDialog
+        open={unsavedChangesGuard.isOpen}
+        isPending={unsavedChangesGuard.isPending}
+        onCancel={unsavedChangesGuard.cancel}
+        onDiscard={unsavedChangesGuard.discard}
+        onSave={() => {
+          unsavedChangesGuard.saveAndProceed().catch(() => undefined);
+        }}
+      />
     </div>
   );
 }

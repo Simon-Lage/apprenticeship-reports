@@ -4,8 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { FormField } from '@/renderer/components/app/FormField';
 import { PageHeader } from '@/renderer/components/app/PageHeader';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
+import UnsavedChangesDialog from '@/renderer/components/app/UnsavedChangesDialog';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
+import useUnsavedChangesGuard from '@/renderer/hooks/useUnsavedChangesGuard';
 import { useSettingsSnapshot } from '@/renderer/hooks/useKernelData';
 import {
   mergeUiSettings,
@@ -15,10 +17,26 @@ import {
   weekDayKeys,
   WeekDayKey,
 } from '@/renderer/lib/app-settings';
+import handleEnterAction from '@/renderer/lib/keyboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const lessonCount = 10;
+
+type PendingCatalogEntry = {
+  kind: 'teacher' | 'subject';
+  value: string;
+};
 
 function updateSlots(
   slots: TimetableSlot[],
@@ -53,6 +71,8 @@ export default function TimeTablePage() {
   const [newTeacher, setNewTeacher] = useState('');
   const [newSubject, setNewSubject] = useState('');
   const [isPending, setIsPending] = useState(false);
+  const [pendingCatalogEntry, setPendingCatalogEntry] =
+    useState<PendingCatalogEntry | null>(null);
 
   useEffect(() => {
     if (!settingsSnapshot.value) {
@@ -70,10 +90,13 @@ export default function TimeTablePage() {
     () => uiSettings?.subjects ?? [],
     [uiSettings?.subjects],
   );
-
-  if (!uiSettings) {
-    return null;
-  }
+  const baselineUiSettings = settingsSnapshot.value
+    ? parseUiSettings(settingsSnapshot.value.values)
+    : null;
+  const isDirty =
+    Boolean(uiSettings) &&
+    Boolean(baselineUiSettings) &&
+    JSON.stringify(uiSettings) !== JSON.stringify(baselineUiSettings);
 
   function addTeacher(value: string) {
     const nextValue = value.trim();
@@ -115,11 +138,6 @@ export default function TimeTablePage() {
     key: 'teacher' | 'subject',
     value: string,
   ) {
-    if (key === 'teacher') {
-      addTeacher(value);
-    } else {
-      addSubject(value);
-    }
     setUiSettings((current) => {
       if (!current) {
         return current;
@@ -134,9 +152,30 @@ export default function TimeTablePage() {
     });
   }
 
+  function requestCatalogAdd(kind: 'teacher' | 'subject', value: string) {
+    const nextValue = value.trim();
+
+    if (!nextValue) {
+      return;
+    }
+
+    if (kind === 'teacher' && teacherOptions.includes(nextValue)) {
+      return;
+    }
+
+    if (kind === 'subject' && subjectOptions.includes(nextValue)) {
+      return;
+    }
+
+    setPendingCatalogEntry({
+      kind,
+      value: nextValue,
+    });
+  }
+
   async function saveTimeTable() {
     if (!runtime.api || !settingsSnapshot.value || !uiSettings) {
-      return;
+      return false;
     }
 
     setIsPending(true);
@@ -148,32 +187,31 @@ export default function TimeTablePage() {
       await runtime.refresh();
       await settingsSnapshot.refresh();
       toast.success(t('timeTable.feedback.saved'));
+      return true;
     } catch (error) {
       const message =
         error instanceof Error ? error.message : t('common.errors.unknown');
       toast.error(t('timeTable.feedback.saveError'), message);
+      return false;
     } finally {
       setIsPending(false);
     }
   }
 
+  const unsavedChangesGuard = useUnsavedChangesGuard({
+    isDirty,
+    onSave: async () => saveTimeTable(),
+  });
+
+  if (!uiSettings) {
+    return null;
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-24">
       <PageHeader
         title={t('timeTable.title')}
         description={t('timeTable.description')}
-        action={
-          <Button
-            type="button"
-            disabled={isPending}
-            className="bg-primary text-primary-contrast hover:bg-primary-shade"
-            onClick={() => {
-              saveTimeTable().catch(() => undefined);
-            }}
-          >
-            {isPending ? t('common.loading') : t('timeTable.save')}
-          </Button>
-        }
       />
       <SectionCard className="border-primary-tint bg-white">
         <div className="overflow-x-auto rounded-md border border-primary-tint/60">
@@ -225,6 +263,9 @@ export default function TimeTablePage() {
                                   event.target.value,
                                 )
                               }
+                              onBlur={(event) =>
+                                requestCatalogAdd('subject', event.target.value)
+                              }
                             />
                             <Input
                               value={slot?.teacher ?? ''}
@@ -239,6 +280,9 @@ export default function TimeTablePage() {
                                   'teacher',
                                   event.target.value,
                                 )
+                              }
+                              onBlur={(event) =>
+                                requestCatalogAdd('teacher', event.target.value)
                               }
                             />
                           </div>
@@ -271,6 +315,12 @@ export default function TimeTablePage() {
                   <Input
                     id="new-teacher"
                     value={newTeacher}
+                    onKeyDown={(event) =>
+                      handleEnterAction(event, () => {
+                        addTeacher(newTeacher);
+                        setNewTeacher('');
+                      })
+                    }
                     onChange={(event) => setNewTeacher(event.target.value)}
                   />
                   <Button
@@ -325,6 +375,12 @@ export default function TimeTablePage() {
                   <Input
                     id="new-subject"
                     value={newSubject}
+                    onKeyDown={(event) =>
+                      handleEnterAction(event, () => {
+                        addSubject(newSubject);
+                        setNewSubject('');
+                      })
+                    }
                     onChange={(event) => setNewSubject(event.target.value)}
                   />
                   <Button
@@ -387,6 +443,79 @@ export default function TimeTablePage() {
           </option>
         ))}
       </datalist>
+      <div className="sticky bottom-3 z-20 rounded-xl border border-primary-tint/75 bg-white/95 p-3 shadow-sm backdrop-blur">
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            disabled={isPending}
+            className="bg-primary text-primary-contrast hover:bg-primary-shade"
+            onClick={() => {
+              saveTimeTable().catch(() => undefined);
+            }}
+          >
+            {isPending ? t('common.loading') : t('timeTable.save')}
+          </Button>
+        </div>
+      </div>
+      <AlertDialog
+        open={Boolean(pendingCatalogEntry)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingCatalogEntry(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingCatalogEntry?.kind === 'teacher'
+                ? t('timeTable.confirmAdd.teacherTitle')
+                : t('timeTable.confirmAdd.subjectTitle')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingCatalogEntry
+                ? t('timeTable.confirmAdd.description', {
+                    value: pendingCatalogEntry.value,
+                  })
+                : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {t('timeTable.confirmAdd.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-primary text-primary-contrast hover:bg-primary-shade"
+              onClick={(event) => {
+                event.preventDefault();
+
+                if (!pendingCatalogEntry) {
+                  return;
+                }
+
+                if (pendingCatalogEntry.kind === 'teacher') {
+                  addTeacher(pendingCatalogEntry.value);
+                } else {
+                  addSubject(pendingCatalogEntry.value);
+                }
+
+                setPendingCatalogEntry(null);
+              }}
+            >
+              {t('timeTable.confirmAdd.confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <UnsavedChangesDialog
+        open={unsavedChangesGuard.isOpen}
+        isPending={unsavedChangesGuard.isPending}
+        onCancel={unsavedChangesGuard.cancel}
+        onDiscard={unsavedChangesGuard.discard}
+        onSave={() => {
+          unsavedChangesGuard.saveAndProceed().catch(() => undefined);
+        }}
+      />
     </div>
   );
 }

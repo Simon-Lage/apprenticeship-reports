@@ -4,8 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { FormField } from '@/renderer/components/app/FormField';
 import { PageHeader } from '@/renderer/components/app/PageHeader';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
+import UnsavedChangesDialog from '@/renderer/components/app/UnsavedChangesDialog';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
+import useUnsavedChangesGuard from '@/renderer/hooks/useUnsavedChangesGuard';
 import { useSettingsSnapshot } from '@/renderer/hooks/useKernelData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,6 +63,17 @@ function toManualAbsenceTypeTranslationKey(type: ManualAbsenceType): string {
   return `absences.manual.types.${type}`;
 }
 
+function serializeManualAbsenceForm(form: ManualAbsenceFormState): string {
+  return JSON.stringify({
+    id: form.id,
+    type: form.type,
+    startDate: form.startDate,
+    endDate: form.endDate,
+    label: form.label,
+    note: form.note,
+  });
+}
+
 export default function AbsencesPage() {
   const { t } = useTranslation();
   const runtime = useAppRuntime();
@@ -95,6 +108,31 @@ export default function AbsencesPage() {
       }),
     [absenceSettings.manualAbsences],
   );
+  const baselineForm = useMemo(() => {
+    if (!form.id) {
+      return defaultManualAbsenceFormState;
+    }
+
+    const existing = absenceSettings.manualAbsences.find(
+      (entry) => entry.id === form.id,
+    );
+
+    if (!existing) {
+      return defaultManualAbsenceFormState;
+    }
+
+    return {
+      id: existing.id,
+      type: existing.type,
+      startDate: existing.startDate,
+      endDate: existing.endDate,
+      label: existing.label,
+      note: existing.note ?? '',
+    };
+  }, [absenceSettings.manualAbsences, form.id]);
+  const isDirty =
+    serializeManualAbsenceForm(form) !==
+    serializeManualAbsenceForm(baselineForm);
 
   async function persistManualAbsences(nextManualAbsences: ManualAbsence[]) {
     if (!runtime.api || !settingsSnapshot.value) {
@@ -122,17 +160,19 @@ export default function AbsencesPage() {
     }
   }
 
-  async function handleManualSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function submitManualAbsence(): Promise<boolean> {
+    if (!runtime.api || !settingsSnapshot.value) {
+      return false;
+    }
 
     if (!form.startDate || !form.endDate) {
       toast.error(t('absences.feedback.missingDate'));
-      return;
+      return false;
     }
 
     if (form.endDate < form.startDate) {
       toast.error(t('absences.feedback.invalidRange'));
-      return;
+      return false;
     }
 
     const now = new Date().toISOString();
@@ -156,6 +196,13 @@ export default function AbsencesPage() {
       : [...absenceSettings.manualAbsences, nextEntry];
 
     await persistManualAbsences(nextManualAbsences);
+    return true;
+  }
+
+  async function handleManualSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    await submitManualAbsence();
   }
 
   async function handleDeleteManualAbsence(id: string) {
@@ -185,6 +232,11 @@ export default function AbsencesPage() {
       setIsPending(false);
     }
   }
+
+  const unsavedChangesGuard = useUnsavedChangesGuard({
+    isDirty,
+    onSave: async () => submitManualAbsence(),
+  });
 
   return (
     <div className="space-y-4">
@@ -432,6 +484,15 @@ export default function AbsencesPage() {
           )}
         </SectionCard>
       </div>
+      <UnsavedChangesDialog
+        open={unsavedChangesGuard.isOpen}
+        isPending={unsavedChangesGuard.isPending}
+        onCancel={unsavedChangesGuard.cancel}
+        onDiscard={unsavedChangesGuard.discard}
+        onSave={() => {
+          unsavedChangesGuard.saveAndProceed().catch(() => undefined);
+        }}
+      />
     </div>
   );
 }

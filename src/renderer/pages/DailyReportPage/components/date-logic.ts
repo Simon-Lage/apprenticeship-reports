@@ -73,6 +73,44 @@ function resolveSearchUpperLimit(input: {
   return input.trainingEnd < input.today ? input.trainingEnd : input.today;
 }
 
+export function isWeekendDate(dateValue: string): boolean {
+  const parsed = parseIsoDate(dateValue);
+
+  if (!parsed) {
+    return false;
+  }
+
+  const weekday = parsed.getUTCDay();
+  return weekday === 0 || weekday === 6;
+}
+
+function resolveCandidateDate(input: {
+  startDate: string;
+  reportsState: ReportsState | null;
+  isAutoEnteredDate?: (date: string) => boolean;
+}): string {
+  const knownDates = collectKnownDates(input.reportsState);
+  let cursor = input.startDate;
+
+  for (let attempts = 0; attempts < 36600; attempts += 1) {
+    if (
+      !knownDates.has(cursor) &&
+      !isWeekendDate(cursor) &&
+      !input.isAutoEnteredDate?.(cursor)
+    ) {
+      return cursor;
+    }
+
+    const next = addDays(cursor, 1);
+    if (!next) {
+      return cursor;
+    }
+    cursor = next;
+  }
+
+  return cursor;
+}
+
 export function resolveDayKey(dateValue: string): WeekdayKey | null {
   const parsed = parseIsoDate(dateValue);
 
@@ -117,6 +155,7 @@ export function resolveInitialDailyReportDate(input: {
   trainingStart: string | null;
   trainingEnd: string | null;
   reportsSince: string | null;
+  isAutoEnteredDate?: (date: string) => boolean;
   now?: Date;
 }): string {
   const today = toLocalIsoDate(input.now ?? new Date());
@@ -131,12 +170,20 @@ export function resolveInitialDailyReportDate(input: {
   const knownDates = collectKnownDates(input.reportsState);
 
   if (baseline > upperLimit) {
-    return baseline;
+    return resolveCandidateDate({
+      startDate: baseline,
+      reportsState: input.reportsState,
+      isAutoEnteredDate: input.isAutoEnteredDate,
+    });
   }
 
   let cursor = baseline;
   while (cursor <= upperLimit) {
-    if (!knownDates.has(cursor)) {
+    if (
+      !knownDates.has(cursor) &&
+      !isWeekendDate(cursor) &&
+      !input.isAutoEnteredDate?.(cursor)
+    ) {
       return cursor;
     }
 
@@ -147,5 +194,11 @@ export function resolveInitialDailyReportDate(input: {
     cursor = next;
   }
 
-  return addDays(upperLimit, 1) ?? upperLimit;
+  const nextDate = addDays(upperLimit, 1) ?? upperLimit;
+
+  return resolveCandidateDate({
+    startDate: nextDate,
+    reportsState: input.reportsState,
+    isAutoEnteredDate: input.isAutoEnteredDate,
+  });
 }

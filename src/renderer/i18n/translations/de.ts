@@ -14,6 +14,14 @@ const deTranslation = {
     remove: 'Entfernen',
     yes: 'Ja',
     no: 'Nein',
+    unsavedChanges: {
+      title: 'Ungespeicherte Änderungen',
+      description:
+        'Du hast ungespeicherte Änderungen. Möchtest du vor dem Verlassen speichern?',
+      save: 'Speichern',
+      discard: 'Verwerfen',
+      cancel: 'Weiter anlegen',
+    },
     password: {
       show: 'Passwort anzeigen',
       hide: 'Passwort ausblenden',
@@ -310,6 +318,11 @@ const deTranslation = {
       syncSuccess: 'Abwesenheitsdaten synchronisiert.',
       syncError: 'Abwesenheitsdaten konnten nicht synchronisiert werden.',
     },
+    unsavedChanges: {
+      save: 'Abwesenheiten speichern',
+      discard: 'Abwesenheiten verwerfen',
+      cancel: 'Abwesenheiten weiter anlegen',
+    },
   },
   authMethods: {
     title: 'Authentifizierungsmethoden',
@@ -334,14 +347,12 @@ const deTranslation = {
       cancel: 'Abbrechen',
       password: {
         title: 'Passwort wirklich ändern?',
-        description:
-          'Möchtest du das lokale Passwort jetzt wirklich ändern?',
+        description: 'Möchtest du das lokale Passwort jetzt wirklich ändern?',
         confirm: 'Passwort ändern',
       },
       googleRemove: {
         title: 'Google-Konto wirklich entfernen?',
-        description:
-          'Möchtest du die Google-Verknüpfung wirklich entfernen?',
+        description: 'Möchtest du die Google-Verknüpfung wirklich entfernen?',
         confirm: 'Google-Konto entfernen',
       },
     },
@@ -436,6 +447,13 @@ const deTranslation = {
       newTeacher: 'Neuen Lehrer hinzufügen',
       newSubject: 'Neues Fach hinzufügen',
     },
+    confirmAdd: {
+      teacherTitle: 'Lehrer hinzufügen?',
+      subjectTitle: 'Fach hinzufügen?',
+      description: '"{{value}}" ist noch nicht in der Liste.',
+      cancel: 'Nein',
+      confirm: 'Hinzufügen',
+    },
     feedback: {
       saved: 'Stundenplan gespeichert.',
       saveError: 'Stundenplan konnte nicht gespeichert werden.',
@@ -453,6 +471,8 @@ const deTranslation = {
     meta: {
       title: 'Datum und Tagestyp',
       description: 'Datum und Tagestyp festlegen.',
+      editingDescription: 'Du bearbeitest den Tagesbericht vom {{date}}.',
+      creatingDescription: 'Du legst einen neuen Tagesbericht für {{date}} an.',
       weekStart: 'Wochenstart',
       weekEnd: 'Wochenende',
       date: 'Datum',
@@ -460,6 +480,7 @@ const deTranslation = {
     },
     auto: {
       reasonPublicHoliday: 'Automatisch erkannt: Feiertag ({{name}}).',
+      reasonWeekend: 'Automatisch erkannt: Wochenende.',
       reasonSick: 'Automatisch erkannt: Krankheit ({{name}}).',
       reasonVacation: 'Automatisch erkannt: Urlaub ({{name}}).',
       reasonSchoolHoliday:
@@ -473,12 +494,16 @@ const deTranslation = {
     },
     activities: {
       title: 'Tätigkeiten',
+      workTitleForSchoolDay: 'Arbeitstätigkeiten (Betrieb)',
       description: 'Suchbare Eintragsliste mit wiederverwendbaren Vorschlägen.',
       placeholder: 'Tätigkeit eintragen',
     },
     school: {
-      title: 'Schulstunden',
-      description: 'Fach/Lehrer pro Stunde und Unterrichtsthema.',
+      title: 'Schultätigkeiten',
+      addLesson: 'Stunde hinzufügen',
+      lessonNumberOption: 'Stunde {{lesson}}',
+      subjectPlaceholder: 'Fach',
+      teacherPlaceholder: 'Lehrer',
       topicPlaceholder: 'Thema',
     },
     trainings: {
@@ -489,15 +514,30 @@ const deTranslation = {
     },
     actions: {
       save: 'Tagesbericht speichern',
+      saveChanges: 'Änderungen speichern',
+      cancel: 'Abbrechen',
       delete: 'Tagesbericht löschen',
+    },
+    deleteDialog: {
+      title: 'Tagesbericht löschen?',
+      description: 'Soll der Tagesbericht vom {{date}} wirklich gelöscht werden?',
     },
     feedback: {
       missingDates: 'Bitte ein gültiges Datum angeben.',
+      missingWorkEntries:
+        'Bei Arbeitstagen muss mindestens eine Arbeitstätigkeit oder eine Schulung eingetragen werden.',
+      missingSchoolLessonTopics:
+        'Bei Schultagen muss für jede Schulstunde mindestens ein Thema eingetragen sein.',
       duplicateActivityForDate:
         'Diese Tätigkeit ist für den {{date}} schon eingetragen.',
       saved: 'Tagesbericht gespeichert.',
       deleted: 'Tagesbericht gelöscht.',
       saveError: 'Tagesbericht konnte nicht gespeichert werden.',
+    },
+    unsavedChanges: {
+      save: 'Tagesbericht speichern',
+      discard: 'Tagesbericht verwerfen',
+      cancel: 'Tagesbericht weiter anlegen',
     },
   },
   weeklyReport: {
@@ -576,6 +616,8 @@ const deTranslation = {
       submitted: 'Gesendet',
       submittedTo: 'Empfänger',
       area: 'Abteilung',
+      openDailyTooltip: 'Tagesbericht vom {{date}} öffnen',
+      openWeeklyTooltip: 'Wochenbericht {{start}} bis {{end}} öffnen',
     },
   },
   import: {

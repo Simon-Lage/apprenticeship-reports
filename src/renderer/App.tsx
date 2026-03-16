@@ -1,4 +1,10 @@
-import { Navigate, Route, Routes, HashRouter } from 'react-router-dom';
+import {
+  Navigate,
+  Route,
+  Routes,
+  RouterProvider,
+  createHashRouter,
+} from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';
 
@@ -172,6 +178,13 @@ function RuntimeRouter() {
   );
 }
 
+const appRouter = createHashRouter([
+  {
+    path: '*',
+    element: <RuntimeRouter />,
+  },
+]);
+
 export default function App() {
   useEffect(() => {
     const preventDragDefault = (event: DragEvent) => {
@@ -193,9 +206,7 @@ export default function App() {
   return (
     <ToastControllerProvider>
       <AppRuntimeProvider>
-        <HashRouter>
-          <RuntimeRouter />
-        </HashRouter>
+        <RouterProvider router={appRouter} />
       </AppRuntimeProvider>
     </ToastControllerProvider>
   );

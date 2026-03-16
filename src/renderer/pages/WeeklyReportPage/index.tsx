@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiFileText, FiRotateCcw, FiSave, FiSend } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { FormField } from '@/renderer/components/app/FormField';
 import { PageHeader } from '@/renderer/components/app/PageHeader';
@@ -25,11 +25,13 @@ import {
 import {
   buildWeeklyAggregates,
   listWeekDates,
-  listWeeksWithDailyReports,
   parseWeeklyReportValues,
-  WeekWithReports,
 } from '@/renderer/lib/report-values';
-import { resolveWeekRangeForDate } from '@/renderer/pages/DailyReportPage/components/date-logic';
+import {
+  isWeekendDate,
+  resolveInitialDailyReportDate,
+  resolveWeekRangeForDate,
+} from '@/renderer/pages/DailyReportPage/components/date-logic';
 import { resolveAutoDayType } from '@/renderer/pages/DailyReportPage/components/day-type-defaults';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,14 +56,6 @@ function stringifyLines(values: string[]): string {
   }
 
   return values.join('\n');
-}
-
-function isWeekend(dateValue: string): boolean {
-  const [year, month, day] = dateValue.split('-').map(Number);
-  const parsed = new Date(Date.UTC(year, month - 1, day));
-  const weekDay = parsed.getUTCDay();
-
-  return weekDay === 0 || weekDay === 6;
 }
 
 function toDisplayDate(value: string): string {
@@ -89,58 +83,9 @@ function resolveBaselineDate(input: {
   return null;
 }
 
-function resolveInitialWeekRange(input: {
-  weeksWithDailyReports: WeekWithReports[];
-  baselineDate: string | null;
-  now: Date;
-}): { weekStart: string; weekEnd: string } {
-  const baselineWeekStart = input.baselineDate
-    ? (resolveWeekRangeForDate(input.baselineDate)?.weekStart ?? null)
-    : null;
-  const candidateWeeks = input.weeksWithDailyReports
-    .filter((week) =>
-      baselineWeekStart
-        ? week.weeklyReport.weekStart >= baselineWeekStart
-        : true,
-    )
-    .sort((left, right) =>
-      left.weeklyReport.weekStart.localeCompare(right.weeklyReport.weekStart),
-    );
-  const firstUnsubmittedWeek = candidateWeeks.find((week) => {
-    const parsed = parseWeeklyReportValues(week.weeklyReport.values);
-    return !parsed.submitted;
-  });
-
-  if (firstUnsubmittedWeek) {
-    return {
-      weekStart: firstUnsubmittedWeek.weeklyReport.weekStart,
-      weekEnd: firstUnsubmittedWeek.weeklyReport.weekEnd,
-    };
-  }
-
-  if (candidateWeeks.length) {
-    const latestWeek = candidateWeeks[candidateWeeks.length - 1];
-    return {
-      weekStart: latestWeek.weeklyReport.weekStart,
-      weekEnd: latestWeek.weeklyReport.weekEnd,
-    };
-  }
-
-  const todayIso = input.now.toISOString().slice(0, 10);
-  const weekRange = resolveWeekRangeForDate(todayIso);
-
-  if (weekRange) {
-    return weekRange;
-  }
-
-  return {
-    weekStart: todayIso,
-    weekEnd: todayIso,
-  };
-}
-
 export default function WeeklyReportPage() {
   const { t } = useTranslation();
+  const location = useLocation();
   const navigate = useNavigate();
   const runtime = useAppRuntime();
   const toast = useToastController();
@@ -175,31 +120,60 @@ export default function WeeklyReportPage() {
     () => resolveOnboardingSubdivisionCode(settingsValues),
     [settingsValues],
   );
-  const weeksWithDailyReports = useMemo(
-    () =>
-      reportsState.value ? listWeeksWithDailyReports(reportsState.value) : [],
-    [reportsState.value],
-  );
-  const currentWeek = useMemo(
-    () =>
-      weeksWithDailyReports.find(
-        (week) =>
-          week.weeklyReport.weekStart === form.weekStart &&
-          week.weeklyReport.weekEnd === form.weekEnd,
-      ) ?? null,
-    [form.weekEnd, form.weekStart, weeksWithDailyReports],
-  );
+  const requestedWeekRange = useMemo(() => {
+    const search = new URLSearchParams(location.search);
+    const weekStart = search.get('weekStart');
+    const weekEnd = search.get('weekEnd');
+
+    if (
+      !weekStart ||
+      !weekEnd ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(weekStart) ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(weekEnd)
+    ) {
+      return null;
+    }
+
+    return {
+      weekStart,
+      weekEnd,
+    };
+  }, [location.search]);
+  const currentWeeklyReport = useMemo(() => {
+    if (!reportsState.value || !form.weekStart || !form.weekEnd) {
+      return null;
+    }
+
+    return (
+      Object.values(reportsState.value.weeklyReports).find(
+        (weeklyReport) =>
+          weeklyReport.weekStart === form.weekStart &&
+          weeklyReport.weekEnd === form.weekEnd,
+      ) ?? null
+    );
+  }, [form.weekEnd, form.weekStart, reportsState.value]);
+  const currentDailyReports = useMemo(() => {
+    if (!reportsState.value || !currentWeeklyReport) {
+      return [];
+    }
+
+    return currentWeeklyReport.dailyReportIds
+      .map((dailyReportId) => reportsState.value?.dailyReports[dailyReportId])
+      .filter((dailyReport): dailyReport is NonNullable<typeof dailyReport> =>
+        Boolean(dailyReport),
+      )
+      .sort((left, right) => left.date.localeCompare(right.date));
+  }, [currentWeeklyReport, reportsState.value]);
   const currentWeeklyValues = useMemo(
     () =>
-      currentWeek
-        ? parseWeeklyReportValues(currentWeek.weeklyReport.values)
+      currentWeeklyReport
+        ? parseWeeklyReportValues(currentWeeklyReport.values)
         : null,
-    [currentWeek],
+    [currentWeeklyReport],
   );
   const currentAggregates = useMemo(
-    () =>
-      currentWeek ? buildWeeklyAggregates(currentWeek.dailyReports) : null,
-    [currentWeek],
+    () => buildWeeklyAggregates(currentDailyReports),
+    [currentDailyReports],
   );
   const weekDates = useMemo(
     () =>
@@ -209,8 +183,8 @@ export default function WeeklyReportPage() {
     [form.weekEnd, form.weekStart],
   );
   const reportedDateSet = useMemo(
-    () => new Set((currentWeek?.dailyReports ?? []).map((entry) => entry.date)),
-    [currentWeek],
+    () => new Set(currentDailyReports.map((entry) => entry.date)),
+    [currentDailyReports],
   );
   const trackedDaysCount = useMemo(
     () => weekDates.filter((date) => reportedDateSet.has(date)).length,
@@ -222,11 +196,9 @@ export default function WeeklyReportPage() {
   const fallbackSupervisor =
     uiSettings.supervisorEmailPrimary || onboardingWorkplace.trainerEmail || '';
   const hasEditableChanges = useMemo(() => {
-    if (!currentWeek) {
-      return false;
-    }
-
-    const parsed = parseWeeklyReportValues(currentWeek.weeklyReport.values);
+    const parsed = currentWeeklyReport
+      ? parseWeeklyReportValues(currentWeeklyReport.values)
+      : parseWeeklyReportValues({});
     const referenceArea = parsed.area || fallbackArea;
     const referenceSupervisor =
       parsed.supervisorEmailPrimary || fallbackSupervisor;
@@ -236,7 +208,7 @@ export default function WeeklyReportPage() {
       form.supervisorEmail.trim() !== referenceSupervisor.trim()
     );
   }, [
-    currentWeek,
+    currentWeeklyReport,
     fallbackArea,
     fallbackSupervisor,
     form.area,
@@ -244,23 +216,66 @@ export default function WeeklyReportPage() {
   ]);
 
   useEffect(() => {
-    if (!weeksWithDailyReports.length) {
+    if (!requestedWeekRange || !reportsState.value) {
       return;
     }
 
+    const exists = Object.values(reportsState.value.weeklyReports).some(
+      (weeklyReport) =>
+        weeklyReport.weekStart === requestedWeekRange.weekStart &&
+        weeklyReport.weekEnd === requestedWeekRange.weekEnd,
+    );
+
+    if (!exists) {
+      return;
+    }
+
+    setForm((current) => {
+      if (
+        current.weekStart === requestedWeekRange.weekStart &&
+        current.weekEnd === requestedWeekRange.weekEnd
+      ) {
+        return current;
+      }
+
+      return {
+        ...current,
+        weekStart: requestedWeekRange.weekStart,
+        weekEnd: requestedWeekRange.weekEnd,
+      };
+    });
+  }, [reportsState.value, requestedWeekRange]);
+
+  useEffect(() => {
     if (form.weekStart && form.weekEnd) {
       return;
     }
 
-    const baselineDate = resolveBaselineDate({
+    if (!settingsSnapshot.value) {
+      return;
+    }
+
+    const initialDate = resolveInitialDailyReportDate({
+      reportsState: reportsState.value ?? null,
       trainingStart: trainingPeriod.trainingStart,
-      reportsSince: trainingPeriod.reportsSince,
+      trainingEnd: trainingPeriod.trainingEnd,
+      reportsSince:
+        resolveBaselineDate({
+          trainingStart: trainingPeriod.trainingStart,
+          reportsSince: trainingPeriod.reportsSince,
+        }) ?? null,
+      isAutoEnteredDate: (date) =>
+        resolveAutoDayType({
+          date,
+          uiSettings,
+          absenceSettings,
+          currentYear: new Date(date).getUTCFullYear(),
+        }).dayType === 'free',
     });
-    const weekRange = resolveInitialWeekRange({
-      weeksWithDailyReports,
-      baselineDate,
-      now: new Date(),
-    });
+    const weekRange = resolveWeekRangeForDate(initialDate) ?? {
+      weekStart: initialDate,
+      weekEnd: initialDate,
+    };
 
     setForm((current) => ({
       ...current,
@@ -275,22 +290,26 @@ export default function WeeklyReportPage() {
     form.weekEnd,
     form.weekStart,
     trainingPeriod.reportsSince,
+    trainingPeriod.trainingEnd,
     trainingPeriod.trainingStart,
-    weeksWithDailyReports,
+    reportsState.value,
+    settingsSnapshot.value,
+    uiSettings,
+    absenceSettings,
   ]);
 
   useEffect(() => {
-    if (!currentWeek) {
+    if (!currentWeeklyReport) {
       return;
     }
 
-    const parsed = parseWeeklyReportValues(currentWeek.weeklyReport.values);
+    const parsed = parseWeeklyReportValues(currentWeeklyReport.values);
     setForm((current) => ({
       ...current,
       area: parsed.area || fallbackArea,
       supervisorEmail: parsed.supervisorEmailPrimary || fallbackSupervisor,
     }));
-  }, [currentWeek, fallbackArea, fallbackSupervisor]);
+  }, [currentWeeklyReport, fallbackArea, fallbackSupervisor]);
 
   useEffect(() => {
     if (!form.area.trim() || !form.supervisorEmail.trim()) {
@@ -307,7 +326,8 @@ export default function WeeklyReportPage() {
   useEffect(() => {
     if (
       !runtime.api ||
-      !currentWeek ||
+      !form.weekStart ||
+      !form.weekEnd ||
       !weekDates.length ||
       !subdivisionCode ||
       isAutoFillingWeek
@@ -317,10 +337,6 @@ export default function WeeklyReportPage() {
 
     const missingDates = weekDates.filter((date) => !reportedDateSet.has(date));
     const autoFillDates = missingDates.filter((date) => {
-      if (isWeekend(date)) {
-        return true;
-      }
-
       const autoDayType = resolveAutoDayType({
         date,
         uiSettings,
@@ -350,9 +366,10 @@ export default function WeeklyReportPage() {
             const weekendReason = t('weeklyReport.meta.weekendAutoReason');
             const values = {
               dayType: 'free',
-              freeReason: isWeekend(date)
-                ? weekendReason
-                : autoDayType.freeReason || weekendReason,
+              freeReason:
+                autoDayType.reason.kind === 'weekend' || isWeekendDate(date)
+                  ? weekendReason
+                  : autoDayType.freeReason,
               activities: [],
               trainings: [],
               schoolTopics: [],
@@ -360,8 +377,8 @@ export default function WeeklyReportPage() {
             };
 
             await runtime.api?.upsertDailyReport({
-              weekStart: currentWeek.weeklyReport.weekStart,
-              weekEnd: currentWeek.weeklyReport.weekEnd,
+              weekStart: form.weekStart,
+              weekEnd: form.weekEnd,
               date,
               values,
             });
@@ -375,7 +392,8 @@ export default function WeeklyReportPage() {
     })().catch(() => undefined);
   }, [
     absenceSettings,
-    currentWeek,
+    form.weekEnd,
+    form.weekStart,
     isAutoFillingWeek,
     reportedDateSet,
     reportsState,
@@ -388,7 +406,7 @@ export default function WeeklyReportPage() {
 
   async function saveWeeklyReport(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!runtime.api || !form.weekStart || !form.weekEnd || !currentWeek) {
+    if (!runtime.api || !form.weekStart || !form.weekEnd) {
       toast.error(t('weeklyReport.feedback.missingRange'));
       return;
     }
@@ -396,10 +414,10 @@ export default function WeeklyReportPage() {
     setIsPending(true);
 
     try {
-      const aggregates = buildWeeklyAggregates(currentWeek.dailyReports);
-      const existingValues = parseWeeklyReportValues(
-        currentWeek.weeklyReport.values,
-      );
+      const aggregates = buildWeeklyAggregates(currentDailyReports);
+      const existingValues = currentWeeklyReport
+        ? parseWeeklyReportValues(currentWeeklyReport.values)
+        : parseWeeklyReportValues({});
 
       await runtime.api.upsertWeeklyReport({
         weekStart: form.weekStart,
@@ -430,11 +448,9 @@ export default function WeeklyReportPage() {
   }
 
   function handleReset() {
-    if (!currentWeek) {
-      return;
-    }
-
-    const parsed = parseWeeklyReportValues(currentWeek.weeklyReport.values);
+    const parsed = currentWeeklyReport
+      ? parseWeeklyReportValues(currentWeeklyReport.values)
+      : parseWeeklyReportValues({});
     setForm((current) => ({
       ...current,
       area: parsed.area || fallbackArea,
@@ -503,46 +519,38 @@ export default function WeeklyReportPage() {
                   ? t('common.yes')
                   : t('common.no')}
               </p>
-              {currentWeek ? (
-                <>
-                  <p className="text-base font-extrabold text-text-color">
-                    {t('weeklyReport.meta.daysTrackedHeadline', {
-                      done: trackedDaysCount,
-                      total: weekDates.length || 7,
-                    })}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {weekDates.map((date) => {
-                      const isDone = reportedDateSet.has(date);
+              <p className="text-base font-extrabold text-text-color">
+                {t('weeklyReport.meta.daysTrackedHeadline', {
+                  done: trackedDaysCount,
+                  total: weekDates.length || 7,
+                })}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {weekDates.map((date) => {
+                  const isDone = reportedDateSet.has(date);
 
-                      return (
-                        <Button
-                          key={date}
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className={
-                            isDone
-                              ? 'border-primary bg-primary text-primary-contrast'
-                              : 'border-primary-tint bg-white text-text-color'
-                          }
-                          onClick={() => {
-                            navigate(
-                              `${appRoutes.dailyReport}?date=${encodeURIComponent(date)}`,
-                            );
-                          }}
-                        >
-                          <span>{toDisplayDate(date)}</span>
-                        </Button>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                <p className="text-text-color/70">
-                  {t('weeklyReport.meta.noWeek')}
-                </p>
-              )}
+                  return (
+                    <Button
+                      key={date}
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className={
+                        isDone
+                          ? 'border-primary bg-primary text-primary-contrast'
+                          : 'border-primary-tint bg-white text-text-color'
+                      }
+                      onClick={() => {
+                        navigate(
+                          `${appRoutes.dailyReport}?date=${encodeURIComponent(date)}`,
+                        );
+                      }}
+                    >
+                      <span>{toDisplayDate(date)}</span>
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
           </SectionCard>
           <div className="space-y-4">
@@ -589,7 +597,12 @@ export default function WeeklyReportPage() {
             <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
               <Button
                 type="submit"
-                disabled={isPending || !currentWeek || isAutoFillingWeek}
+                disabled={
+                  isPending ||
+                  !form.weekStart ||
+                  !form.weekEnd ||
+                  isAutoFillingWeek
+                }
                 className="bg-primary text-primary-contrast hover:bg-primary-shade"
               >
                 <FiSave className="size-4" />
