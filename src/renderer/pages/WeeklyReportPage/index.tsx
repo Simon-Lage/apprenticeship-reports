@@ -27,11 +27,7 @@ import {
   listWeekDates,
   parseWeeklyReportValues,
 } from '@/renderer/lib/report-values';
-import {
-  isWeekendDate,
-  resolveInitialDailyReportDate,
-  resolveWeekRangeForDate,
-} from '@/renderer/pages/DailyReportPage/components/date-logic';
+import { resolveInitialWeeklyReportRange } from '@/renderer/pages/DailyReportPage/components/date-logic';
 import { resolveAutoDayType } from '@/renderer/pages/DailyReportPage/components/day-type-defaults';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,21 +62,6 @@ function toDisplayDate(value: string): string {
   }
 
   return `${day}.${month}.${year}`;
-}
-
-function resolveBaselineDate(input: {
-  trainingStart: string | null;
-  reportsSince: string | null;
-}): string | null {
-  if (input.reportsSince) {
-    return input.reportsSince;
-  }
-
-  if (input.trainingStart) {
-    return input.trainingStart;
-  }
-
-  return null;
 }
 
 export default function WeeklyReportPage() {
@@ -164,13 +145,6 @@ export default function WeeklyReportPage() {
       )
       .sort((left, right) => left.date.localeCompare(right.date));
   }, [currentWeeklyReport, reportsState.value]);
-  const currentWeeklyValues = useMemo(
-    () =>
-      currentWeeklyReport
-        ? parseWeeklyReportValues(currentWeeklyReport.values)
-        : null,
-    [currentWeeklyReport],
-  );
   const currentAggregates = useMemo(
     () => buildWeeklyAggregates(currentDailyReports),
     [currentDailyReports],
@@ -255,27 +229,11 @@ export default function WeeklyReportPage() {
       return;
     }
 
-    const initialDate = resolveInitialDailyReportDate({
+    const weekRange = resolveInitialWeeklyReportRange({
       reportsState: reportsState.value ?? null,
       trainingStart: trainingPeriod.trainingStart,
-      trainingEnd: trainingPeriod.trainingEnd,
-      reportsSince:
-        resolveBaselineDate({
-          trainingStart: trainingPeriod.trainingStart,
-          reportsSince: trainingPeriod.reportsSince,
-        }) ?? null,
-      isAutoEnteredDate: (date) =>
-        resolveAutoDayType({
-          date,
-          uiSettings,
-          absenceSettings,
-          currentYear: new Date(date).getUTCFullYear(),
-        }).dayType === 'free',
+      reportsSince: trainingPeriod.reportsSince,
     });
-    const weekRange = resolveWeekRangeForDate(initialDate) ?? {
-      weekStart: initialDate,
-      weekEnd: initialDate,
-    };
 
     setForm((current) => ({
       ...current,
@@ -290,12 +248,9 @@ export default function WeeklyReportPage() {
     form.weekEnd,
     form.weekStart,
     trainingPeriod.reportsSince,
-    trainingPeriod.trainingEnd,
     trainingPeriod.trainingStart,
     reportsState.value,
     settingsSnapshot.value,
-    uiSettings,
-    absenceSettings,
   ]);
 
   useEffect(() => {
@@ -351,295 +306,224 @@ export default function WeeklyReportPage() {
       return;
     }
 
-    setIsAutoFillingWeek(true);
+    async function applyAutoFill() {
+      if (!runtime.api) {
+        return;
+      }
 
-    (async () => {
+      setIsAutoFillingWeek(true);
       try {
         await Promise.all(
-          autoFillDates.map(async (date) => {
-            const autoDayType = resolveAutoDayType({
-              date,
-              uiSettings,
-              absenceSettings,
-              currentYear: new Date(date).getUTCFullYear(),
-            });
-            const weekendReason = t('weeklyReport.meta.weekendAutoReason');
-            const values = {
-              dayType: 'free',
-              freeReason:
-                autoDayType.reason.kind === 'weekend' || isWeekendDate(date)
-                  ? weekendReason
-                  : autoDayType.freeReason,
-              activities: [],
-              trainings: [],
-              schoolTopics: [],
-              lessons: [],
-            };
-
-            await runtime.api?.upsertDailyReport({
+          autoFillDates.map((date) =>
+            runtime.api!.upsertDailyReport({
               weekStart: form.weekStart,
               weekEnd: form.weekEnd,
               date,
-              values,
-            });
-          }),
+              values: { type: 'free' },
+            })
+          )
         );
-        await runtime.refresh();
-        await reportsState.refresh();
+      } catch {
+        toast.error('Automatisches Ausfüllen fehlgeschlagen');
       } finally {
         setIsAutoFillingWeek(false);
       }
-    })().catch(() => undefined);
+    }
+
+    applyAutoFill();
   }, [
     absenceSettings,
     form.weekEnd,
     form.weekStart,
     isAutoFillingWeek,
     reportedDateSet,
-    reportsState,
-    runtime,
+    runtime.api,
     subdivisionCode,
     t,
+    toast,
     uiSettings,
     weekDates,
   ]);
 
-  async function saveWeeklyReport(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const onSave = async (e: FormEvent) => {
+    e.preventDefault();
+
     if (!runtime.api || !form.weekStart || !form.weekEnd) {
-      toast.error(t('weeklyReport.feedback.missingRange'));
       return;
     }
 
     setIsPending(true);
-
     try {
-      const aggregates = buildWeeklyAggregates(currentDailyReports);
-      const existingValues = currentWeeklyReport
-        ? parseWeeklyReportValues(currentWeeklyReport.values)
-        : parseWeeklyReportValues({});
-
       await runtime.api.upsertWeeklyReport({
         weekStart: form.weekStart,
         weekEnd: form.weekEnd,
         values: {
-          reportDate: '',
-          area: form.area.trim(),
-          supervisorEmailPrimary: form.supervisorEmail.trim(),
-          supervisorEmailSecondary: '',
-          submitted: existingValues.submitted,
-          submittedToEmail: existingValues.submittedToEmail,
-          workActivities: aggregates.workActivities,
-          schoolTopics: aggregates.schoolTopics,
-          trainings: aggregates.trainings,
-          notes: '',
+          area: form.area.trim() || null,
+          supervisorEmailPrimary: form.supervisorEmail.trim() || null,
         },
       });
-      await runtime.refresh();
-      await reportsState.refresh();
-      toast.success(t('weeklyReport.feedback.saved'));
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : t('common.errors.unknown');
-      toast.error(t('weeklyReport.feedback.saveError'), message);
+
+      toast.success(t('weeklyReport.notifications.saved'));
+    } catch {
+      toast.error(t('weeklyReport.notifications.saveFailed'));
     } finally {
       setIsPending(false);
     }
-  }
+  };
 
-  function handleReset() {
-    const parsed = currentWeeklyReport
-      ? parseWeeklyReportValues(currentWeeklyReport.values)
-      : parseWeeklyReportValues({});
+  const onReset = () => {
+    if (!currentWeeklyReport) {
+      setForm((current) => ({
+        ...current,
+        area: fallbackArea,
+        supervisorEmail: fallbackSupervisor,
+      }));
+      return;
+    }
+
+    const parsed = parseWeeklyReportValues(currentWeeklyReport.values);
     setForm((current) => ({
       ...current,
       area: parsed.area || fallbackArea,
       supervisorEmail: parsed.supervisorEmailPrimary || fallbackSupervisor,
     }));
-  }
+  };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader
         title={t('weeklyReport.title')}
-        description={t('weeklyReport.description')}
+        description={
+          form.weekStart && form.weekEnd
+            ? `${toDisplayDate(form.weekStart)} - ${toDisplayDate(form.weekEnd)}`
+            : t('weeklyReport.description')
+        }
       />
-      <form className="space-y-4 pb-24" onSubmit={saveWeeklyReport}>
-        <div className="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
-          <SectionCard
-            title={t('weeklyReport.meta.title')}
-            className="border-primary-tint bg-white"
-          >
-            <div className="space-y-3 text-sm text-text-color">
-              <p className="text-xl font-extrabold text-text-color">
-                {form.weekStart && form.weekEnd
-                  ? t('weeklyReport.meta.weekHeadline', {
-                      start: toDisplayDate(form.weekStart),
-                      end: toDisplayDate(form.weekEnd),
-                    })
-                  : '-'}
-              </p>
-              <p>
-                <strong>{t('weeklyReport.meta.weekRange')}:</strong>{' '}
-                {form.weekStart && form.weekEnd
-                  ? `${toDisplayDate(form.weekStart)} - ${toDisplayDate(form.weekEnd)}`
-                  : '-'}
-              </p>
-              <FormField id="weekly-area" label={t('weeklyReport.meta.area')}>
-                <Input
-                  id="weekly-area"
-                  value={form.area}
-                  readOnly={currentWeeklyValues?.submitted}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      area: event.target.value,
-                    }))
-                  }
-                />
-              </FormField>
-              <FormField
-                id="weekly-supervisor"
-                label={t('weeklyReport.meta.supervisorPrimary')}
-              >
-                <Input
-                  id="weekly-supervisor"
-                  type="email"
-                  value={form.supervisorEmail}
-                  readOnly={currentWeeklyValues?.submitted}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      supervisorEmail: event.target.value,
-                    }))
-                  }
-                />
-              </FormField>
-              <p>
-                <strong>{t('weeklyReport.meta.submitted')}:</strong>{' '}
-                {currentWeeklyValues?.submitted
-                  ? t('common.yes')
-                  : t('common.no')}
-              </p>
-              <p className="text-base font-extrabold text-text-color">
-                {t('weeklyReport.meta.daysTrackedHeadline', {
-                  done: trackedDaysCount,
-                  total: weekDates.length || 7,
-                })}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {weekDates.map((date) => {
-                  const isDone = reportedDateSet.has(date);
 
-                  return (
-                    <Button
-                      key={date}
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className={
-                        isDone
-                          ? 'border-primary bg-primary text-primary-contrast'
-                          : 'border-primary-tint bg-white text-text-color'
-                      }
-                      onClick={() => {
-                        navigate(
-                          `${appRoutes.dailyReport}?date=${encodeURIComponent(date)}`,
-                        );
-                      }}
-                    >
-                      <span>{toDisplayDate(date)}</span>
-                    </Button>
-                  );
-                })}
-              </div>
-            </div>
-          </SectionCard>
-          <div className="space-y-4">
-            <SectionCard
-              title={t('weeklyReport.sections.work')}
-              className="border-primary-tint bg-white"
+      <SectionCard
+        title={t('weeklyReport.sections.metadata.title')}
+        description={t('weeklyReport.sections.metadata.description')}
+      >
+        <form onSubmit={onSave} className="space-y-4">
+          <FormField id="area" label={t('weeklyReport.form.area')}>
+            <Input
+              id="area"
+              value={form.area}
+              onChange={(e) =>
+                setForm((current) => ({ ...current, area: e.target.value }))
+              }
+              disabled={currentWeeklyReport?.values.submitted === true}
+              placeholder={fallbackArea}
+            />
+          </FormField>
+
+          <FormField
+            id="supervisorEmail"
+            label={t('weeklyReport.form.supervisorEmail')}
+          >
+            <Input
+              id="supervisorEmail"
+              type="email"
+              value={form.supervisorEmail}
+              onChange={(e) =>
+                setForm((current) => ({
+                  ...current,
+                  supervisorEmail: e.target.value,
+                }))
+              }
+              disabled={currentWeeklyReport?.values.submitted === true}
+              placeholder={fallbackSupervisor}
+            />
+          </FormField>
+
+          <div className="flex items-center gap-2 pt-2">
+            <Button
+              type="submit"
+              disabled={
+                isPending ||
+                !form.weekStart ||
+                !form.weekEnd ||
+                !hasEditableChanges ||
+                currentWeeklyReport?.values.submitted === true
+              }
             >
-              <pre className="font-sans whitespace-pre-wrap text-sm text-text-color">
-                {stringifyLines(currentAggregates?.workActivities ?? [])}
-              </pre>
-            </SectionCard>
-            <SectionCard
-              title={t('weeklyReport.sections.training')}
-              className="border-primary-tint bg-white"
-            >
-              <pre className="font-sans whitespace-pre-wrap text-sm text-text-color">
-                {stringifyLines(currentAggregates?.trainings ?? [])}
-              </pre>
-            </SectionCard>
-            <SectionCard
-              title={t('weeklyReport.sections.school')}
-              className="border-primary-tint bg-white"
-            >
-              <pre className="font-sans whitespace-pre-wrap text-sm text-text-color">
-                {stringifyLines(currentAggregates?.schoolTopics ?? [])}
-              </pre>
-            </SectionCard>
-          </div>
-        </div>
-        <div className="sticky bottom-3 z-20 rounded-xl border border-primary-tint/75 bg-white/95 p-3 shadow-sm backdrop-blur">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+              <FiSave className="mr-2 h-4 w-4" />
+              {t('weeklyReport.actions.save')}
+            </Button>
             <Button
               type="button"
               variant="outline"
-              className="border-primary-tint"
-              disabled={!hasEditableChanges || isPending || isAutoFillingWeek}
-              onClick={() => {
-                handleReset();
-              }}
+              disabled={isPending || !hasEditableChanges || currentWeeklyReport?.values.submitted === true}
+              onClick={onReset}
             >
-              <FiRotateCcw className="size-4" />
+              <FiRotateCcw className="mr-2 h-4 w-4" />
               {t('weeklyReport.actions.reset')}
             </Button>
-            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+            {currentWeeklyReport && (
               <Button
-                type="submit"
-                disabled={
-                  isPending ||
-                  !form.weekStart ||
-                  !form.weekEnd ||
-                  !hasEditableChanges ||
-                  isAutoFillingWeek
+                type="button"
+                variant="secondary"
+                disabled={isPending || !isWeekComplete}
+                onClick={() =>
+                  navigate(
+                    `${appRoutes.sendWeeklyReport}?weekStart=${form.weekStart}&weekEnd=${form.weekEnd}`,
+                  )
                 }
-                className="bg-primary text-primary-contrast hover:bg-primary-shade"
               >
-                <FiSave className="size-4" />
-                {isPending
-                  ? t('common.loading')
-                  : t('weeklyReport.actions.save')}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="border-primary-tint"
-                disabled={!isWeekComplete || isPending || isAutoFillingWeek}
-                onClick={() => {
-                  navigate(appRoutes.weeklyReportPdf);
-                }}
-              >
-                <FiFileText className="size-4" />
-                {t('weeklyReport.actions.exportPdf')}
-              </Button>
-              <Button
-                type="button"
-                className="bg-primary text-primary-contrast hover:bg-primary-shade"
-                disabled={!isWeekComplete || isPending || isAutoFillingWeek}
-                onClick={() => {
-                  navigate(appRoutes.sendWeeklyReport);
-                }}
-              >
-                <FiSend className="size-4" />
+                <FiSend className="mr-2 h-4 w-4" />
                 {t('weeklyReport.actions.send')}
               </Button>
-            </div>
+            )}
           </div>
+        </form>
+      </SectionCard>
+
+      <div className="grid gap-6">
+        <SectionCard title={t('weeklyReport.sections.operational.title')}>
+          <div className="whitespace-pre-wrap text-sm leading-relaxed text-text-color/70">
+            {stringifyLines(currentAggregates.workActivities)}
+          </div>
+        </SectionCard>
+
+        <SectionCard title={t('weeklyReport.sections.instructional.title')}>
+          <div className="whitespace-pre-wrap text-sm leading-relaxed text-text-color/70">
+            {stringifyLines(currentAggregates.trainings)}
+          </div>
+        </SectionCard>
+
+        <SectionCard title={t('weeklyReport.sections.school.title')}>
+          <div className="whitespace-pre-wrap text-sm leading-relaxed text-text-color/70">
+            {stringifyLines(currentAggregates.schoolTopics)}
+          </div>
+        </SectionCard>
+      </div>
+
+      <SectionCard 
+        title={t('weeklyReport.sections.summary.title')}
+        description={t('weeklyReport.sections.summary.description')}
+      >
+        <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div
+              className={`h-2.5 w-2.5 rounded-full ${
+                isWeekComplete ? 'bg-green-500' : 'bg-yellow-500'
+              }`}
+            />
+            <span className="font-medium">
+              {t('weeklyReport.stats.trackedDays', {
+                count: trackedDaysCount,
+                total: weekDates.length,
+              })}
+            </span>
+          </div>
+          {currentWeeklyReport?.values.submitted && (
+            <div className="flex items-center gap-2 text-primary font-medium">
+              <FiFileText className="h-4 w-4" />
+              {t('weeklyReport.status.submitted')}
+            </div>
+          )}
         </div>
-      </form>
+      </SectionCard>
     </div>
   );
 }

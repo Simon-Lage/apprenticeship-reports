@@ -30,6 +30,7 @@ export default function registerAppHandlers(
   appKernel: AppKernel,
   desktopFileDialogService: DesktopFileDialogService,
   resolveMainWindow: () => BrowserWindow | null,
+  setAppDirtyState: (isDirty: boolean) => void,
 ): void {
   const requireMainWindow = (): BrowserWindow => {
     const mainWindow = resolveMainWindow();
@@ -221,4 +222,8 @@ export default function registerAppHandlers(
       RegisterWeeklyReportHashInputSchema.parse(input),
     ),
   );
+
+  ipcMain.handle(AppIpcChannel.setAppDirtyState, (_event, isDirty) => {
+    setAppDirtyState(Boolean(isDirty));
+  });
 }

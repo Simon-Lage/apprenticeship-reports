@@ -63,6 +63,7 @@ export const AppIpcChannel = {
   completeOnboardingStep: 'app:complete-onboarding-step',
   skipOnboardingStep: 'app:skip-onboarding-step',
   registerWeeklyReportHash: 'app:register-weekly-report-hash',
+  setAppDirtyState: 'app:set-app-dirty-state',
 } as const;
 
 const PasswordSecretSchema = z.string().min(8).max(128);
@@ -324,6 +325,7 @@ export type AppApi = {
   registerWeeklyReportHash: (
     input: RegisterWeeklyReportHashInput,
   ) => Promise<WeeklyReportHashRecord>;
+  setAppDirtyState: (isDirty: boolean) => Promise<void>;
 };
 
 export type BackupImportConflictStrategy = BackupConflictStrategy;

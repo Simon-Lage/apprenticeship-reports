@@ -229,7 +229,7 @@ const deTranslation = {
     stats: {
       dailyReports: 'Tagesberichte',
       weeklyReports: 'Wochenberichte',
-      totalEntries: 'Berichtstage',
+      totalEntries: 'Tage mit Berichten',
     },
     areas: {
       daily: {
@@ -242,7 +242,7 @@ const deTranslation = {
       },
       overview: {
         title: 'Berichte Übersicht',
-        description: 'Alle Einträge durchsuchen, filtern und vergleichen.',
+        description: 'Berichte filtern und verwalten.',
       },
       timetable: {
         title: 'Stundenplan',
@@ -369,6 +369,7 @@ const deTranslation = {
     title: 'Settings',
     description: 'Globale Einstellungen, Import und Export.',
     save: 'Settings speichern',
+    reset: 'Settings zurücksetzen',
     loadingTitle: 'Settings werden geladen',
     loadingDescription: 'Die aktuellen Einstellungen werden abgerufen.',
     general: {
@@ -378,6 +379,7 @@ const deTranslation = {
       supervisorPrimary: 'Betreuer-E-Mail',
       supervisorSecondary: 'Betreuer-E-Mail 2',
       ihkLink: 'IHK-Link',
+      googleAccount: 'Verknüpftes Google-Konto',
     },
     trainingPeriod: {
       title: 'Ausbildungszeitraum',
@@ -544,6 +546,13 @@ const deTranslation = {
   weeklyReport: {
     title: 'Wochenbericht',
     description: 'Aggregierte Wocheninhalte aus Tagesberichten und Metadaten.',
+    form: {
+      area: 'Ausbildungsabschnitt/Abteilung',
+      supervisorEmail: 'Betreuer-E-Mail',
+    },
+    stats: {
+      trackedDays: 'Berichte für {{count}} von {{total}} Tagen erfasst',
+    },
     meta: {
       title: 'Wochenstatus',
       weekRange: 'Zeitraum',
@@ -557,16 +566,32 @@ const deTranslation = {
       noWeek: 'Keine passende Woche mit Tagesberichten gefunden.',
     },
     sections: {
-      work: 'Betriebliche Tätigkeiten',
-      training:
-        'Unterweisungen / betrieblicher Unterricht / sonstige Schulungen',
-      school: 'Berufsschule (Unterrichtsthemen)',
+      operational: {
+        title: 'Betriebliche Tätigkeiten',
+      },
+      instructional: {
+        title: 'Unterweisungen / betrieblicher Unterricht / sonstige Schulungen',
+      },
+      school: {
+        title: 'Berufsschule (Unterrichtsthemen)',
+      },
+      summary: {
+        title: 'Wochenzusammenfassung',
+        description: 'Status der Erfassung für die aktuelle Woche.',
+      },
     },
     actions: {
       reset: 'Zurücksetzen',
       save: 'Wochenbericht speichern',
       send: 'Wochenbericht senden',
       exportPdf: 'Als PDF exportieren',
+    },
+    notifications: {
+      saved: 'Wochenbericht wurde gespeichert.',
+      saveFailed: 'Wochenbericht konnte nicht gespeichert werden.',
+    },
+    status: {
+      submitted: 'Bericht abgeschickt',
     },
     feedback: {
       missingRange: 'Es ist keine gültige Woche ausgewählt.',
@@ -610,7 +635,6 @@ const deTranslation = {
       allTypes: 'Alle Tagestypen',
     },
     table: {
-      title: 'Tagesliste',
       date: 'Datum',
       dayType: 'Typ',
       entries: 'Einträge',

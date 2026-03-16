@@ -83,6 +83,8 @@ const appApi: AppApi = {
     ipcRenderer.invoke(AppIpcChannel.skipOnboardingStep, stepId),
   registerWeeklyReportHash: (input) =>
     ipcRenderer.invoke(AppIpcChannel.registerWeeklyReportHash, input),
+  setAppDirtyState: (isDirty) =>
+    ipcRenderer.invoke(AppIpcChannel.setAppDirtyState, isDirty),
 };
 
 const electronHandler = {

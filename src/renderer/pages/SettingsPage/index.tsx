@@ -339,6 +339,17 @@ export default function SettingsPage() {
               }
             />
           </FormField>
+          <FormField
+            id="google-account"
+            label={t('settings.general.googleAccount')}
+          >
+            <div className="flex h-9 items-center">
+              <span className="text-sm font-medium text-text-color/80">
+                {runtime.state.drive.connectedAccountEmail ||
+                  t('authMethods.google.notLinked')}
+              </span>
+            </div>
+          </FormField>
         </div>
       </SectionCard>
       <SectionCard
@@ -515,10 +526,24 @@ export default function SettingsPage() {
         </SectionCard>
       ) : null}
       <div className="sticky bottom-3 z-20 rounded-xl border border-primary-tint/75 bg-white/95 p-3 shadow-sm backdrop-blur">
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-3">
           <Button
             type="button"
-            disabled={isPending}
+            variant="outline"
+            disabled={isPending || !isDirty}
+            className="border-primary-tint"
+            onClick={() => {
+              if (baselineFormValues) {
+                setFormValues(baselineFormValues);
+                toast.info(t('settings.reset'));
+              }
+            }}
+          >
+            {t('settings.reset')}
+          </Button>
+          <Button
+            type="button"
+            disabled={isPending || !isDirty}
             className="bg-primary text-primary-contrast hover:bg-primary-shade"
             onClick={() => {
               saveSettings().catch(() => undefined);

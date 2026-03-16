@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useBlocker } from 'react-router-dom';
 
+import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
+
 type UseUnsavedChangesGuardInput = {
   isDirty: boolean;
   onSave: () => Promise<boolean>;
@@ -13,6 +15,8 @@ export default function useUnsavedChangesGuard(
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
+  const runtime = useAppRuntime();
+
   useEffect(() => {
     if (blocker.state === 'blocked') {
       setIsOpen(true);
@@ -23,7 +27,11 @@ export default function useUnsavedChangesGuard(
     if (!input.isDirty) {
       setIsOpen(false);
     }
-  }, [input.isDirty]);
+    
+    if (runtime.api) {
+      runtime.api.setAppDirtyState(input.isDirty).catch(() => undefined);
+    }
+  }, [input.isDirty, runtime.api]);
 
   function cancel() {
     if (blocker.state === 'blocked') {

@@ -193,7 +193,7 @@ export default function ImportPage() {
         title={t('import.title')}
         description={t('import.description')}
       />
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid items-start gap-4 lg:grid-cols-2">
         <SectionCard
           title={t('import.reports.title')}
           description={t('import.reports.description')}

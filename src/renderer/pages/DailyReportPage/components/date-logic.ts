@@ -202,3 +202,55 @@ export function resolveInitialDailyReportDate(input: {
     isAutoEnteredDate: input.isAutoEnteredDate,
   });
 }
+
+export function resolveInitialWeeklyReportRange(input: {
+  reportsState: ReportsState | null;
+  trainingStart: string | null;
+  reportsSince: string | null;
+  now?: Date;
+}): { weekStart: string; weekEnd: string } {
+  const today = toLocalIsoDate(input.now ?? new Date());
+  const baseline =
+    normalizeIsoDate(input.reportsSince) ??
+    normalizeIsoDate(input.trainingStart) ??
+    today;
+
+  const baselineRange = resolveWeekRangeForDate(baseline) ?? {
+    weekStart: baseline,
+    weekEnd: baseline,
+  };
+
+  let cursorStart = baselineRange.weekStart;
+  let cursorEnd = baselineRange.weekEnd;
+
+  // Search for the first week that is NOT submitted
+  // We'll search up to 2 years from today
+  const limitDate = input.now ?? new Date();
+  limitDate.setFullYear(limitDate.getFullYear() + 2);
+  const limit = toIsoDate(limitDate);
+
+  const reports = input.reportsState?.weeklyReports || {};
+
+  for (let i = 0; i < 520; i += 1) {
+    if (cursorStart > limit) break;
+
+    const report = Object.values(reports).find(
+      (r) => r.weekStart === cursorStart && r.weekEnd === cursorEnd,
+    );
+
+    const isSubmitted = report ? report.values.submitted === true : false;
+
+    if (!isSubmitted) {
+      return { weekStart: cursorStart, weekEnd: cursorEnd };
+    }
+
+    // Next week
+    const nextStart = addDays(cursorEnd, 1);
+    const nextRange = nextStart ? resolveWeekRangeForDate(nextStart) : null;
+    if (!nextRange) break;
+    cursorStart = nextRange.weekStart;
+    cursorEnd = nextRange.weekEnd;
+  }
+
+  return baselineRange;
+}

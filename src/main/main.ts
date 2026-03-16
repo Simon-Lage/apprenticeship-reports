@@ -49,6 +49,7 @@ class AppUpdater {
 let mainWindow: BrowserWindow | null = null;
 let appKernel: AppKernel | null = null;
 let isQuittingAfterBackupRegistration = false;
+let isAppDirty = false;
 
 loadEnvLocal([
   path.join(process.cwd(), '.env.local'),
@@ -141,9 +142,9 @@ async function createWindow(): Promise<void> {
   mainWindow = new BrowserWindow({
     show: false,
     width: 1500,
-    height: 860,
+    height: 870,
     minWidth: 1500,
-    minHeight: 860,
+    minHeight: 870,
     fullscreen: true,
     autoHideMenuBar: true,
     icon: getAssetPath('apprenticeship-reports-logo-small.png'),
@@ -168,6 +169,28 @@ async function createWindow(): Promise<void> {
     }
 
     mainWindow.show();
+  });
+
+  mainWindow.on('close', (event) => {
+    if (isAppDirty && mainWindow) {
+      const result = dialog.showMessageBoxSync(mainWindow, {
+        type: 'warning',
+        title: 'Ungespeicherte Änderungen',
+        message: 'Du hast ungespeicherte Änderungen.',
+        detail:
+          'Möchtest du das Programm wirklich beenden? Alle ungespeicherten Änderungen gehen verloren.',
+        buttons: ['Trotzdem beenden', 'Abbrechen'],
+        defaultId: 1,
+        cancelId: 1,
+        noLink: true,
+      });
+
+      if (result === 1) {
+        event.preventDefault();
+      } else {
+        isAppDirty = false;
+      }
+    }
   });
 
   mainWindow.on('closed', () => {
@@ -224,7 +247,14 @@ app
     const desktopFileDialogService = new DesktopFileDialogService(
       () => mainWindow,
     );
-    registerAppHandlers(appKernel, desktopFileDialogService, () => mainWindow);
+    registerAppHandlers(
+      appKernel,
+      desktopFileDialogService,
+      () => mainWindow,
+      (isDirty) => {
+        isAppDirty = isDirty;
+      },
+    );
     await appKernel.boot();
     await createWindow();
 

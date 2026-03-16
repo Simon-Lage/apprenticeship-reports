@@ -118,7 +118,7 @@ export default function ExportPage() {
         title={t('export.title')}
         description={t('export.description')}
       />
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid items-start gap-4 lg:grid-cols-2">
         <SectionCard
           title={t('export.local.title')}
           description={t('export.local.description')}

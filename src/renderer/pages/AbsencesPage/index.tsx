@@ -252,16 +252,32 @@ export default function AbsencesPage() {
         description={t('absences.sync.description')}
         className="border-primary-tint bg-white"
         action={
-          <Button
-            type="button"
-            disabled={isPending || !subdivisionCode}
-            className="bg-primary text-primary-contrast hover:bg-primary-shade"
-            onClick={() => {
-              handleSyncNow().catch(() => undefined);
-            }}
-          >
-            {t('absences.sync.trigger')}
-          </Button>
+          <div className="flex flex-col items-end gap-1">
+            <Button
+              type="button"
+              disabled={isPending || !subdivisionCode}
+              className="bg-primary text-primary-contrast hover:bg-primary-shade h-9"
+              onClick={() => {
+                handleSyncNow().catch(() => undefined);
+              }}
+            >
+              {t('absences.sync.trigger')}
+            </Button>
+            {absenceSettings.lastSyncedAt && (
+              <span className="text-xs text-text-color/70 font-medium whitespace-nowrap">
+                {t('absences.sync.syncedAt')}:{' '}
+                {new Date(absenceSettings.lastSyncedAt)
+                  .toLocaleString('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                  .replace(',', '')}
+              </span>
+            )}
+          </div>
         }
       >
         <div className="grid gap-x-6 gap-y-2 md:grid-cols-2">
@@ -271,18 +287,6 @@ export default function AbsencesPage() {
           </p>
           <p className="text-sm text-text-color/80">
             <strong>{t('absences.sync.currentYear')}:</strong> {currentYear}
-          </p>
-          <p className="col-span-full text-sm text-text-color/80">
-            <strong>{t('absences.sync.syncedAt')}:</strong>{' '}
-            {absenceSettings.lastSyncedAt
-              ? new Date(absenceSettings.lastSyncedAt).toLocaleString('de-DE', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-              : '-'}
           </p>
         </div>
       </SectionCard>
@@ -450,7 +454,7 @@ export default function AbsencesPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <SectionCard
           title={t('absences.catalog.publicTitle')}
-          className="h-fit border-primary-tint bg-white"
+          className="h-full border-primary-tint bg-white"
           action={
             <Button
               variant="ghost"
@@ -504,7 +508,7 @@ export default function AbsencesPage() {
         </SectionCard>
         <SectionCard
           title={t('absences.catalog.schoolTitle')}
-          className="h-fit border-primary-tint bg-white"
+          className="h-full border-primary-tint bg-white"
           action={
             <Button
               variant="ghost"
