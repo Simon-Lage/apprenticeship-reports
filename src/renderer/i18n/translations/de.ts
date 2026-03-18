@@ -627,28 +627,88 @@ const deTranslation = {
       saveError: 'Wochenbericht konnte nicht gespeichert werden.',
     },
   },
-  weeklyPdf: {
-    title: 'Wochenbericht PDF',
-    description: 'Einseitige Vorschau und Export als PDF-Datei.',
-    export: 'Als PDF exportieren',
-    selectorTitle: 'Woche auswählen',
-    selectorDescription: 'Woche auswählen, die als PDF angezeigt wird.',
-    previewTitle: 'PDF-Vorschau',
-    empty: 'Bitte zunächst eine vorhandene Woche auswählen.',
+  weeklyDocument: {
+    title: 'Ausbildungsnachweis',
+    emptyValue: '-',
     labels: {
-      week: 'Woche',
-      area: 'Abteilung',
-      supervisor: 'Betreuer',
-      supervisorSecondary: 'Betreuer 2',
+      name: 'Name:',
+      apprenticeIdentifier: 'Azubi-Ident-Nummer:',
+      profession: 'Beruf:',
+      trainingPeriod: 'Ausbildungszeitraum:',
+      rangeStart: 'Zeitraum von: (*)',
+      rangeEnd: 'bis: (*)',
+      area: 'Ausbildungsabschnitt / - Abteilung: (*)',
+      supervisor: 'E-Mail des Betreuers: (*)',
+      supervisorRepeat: 'E-Mail des Betreuers (Wiederholung): (*)',
     },
     sections: {
-      work: 'Betriebliche Tätigkeiten',
-      school: 'Berufsschule',
+      work: 'Betriebliche Tätigkeiten:',
       training:
-        'Unterweisungen / betrieblicher Unterricht / sonstige Schulungen',
+        'Unterweisungen, betrieblicher Unterricht, sonstige Schulungen:',
+      school: 'Berufsschule (Unterrichtsthemen):',
     },
+  },
+  sendWeeklyReport: {
+    title: 'Wochenbericht senden',
+    description:
+      'Die Anwendung versendet nichts automatisch. Du prüfst den Nachweis, kopierst die Inhalte manuell und markierst danach selbst, dass du gesendet hast.',
+    action: 'Gesendet',
+    cancelAction: 'Abbrechen',
+    openIhk: 'IHK-Seite öffnen',
+    copyAction: 'Kopieren',
+    selectorTitle: 'Gewählte Woche',
+    selectorDescription:
+      'Die Auswahl ist nur für die Bildschirmansicht sichtbar und wird nicht in den Nachweis übernommen.',
+    selectorLabel: 'Woche',
+    selectorPlaceholder: 'Bitte vollständige Woche auswählen',
+    completeWeeksTitle: 'Nur vollständige Wochen',
+    completeWeeksDescription:
+      'Senden ist nur möglich, wenn für alle sieben Tage der Woche Tagesberichte vorhanden sind.',
+    completeWeeksDescriptionMissingIhk:
+      'Senden ist nur manuell vorgesehen. Hinterlege zusätzlich einen IHK-Link im Onboarding oder in den Settings, damit du die Zielseite direkt öffnen kannst.',
+    submittedTitle: 'Wochenbericht bereits gesendet',
+    submittedDescription: 'Diese Woche wurde bereits als gesendet markiert.',
+    submittedDescriptionWithEmail:
+      'Diese Woche wurde bereits als gesendet markiert: {{email}}',
+    emptyTitle: 'Keine Wochenvorschau verfügbar',
+    emptyDescription: 'Bitte zuerst eine vollständige Woche auswählen.',
+    noCompleteWeeks:
+      'Aktuell gibt es keine vollständige Woche, die gesendet werden kann.',
     feedback: {
-      selectWeekFirst: 'Bitte zuerst eine gültige Woche auswählen.',
+      selectWeekFirst: 'Bitte zuerst eine vollständige Woche auswählen.',
+      submitted: 'Wochenbericht wurde als gesendet markiert.',
+      submitError: 'Wochenbericht konnte nicht als gesendet markiert werden.',
+      copied: 'Inhalt wurde kopiert.',
+      copyError: 'Inhalt konnte nicht kopiert werden.',
+    },
+    leaveDialog: {
+      title: 'Wurde der Wochenbericht gesendet?',
+      description:
+        'Du hast die Sendeseite verlassen, ohne Gesendet oder Abbrechen zu wählen. Möchtest du den Bericht als gesendet markieren?',
+      sent: 'Gesendet',
+      notSent: 'Nicht gesendet',
+      stay: 'Zurück',
+    },
+  },
+  weeklyPdf: {
+    title: 'Wochenbericht PDF',
+    description:
+      'Digitale A4-Vorschau des Ausbildungsnachweises mit Export als PDF-Datei.',
+    export: 'Als PDF exportieren',
+    selectorTitle: 'Gewählte Woche',
+    selectorDescription:
+      'Die Auswahl ist nur für die Bildschirmansicht sichtbar und erscheint nicht im PDF.',
+    selectorLabel: 'Woche',
+    selectorPlaceholder: 'Bitte vollständige Woche auswählen',
+    completeWeeksTitle: 'Nur vollständige Wochen',
+    completeWeeksDescription:
+      'Export ist nur möglich, wenn für alle sieben Tage der Woche Tagesberichte vorhanden sind.',
+    emptyTitle: 'Keine PDF-Vorschau verfügbar',
+    empty: 'Bitte zuerst eine vollständige Woche auswählen.',
+    noCompleteWeeks:
+      'Aktuell gibt es keine vollständige Woche, die als PDF exportiert werden kann.',
+    feedback: {
+      selectWeekFirst: 'Bitte zuerst eine vollständige Woche auswählen.',
       exportCanceled: 'PDF-Export abgebrochen.',
       exported: 'PDF wurde exportiert.',
       exportError: 'PDF-Export fehlgeschlagen.',

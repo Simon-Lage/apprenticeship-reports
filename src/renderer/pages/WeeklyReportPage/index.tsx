@@ -462,6 +462,21 @@ export default function WeeklyReportPage() {
             {currentWeeklyReport && (
               <Button
                 type="button"
+                variant="outline"
+                disabled={isPending || !isWeekComplete}
+                onClick={() =>
+                  navigate(
+                    `${appRoutes.weeklyReportPdf}?weekStart=${form.weekStart}&weekEnd=${form.weekEnd}`,
+                  )
+                }
+              >
+                <FiFileText className="mr-2 h-4 w-4" />
+                {t('weeklyReport.actions.exportPdf')}
+              </Button>
+            )}
+            {currentWeeklyReport && (
+              <Button
+                type="button"
                 variant="secondary"
                 disabled={isPending || !isWeekComplete}
                 onClick={() =>

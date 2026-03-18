@@ -14,6 +14,8 @@ import {
 type UnsavedChangesDialogProps = {
   open: boolean;
   isPending: boolean;
+  titleKey?: string;
+  descriptionKey?: string;
   saveLabelKey?: string;
   discardLabelKey?: string;
   cancelLabelKey?: string;
@@ -25,6 +27,8 @@ type UnsavedChangesDialogProps = {
 export default function UnsavedChangesDialog({
   open,
   isPending,
+  titleKey = 'common.unsavedChanges.title',
+  descriptionKey = 'common.unsavedChanges.description',
   saveLabelKey = 'common.unsavedChanges.save',
   discardLabelKey = 'common.unsavedChanges.discard',
   cancelLabelKey = 'common.unsavedChanges.cancel',
@@ -45,9 +49,9 @@ export default function UnsavedChangesDialog({
     >
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{t('common.unsavedChanges.title')}</AlertDialogTitle>
+          <AlertDialogTitle>{t(titleKey)}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t('common.unsavedChanges.description')}
+            {t(descriptionKey)}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -79,5 +83,4 @@ export default function UnsavedChangesDialog({
     </AlertDialog>
   );
 }
-
 

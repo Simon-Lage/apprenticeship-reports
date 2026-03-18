@@ -130,10 +130,26 @@ export type WeekWithReports = {
   dailyReports: DailyReportRecord[];
 };
 
+export type CompleteWeekWithReports = WeekWithReports & {
+  trackedDaysCount: number;
+  totalDaysCount: number;
+};
+
 export type WeeklyAggregates = {
   workActivities: string[];
   trainings: string[];
   schoolTopics: string[];
+};
+
+export type WeeklySectionDayEntry = {
+  date: string;
+  items: string[];
+};
+
+export type WeeklySectionDayGroups = {
+  work: WeeklySectionDayEntry[];
+  trainings: WeeklySectionDayEntry[];
+  school: WeeklySectionDayEntry[];
 };
 
 function parseIsoDate(value: string): Date | null {
@@ -229,6 +245,75 @@ export function buildWeeklyAggregates(
   };
 }
 
+export function countTrackedWeekDays(
+  weekStart: string,
+  weekEnd: string,
+  dailyReports: DailyReportRecord[],
+): {
+  trackedDaysCount: number;
+  totalDaysCount: number;
+} {
+  const weekDates = listWeekDates(weekStart, weekEnd);
+  const trackedDates = new Set(dailyReports.map((dailyReport) => dailyReport.date));
+
+  return {
+    trackedDaysCount: weekDates.filter((date) => trackedDates.has(date)).length,
+    totalDaysCount: weekDates.length,
+  };
+}
+
+export function buildWeeklySectionDayGroups(
+  dailyReports: DailyReportRecord[],
+): WeeklySectionDayGroups {
+  const work: WeeklySectionDayEntry[] = [];
+  const trainings: WeeklySectionDayEntry[] = [];
+  const school: WeeklySectionDayEntry[] = [];
+
+  dailyReports
+    .slice()
+    .sort((left, right) => left.date.localeCompare(right.date))
+    .forEach((dailyReport) => {
+      const parsed = parseDailyReportValues(dailyReport.values);
+      const schoolItems = uniqValues([
+        ...parsed.schoolTopics,
+        ...parsed.lessons.flatMap((lesson) =>
+          lesson.topics.map((topic) =>
+            lesson.subject.trim().length
+              ? `${lesson.subject}: ${topic}`
+              : topic,
+          ),
+        ),
+      ]);
+
+      if (parsed.activities.length) {
+        work.push({
+          date: dailyReport.date,
+          items: parsed.activities,
+        });
+      }
+
+      if (parsed.trainings.length) {
+        trainings.push({
+          date: dailyReport.date,
+          items: parsed.trainings,
+        });
+      }
+
+      if (schoolItems.length) {
+        school.push({
+          date: dailyReport.date,
+          items: schoolItems,
+        });
+      }
+    });
+
+  return {
+    work,
+    trainings,
+    school,
+  };
+}
+
 export function listWeeksWithDailyReports(
   reports: ReportsState,
 ): WeekWithReports[] {
@@ -248,6 +333,27 @@ export function listWeeksWithDailyReports(
     })
     .sort((left, right) =>
       left.weeklyReport.weekStart.localeCompare(right.weeklyReport.weekStart),
+    );
+}
+
+export function listCompleteWeeksWithDailyReports(
+  reports: ReportsState,
+): CompleteWeekWithReports[] {
+  return listWeeksWithDailyReports(reports)
+    .map((week) => {
+      const coverage = countTrackedWeekDays(
+        week.weeklyReport.weekStart,
+        week.weeklyReport.weekEnd,
+        week.dailyReports,
+      );
+
+      return {
+        ...week,
+        ...coverage,
+      };
+    })
+    .filter(
+      (week) => week.totalDaysCount === 7 && week.trackedDaysCount === week.totalDaysCount,
     );
 }
 
