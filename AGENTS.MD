@@ -15,6 +15,8 @@ Bitte beachte folgende Punkte:
 - Wir gehen Schritt für Schritt vor.
 - Nutzerinputs müssen immer validiert werden.
 - Alle UI-Texte müssen aus i18n-Übersetzungen kommen.
+- Dokumentationsregeln, Quellen und Arbeitsablaeufe stehen in `DOCUMENTATION_NOTES.md`.
+- `DOCUMENTATION_NOTES.md` ist nur relevant, wenn der Auftrag die Projektdokumentation betrifft, und kann bei normalen Programmierauftraegen ignoriert werden.
 
 ---
 
