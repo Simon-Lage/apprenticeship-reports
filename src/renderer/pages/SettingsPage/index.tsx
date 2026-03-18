@@ -12,6 +12,7 @@ import useUnsavedChangesGuard from '@/renderer/hooks/useUnsavedChangesGuard';
 import { useSettingsSnapshot } from '@/renderer/hooks/useKernelData';
 import {
   mergeOnboardingSettings,
+  parseOnboardingIdentity,
   mergeUiSettings,
   parseOnboardingRegion,
   parseOnboardingTrainingPeriod,
@@ -32,6 +33,10 @@ import { JsonObject } from '@/shared/common/json';
 import { SettingsImportPreview } from '@/shared/settings/schema';
 
 type SettingsFormValues = UiSettingsValues & {
+  firstName: string;
+  lastName: string;
+  apprenticeIdentifier: string;
+  profession: string;
   trainingStart: string;
   trainingEnd: string;
   reportsSince: string;
@@ -42,12 +47,17 @@ type SettingsFormValues = UiSettingsValues & {
 
 function resolveSettingsFormValues(values: JsonObject): SettingsFormValues {
   const parsedUiSettings = parseUiSettings(values);
+  const identity = parseOnboardingIdentity(values);
   const trainingPeriod = parseOnboardingTrainingPeriod(values);
   const region = parseOnboardingRegion(values);
   const absence = parseAbsenceSettings(values);
 
   return {
     ...parsedUiSettings,
+    firstName: identity.firstName ?? '',
+    lastName: identity.lastName ?? '',
+    apprenticeIdentifier: identity.apprenticeIdentifier ?? '',
+    profession: identity.profession ?? '',
     trainingStart: trainingPeriod.trainingStart ?? '',
     trainingEnd: trainingPeriod.trainingEnd ?? '',
     reportsSince: trainingPeriod.reportsSince ?? '',
@@ -89,6 +99,17 @@ export default function SettingsPage() {
     setIsPending(true);
 
     try {
+      const identity = parseOnboardingStepValues('identity', {
+        firstName: formValues.firstName,
+        lastName: formValues.lastName,
+        apprenticeIdentifier: formValues.apprenticeIdentifier,
+        profession: formValues.profession,
+      }) as {
+        firstName: string;
+        lastName: string;
+        apprenticeIdentifier: string;
+        profession: string;
+      };
       const trainingPeriod = parseOnboardingStepValues('training-period', {
         trainingStart: formValues.trainingStart,
         trainingEnd: formValues.trainingEnd,
@@ -122,6 +143,12 @@ export default function SettingsPage() {
           ...absence,
           autoSyncHolidays: formValues.autoSyncHolidays,
         }),
+        identity: {
+          firstName: identity.firstName,
+          lastName: identity.lastName,
+          apprenticeIdentifier: identity.apprenticeIdentifier,
+          profession: identity.profession,
+        },
         trainingPeriod: {
           trainingStart: trainingPeriod.trainingStart,
           trainingEnd: trainingPeriod.trainingEnd,
@@ -160,6 +187,11 @@ export default function SettingsPage() {
           toast.error(
             t('settings.feedback.saveError'),
             t('onboarding.steps.region.validationSubdivision'),
+          );
+        } else if (code === 'invalid-apprentice-identifier') {
+          toast.error(
+            t('settings.feedback.saveError'),
+            t('onboarding.steps.identity.validationApprenticeIdentifier'),
           );
         } else if (code === 'required-department') {
           toast.error(
@@ -307,6 +339,74 @@ export default function SettingsPage() {
         className="border-primary-tint bg-white"
       >
         <div className="grid gap-4 md:grid-cols-2">
+          <FormField
+            id="first-name"
+            label={t('onboarding.steps.identity.firstName')}
+          >
+            <Input
+              id="first-name"
+              value={formValues.firstName}
+              onChange={(event) =>
+                setFormValues((current) =>
+                  current
+                    ? { ...current, firstName: event.target.value }
+                    : current,
+                )
+              }
+            />
+          </FormField>
+          <FormField
+            id="last-name"
+            label={t('onboarding.steps.identity.lastName')}
+          >
+            <Input
+              id="last-name"
+              value={formValues.lastName}
+              onChange={(event) =>
+                setFormValues((current) =>
+                  current
+                    ? { ...current, lastName: event.target.value }
+                    : current,
+                )
+              }
+            />
+          </FormField>
+          <FormField
+            id="apprentice-identifier"
+            label={t('settings.general.apprenticeIdentifier')}
+          >
+            <Input
+              id="apprentice-identifier"
+              inputMode="numeric"
+              value={formValues.apprenticeIdentifier}
+              onChange={(event) =>
+                setFormValues((current) =>
+                  current
+                    ? {
+                        ...current,
+                        apprenticeIdentifier: event.target.value.replace(
+                          /\D+/g,
+                          '',
+                        ),
+                      }
+                    : current,
+                )
+              }
+            />
+          </FormField>
+          <FormField id="profession" label={t('settings.general.profession')}>
+            <Input
+              id="profession"
+              value={formValues.profession}
+              onChange={(event) =>
+                setFormValues((current) =>
+                  current
+                    ? { ...current, profession: event.target.value }
+                    : current,
+                )
+              }
+            />
+          </FormField>
           <FormField id="department" label={t('settings.general.department')}>
             <Input
               id="department"
@@ -455,7 +555,7 @@ export default function SettingsPage() {
               htmlFor="auto-sync-holidays"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              {t('absences.sync.autoSyncLabel')}
+              {t('settings.region.autoSyncHolidays')}
             </label>
             <div className="flex items-center space-x-2">
               <Switch
@@ -470,7 +570,7 @@ export default function SettingsPage() {
                 }
               />
               <span className="text-sm text-text-color/70">
-                {t('absences.sync.autoSyncEnableLabel')}
+                {t('settings.region.autoSyncDescription')}
               </span>
             </div>
           </div>

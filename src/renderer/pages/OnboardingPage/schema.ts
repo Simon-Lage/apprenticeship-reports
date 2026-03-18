@@ -29,6 +29,13 @@ const googleSchema = z.object({
 const identitySchema = z.object({
   firstName: z.string().trim().min(1),
   lastName: z.string().trim().min(1),
+  apprenticeIdentifier: z
+    .string()
+    .trim()
+    .min(1)
+    .regex(/^\d+$/, { message: 'invalid-apprentice-identifier' })
+    .max(32),
+  profession: z.string().trim().min(1).max(120),
 });
 
 const trainingPeriodSchema = trainingPeriodStepSchema;
@@ -118,6 +125,14 @@ export function getOnboardingStepDefaults(input: {
           : '',
       lastName:
         typeof input.source.lastName === 'string' ? input.source.lastName : '',
+      apprenticeIdentifier:
+        typeof input.source.apprenticeIdentifier === 'string'
+          ? input.source.apprenticeIdentifier
+          : '',
+      profession:
+        typeof input.source.profession === 'string'
+          ? input.source.profession
+          : '',
     };
   }
 

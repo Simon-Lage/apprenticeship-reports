@@ -11,11 +11,17 @@ import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
 import useUnsavedChangesGuard from '@/renderer/hooks/useUnsavedChangesGuard';
 import { useSettingsSnapshot } from '@/renderer/hooks/useKernelData';
+import AbsenceSyncDialog from '@/renderer/components/absence/AbsenceSyncDialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
   createCatalogYearKey,
+  getStaleAbsenceCatalogYears,
+  hasStaleAbsenceCatalogs,
+  listAbsenceCatalogYears,
   ManualAbsence,
   ManualAbsenceType,
   manualAbsenceTypeValues,
@@ -85,7 +91,10 @@ export default function AbsencesPage() {
   const [form, setForm] = useState<ManualAbsenceFormState>(
     defaultManualAbsenceFormState,
   );
-  const [isCatalogCollapsed, setIsCatalogCollapsed] = useState(true);
+  const [isPublicCatalogCollapsed, setIsPublicCatalogCollapsed] =
+    useState(true);
+  const [isSchoolCatalogCollapsed, setIsSchoolCatalogCollapsed] =
+    useState(true);
 
   const absenceSettings = useMemo(
     () => parseAbsenceSettings(settingsSnapshot.value?.values ?? {}),
@@ -97,8 +106,41 @@ export default function AbsencesPage() {
     [settingsSnapshot.value?.values],
   );
   const currentYear = useMemo(() => new Date().getFullYear(), []);
-  const currentCatalog =
-    absenceSettings.catalogsByYear[createCatalogYearKey(currentYear)];
+  const [showSyncConfirmation, setShowSyncConfirmation] = useState(false);
+  const catalogYears = useMemo(
+    () => listAbsenceCatalogYears(absenceSettings),
+    [absenceSettings],
+  );
+  const staleCatalogYears = useMemo(
+    () => getStaleAbsenceCatalogYears(absenceSettings, currentYear),
+    [absenceSettings, currentYear],
+  );
+  const staleCatalogYearSet = useMemo(
+    () => new Set(staleCatalogYears),
+    [staleCatalogYears],
+  );
+  const hasStaleCatalogs = useMemo(
+    () => hasStaleAbsenceCatalogs(absenceSettings, currentYear),
+    [absenceSettings, currentYear],
+  );
+  const hasPublicCatalogEntries = useMemo(
+    () =>
+      catalogYears.some((year) => {
+        const catalog =
+          absenceSettings.catalogsByYear[createCatalogYearKey(year)];
+        return catalog.publicHolidays.length > 0;
+      }),
+    [absenceSettings.catalogsByYear, catalogYears],
+  );
+  const hasSchoolCatalogEntries = useMemo(
+    () =>
+      catalogYears.some((year) => {
+        const catalog =
+          absenceSettings.catalogsByYear[createCatalogYearKey(year)];
+        return catalog.schoolHolidays.length > 0;
+      }),
+    [absenceSettings.catalogsByYear, catalogYears],
+  );
   const manualAbsences = useMemo(
     () =>
       [...absenceSettings.manualAbsences].sort((left, right) => {
@@ -216,30 +258,54 @@ export default function AbsencesPage() {
     toast.info(t('absences.feedback.deleted'));
   }
 
-  async function handleSyncNow() {
-    if (!runtime.api) {
-      return;
-    }
-
-    setIsPending(true);
-    try {
-      await runtime.api.syncAbsenceCatalog();
-      await runtime.refresh();
-      await settingsSnapshot.refresh();
-      toast.success(t('absences.feedback.syncSuccess'));
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : t('common.errors.unknown');
-      toast.error(t('absences.feedback.syncError'), message);
-    } finally {
-      setIsPending(false);
-    }
-  }
-
   const unsavedChangesGuard = useUnsavedChangesGuard({
     isDirty,
     onSave: async () => submitManualAbsence(),
   });
+
+  function renderCatalogContent(
+    catalogType: 'publicHolidays' | 'schoolHolidays',
+  ) {
+    return (
+      <div className="space-y-4 pr-1">
+        {catalogYears.map((year) => {
+          const catalog =
+            absenceSettings.catalogsByYear[createCatalogYearKey(year)];
+          const entries = catalog[catalogType];
+
+          if (!entries.length) {
+            return null;
+          }
+
+          return (
+            <div key={`${catalogType}-${year}`} className="space-y-2">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-text-color">{year}</p>
+                {staleCatalogYearSet.has(year) ? (
+                  <Badge
+                    variant="outline"
+                    className="border-amber-300 bg-amber-100 text-amber-800"
+                  >
+                    {t('absences.catalog.outdated')}
+                  </Badge>
+                ) : null}
+              </div>
+              <ul className="space-y-2">
+                {entries.map((entry) => (
+                  <li
+                    key={entry.id}
+                    className="rounded-md border border-primary-tint/80 bg-primary-tint/20 px-3 py-2 text-sm"
+                  >
+                    {entry.startDate} - {entry.endDate} | {entry.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -247,6 +313,38 @@ export default function AbsencesPage() {
         title={t('absences.title')}
         description={t('absences.description')}
       />
+
+      {hasStaleCatalogs ? (
+        <Alert className="border-amber-200 bg-amber-50">
+          <div className="flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-amber-600"
+            >
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+              <path d="M12 9v4" />
+              <path d="M12 17h.01" />
+            </svg>
+            <AlertTitle className="text-amber-800 font-semibold mb-0">
+              {t('absences.sync.outdatedTitle')}
+            </AlertTitle>
+          </div>
+          <AlertDescription className="text-amber-700 mt-1">
+            {t('absences.sync.outdatedDescription', {
+              years: staleCatalogYears.join(', '),
+            })}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       <SectionCard
         title={t('absences.sync.title')}
         description={t('absences.sync.description')}
@@ -258,7 +356,7 @@ export default function AbsencesPage() {
               disabled={isPending || !subdivisionCode}
               className="bg-primary text-primary-contrast hover:bg-primary-shade h-9"
               onClick={() => {
-                handleSyncNow().catch(() => undefined);
+                setShowSyncConfirmation(true);
               }}
             >
               {t('absences.sync.trigger')}
@@ -287,6 +385,16 @@ export default function AbsencesPage() {
           </p>
           <p className="text-sm text-text-color/80">
             <strong>{t('absences.sync.currentYear')}:</strong> {currentYear}
+          </p>
+          <p className="text-sm text-text-color/80">
+            <strong>{t('absences.sync.catalogYears')}:</strong>{' '}
+            {catalogYears.length ? catalogYears.join(', ') : '-'}
+          </p>
+          <p className="text-sm text-text-color/80">
+            <strong>{t('absences.sync.autoSyncSetting')}:</strong>{' '}
+            {absenceSettings.autoSyncHolidays
+              ? t('common.yes')
+              : t('common.no')}
           </p>
         </div>
       </SectionCard>
@@ -456,13 +564,13 @@ export default function AbsencesPage() {
           title={t('absences.catalog.publicTitle')}
           className="h-full border-primary-tint bg-white"
           contentClassName="p-0"
-          onClick={() => setIsCatalogCollapsed(!isCatalogCollapsed)}
+          onClick={() => setIsPublicCatalogCollapsed((current) => !current)}
           action={
             <div className="flex h-8 w-8 items-center justify-center">
               <div
                 className={cn(
                   'transition-transform duration-200',
-                  isCatalogCollapsed ? '-rotate-90' : 'rotate-0',
+                  isPublicCatalogCollapsed ? '-rotate-90' : 'rotate-0',
                 )}
               >
                 <svg
@@ -483,7 +591,7 @@ export default function AbsencesPage() {
           }
         >
           <AnimatePresence initial={false}>
-            {!isCatalogCollapsed && (
+            {!isPublicCatalogCollapsed && (
               <motion.div
                 key="public-catalog"
                 initial={{ height: 0, opacity: 0 }}
@@ -493,17 +601,8 @@ export default function AbsencesPage() {
                 className="overflow-hidden"
               >
                 <div className="px-5 pb-5 pt-4">
-                  {currentCatalog?.publicHolidays.length ? (
-                    <ul className="space-y-2 pr-1">
-                      {currentCatalog.publicHolidays.map((entry) => (
-                        <li
-                          key={entry.id}
-                          className="rounded-md border border-primary-tint/80 bg-primary-tint/20 px-3 py-2 text-sm"
-                        >
-                          {entry.startDate} - {entry.endDate} | {entry.name}
-                        </li>
-                      ))}
-                    </ul>
+                  {hasPublicCatalogEntries ? (
+                    renderCatalogContent('publicHolidays')
                   ) : (
                     <p className="text-sm text-text-color/70">
                       {t('absences.catalog.empty')}
@@ -518,13 +617,13 @@ export default function AbsencesPage() {
           title={t('absences.catalog.schoolTitle')}
           className="h-full border-primary-tint bg-white"
           contentClassName="p-0"
-          onClick={() => setIsCatalogCollapsed(!isCatalogCollapsed)}
+          onClick={() => setIsSchoolCatalogCollapsed((current) => !current)}
           action={
             <div className="flex h-8 w-8 items-center justify-center">
               <div
                 className={cn(
                   'transition-transform duration-200',
-                  isCatalogCollapsed ? '-rotate-90' : 'rotate-0',
+                  isSchoolCatalogCollapsed ? '-rotate-90' : 'rotate-0',
                 )}
               >
                 <svg
@@ -545,7 +644,7 @@ export default function AbsencesPage() {
           }
         >
           <AnimatePresence initial={false}>
-            {!isCatalogCollapsed && (
+            {!isSchoolCatalogCollapsed && (
               <motion.div
                 key="school-catalog"
                 initial={{ height: 0, opacity: 0 }}
@@ -555,17 +654,8 @@ export default function AbsencesPage() {
                 className="overflow-hidden"
               >
                 <div className="px-5 pb-5 pt-4">
-                  {currentCatalog?.schoolHolidays.length ? (
-                    <ul className="space-y-2 pr-1">
-                      {currentCatalog.schoolHolidays.map((entry) => (
-                        <li
-                          key={entry.id}
-                          className="rounded-md border border-primary-tint/80 bg-primary-tint/20 px-3 py-2 text-sm"
-                        >
-                          {entry.startDate} - {entry.endDate} | {entry.name}
-                        </li>
-                      ))}
-                    </ul>
+                  {hasSchoolCatalogEntries ? (
+                    renderCatalogContent('schoolHolidays')
                   ) : (
                     <p className="text-sm text-text-color/70">
                       {t('absences.catalog.empty')}
@@ -585,6 +675,11 @@ export default function AbsencesPage() {
         onSave={() => {
           unsavedChangesGuard.saveAndProceed().catch(() => undefined);
         }}
+      />
+      <AbsenceSyncDialog
+        mode="manual"
+        open={showSyncConfirmation}
+        onOpenChange={setShowSyncConfirmation}
       />
     </div>
   );

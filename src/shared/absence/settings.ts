@@ -84,6 +84,10 @@ export type ManualAbsence = z.infer<typeof manualAbsenceSchema>;
 export type ManualAbsenceType = z.infer<typeof ManualAbsenceTypeSchema>;
 export type AbsenceSettings = z.infer<typeof absenceSettingsSchema>;
 
+function hasCatalogEntries(catalog: YearlyAbsenceCatalog): boolean {
+  return catalog.publicHolidays.length > 0 || catalog.schoolHolidays.length > 0;
+}
+
 export function parseAbsenceSettings(values: JsonObject): AbsenceSettings {
   const source =
     typeof values.absence === 'object' && values.absence ? values.absence : {};
@@ -129,4 +133,32 @@ export function resolveOnboardingSubdivisionCode(
 
 export function createCatalogYearKey(year: number): string {
   return String(year);
+}
+
+export function listAbsenceCatalogYears(absence: AbsenceSettings): number[] {
+  return Object.keys(absence.catalogsByYear)
+    .map((value) => Number(value))
+    .filter((value) => Number.isInteger(value))
+    .sort((left, right) => right - left);
+}
+
+export function getStaleAbsenceCatalogYears(
+  absence: AbsenceSettings,
+  currentYear: number,
+): number[] {
+  return listAbsenceCatalogYears(absence).filter((year) => {
+    if (year >= currentYear) {
+      return false;
+    }
+
+    const catalog = absence.catalogsByYear[createCatalogYearKey(year)];
+    return Boolean(catalog && hasCatalogEntries(catalog));
+  });
+}
+
+export function hasStaleAbsenceCatalogs(
+  absence: AbsenceSettings,
+  currentYear: number,
+): boolean {
+  return getStaleAbsenceCatalogYears(absence, currentYear).length > 0;
 }

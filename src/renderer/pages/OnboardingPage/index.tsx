@@ -229,6 +229,10 @@ export default function OnboardingPage() {
           setValidationError(
             t('onboarding.steps.region.validationSubdivision'),
           );
+        } else if (code === 'invalid-apprentice-identifier') {
+          setValidationError(
+            t('onboarding.steps.identity.validationApprenticeIdentifier'),
+          );
         } else if (code === 'required-department') {
           setValidationError(
             t('onboarding.steps.workplace.validationDepartmentRequired'),

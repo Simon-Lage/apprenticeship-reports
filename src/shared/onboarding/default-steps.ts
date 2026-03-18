@@ -24,6 +24,12 @@ const identitySchema = z
   .object({
     firstName: requiredTextSchema,
     lastName: requiredTextSchema,
+    apprenticeIdentifier: z
+      .string()
+      .trim()
+      .regex(/^\d+$/, { message: 'invalid-apprentice-identifier' })
+      .max(32),
+    profession: requiredTextSchema,
   })
   .transform((value) => ensureJsonObject(value));
 

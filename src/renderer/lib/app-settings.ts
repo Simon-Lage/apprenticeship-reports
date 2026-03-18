@@ -50,6 +50,13 @@ const onboardingTrainingPeriodSchema = z.object({
   reportsSince: z.string().date().nullable(),
 });
 
+const onboardingIdentitySchema = z.object({
+  firstName: z.string().trim().min(1).max(120).nullable(),
+  lastName: z.string().trim().min(1).max(120).nullable(),
+  apprenticeIdentifier: z.string().trim().regex(/^\d+$/).max(32).nullable(),
+  profession: z.string().trim().min(1).max(120).nullable(),
+});
+
 const onboardingWorkplaceSchema = z.object({
   department: z.string().trim().min(1).max(120).nullable(),
   trainerEmail: z.string().trim().email().max(320).nullable(),
@@ -65,6 +72,7 @@ export type UiSettingsValues = z.infer<typeof uiSettingsSchema>;
 export type OnboardingTrainingPeriodValues = z.infer<
   typeof onboardingTrainingPeriodSchema
 >;
+export type OnboardingIdentityValues = z.infer<typeof onboardingIdentitySchema>;
 export type OnboardingWorkplaceValues = z.infer<
   typeof onboardingWorkplaceSchema
 >;
@@ -117,6 +125,34 @@ function normalizeEmailOrNull(value: unknown): string | null {
   return parsed.success ? parsed.data : null;
 }
 
+function normalizeTextOrNull(value: unknown, maxLength: number): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const normalized = value.trim();
+
+  if (!normalized || normalized.length > maxLength) {
+    return null;
+  }
+
+  return normalized;
+}
+
+function normalizeApprenticeIdentifierOrNull(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const normalized = value.trim();
+
+  if (!normalized || normalized.length > 32 || !/^\d+$/.test(normalized)) {
+    return null;
+  }
+
+  return normalized;
+}
+
 export function parseUiSettings(values: JsonObject): UiSettingsValues {
   const appUi =
     typeof values.appUi === 'object' && values.appUi ? values.appUi : {};
@@ -146,6 +182,22 @@ export function parseOnboardingTrainingPeriod(
     trainingStart: normalizeDateOrNull(trainingPeriod.trainingStart),
     trainingEnd: normalizeDateOrNull(trainingPeriod.trainingEnd),
     reportsSince: normalizeDateOrNull(trainingPeriod.reportsSince),
+  });
+}
+
+export function parseOnboardingIdentity(
+  values: JsonObject,
+): OnboardingIdentityValues {
+  const onboarding = ensureJsonObject(values.onboarding ?? {});
+  const identity = ensureJsonObject(onboarding.identity ?? {});
+
+  return onboardingIdentitySchema.parse({
+    firstName: normalizeTextOrNull(identity.firstName, 120),
+    lastName: normalizeTextOrNull(identity.lastName, 120),
+    apprenticeIdentifier: normalizeApprenticeIdentifierOrNull(
+      identity.apprenticeIdentifier,
+    ),
+    profession: normalizeTextOrNull(identity.profession, 120),
   });
 }
 
@@ -228,6 +280,7 @@ export function mergeOnboardingIntoUiSettings(input: {
 
 export function mergeOnboardingSettings(input: {
   values: JsonObject;
+  identity: OnboardingIdentityValues;
   trainingPeriod: OnboardingTrainingPeriodValues;
   workplace: OnboardingWorkplaceValues;
   region: OnboardingRegionValues;
@@ -238,6 +291,12 @@ export function mergeOnboardingSettings(input: {
     ...input.values,
     onboarding: {
       ...onboarding,
+      identity: {
+        firstName: input.identity.firstName,
+        lastName: input.identity.lastName,
+        apprenticeIdentifier: input.identity.apprenticeIdentifier,
+        profession: input.identity.profession,
+      },
       'training-period': {
         trainingStart: input.trainingPeriod.trainingStart,
         trainingEnd: input.trainingPeriod.trainingEnd,

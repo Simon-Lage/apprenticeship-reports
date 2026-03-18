@@ -49,6 +49,22 @@ export default function OnboardingStepFields({
           />
         </FormField>
         <FormField
+          id="identity-apprentice-identifier"
+          label={t('onboarding.steps.identity.apprenticeIdentifier')}
+        >
+          <Input
+            id="identity-apprentice-identifier"
+            inputMode="numeric"
+            value={stepValues.apprenticeIdentifier ?? ''}
+            onChange={(event) =>
+              setStepValues((current) => ({
+                ...current,
+                apprenticeIdentifier: event.target.value.replace(/\D+/g, ''),
+              }))
+            }
+          />
+        </FormField>
+        <FormField
           id="identity-last-name"
           label={t('onboarding.steps.identity.lastName')}
         >
@@ -59,6 +75,21 @@ export default function OnboardingStepFields({
               setStepValues((current) => ({
                 ...current,
                 lastName: event.target.value,
+              }))
+            }
+          />
+        </FormField>
+        <FormField
+          id="identity-profession"
+          label={t('onboarding.steps.identity.profession')}
+        >
+          <Input
+            id="identity-profession"
+            value={stepValues.profession ?? ''}
+            onChange={(event) =>
+              setStepValues((current) => ({
+                ...current,
+                profession: event.target.value,
               }))
             }
           />

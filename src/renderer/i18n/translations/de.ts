@@ -12,6 +12,7 @@ const deTranslation = {
     loading: 'Lädt...',
     add: 'Hinzufügen',
     remove: 'Entfernen',
+    cancel: 'Abbrechen',
     yes: 'Ja',
     no: 'Nein',
     unsavedChanges: {
@@ -164,6 +165,10 @@ const deTranslation = {
         description: 'Basisdaten für die lokale Kontoidentität.',
         firstName: 'Vorname',
         lastName: 'Nachname',
+        apprenticeIdentifier: 'Azubi-Identnummer',
+        profession: 'Berufsbezeichnung',
+        validationApprenticeIdentifier:
+          'Die Azubi-Identnummer darf nur aus Ziffern bestehen.',
       },
       'training-period': {
         title: 'Ausbildungszeitraum',
@@ -279,13 +284,22 @@ const deTranslation = {
       syncedAt: 'Letzte Synchronisierung',
       lastError: 'Letzter Fehler',
       currentYear: 'Datenjahr',
+      catalogYears: 'Vorhandene Jahre',
+      autoSyncSetting: 'Automatische Synchronisierung',
       trigger: 'Jetzt synchronisieren',
       missingRegion:
         'Kein Bundesland im Onboarding hinterlegt. Bitte Onboarding abschließen.',
+      outdatedTitle: 'Daten veraltet',
+      outdatedDescription:
+        'Die lokalen Feiertags- und Ferieninformationen aus {{years}} sind veraltet.',
       confirmTitle: 'Feiertage und Ferien synchronisieren?',
       confirmDescription:
         'Möchtest du die Feiertage und Ferien vom OpenHolidays-Server laden? Diese Daten werden lokal gespeichert.',
+      syncNowConfirmTitle: 'Jetzt synchronisieren?',
+      syncNowConfirmDescription:
+        'Möchtest du die Feiertage und Ferien jetzt vom OpenHolidays-Server laden? Bestehende Katalogdaten werden dabei aktualisiert.',
       autoSyncLabel: 'Zukünftig automatisch synchronisieren',
+      enableAutoSyncLabel: 'Automatische Synchronisierung wieder aktivieren',
       confirmButton: 'Jetzt synchronisieren',
       dismissButton: 'Vorerst nicht',
     },
@@ -382,6 +396,8 @@ const deTranslation = {
     general: {
       title: 'Allgemein',
       description: 'Standardwerte für Berichte und Betreuung.',
+      apprenticeIdentifier: 'Azubi-Identnummer',
+      profession: 'Berufsbezeichnung',
       department: 'Ausbildungsabschnitt/Abteilung',
       supervisorPrimary: 'Betreuer-E-Mail',
       supervisorSecondary: 'Betreuer-E-Mail 2',
@@ -533,7 +549,8 @@ const deTranslation = {
     },
     deleteDialog: {
       title: 'Tagesbericht löschen?',
-      description: 'Soll der Tagesbericht vom {{date}} wirklich gelöscht werden?',
+      description:
+        'Soll der Tagesbericht vom {{date}} wirklich gelöscht werden?',
     },
     feedback: {
       missingDates: 'Bitte ein gültiges Datum angeben.',
@@ -580,7 +597,8 @@ const deTranslation = {
         title: 'Betriebliche Tätigkeiten',
       },
       instructional: {
-        title: 'Unterweisungen / betrieblicher Unterricht / sonstige Schulungen',
+        title:
+          'Unterweisungen / betrieblicher Unterricht / sonstige Schulungen',
       },
       school: {
         title: 'Berufsschule (Unterrichtsthemen)',
@@ -740,22 +758,6 @@ const deTranslation = {
       driveError: 'Drive-Export fehlgeschlagen.',
     },
   },
-  setupDrive: {
-    title: 'Google Drive verbinden',
-    description:
-      'Google Drive ermöglicht optionale automatische Backups deiner Daten.',
-    backupExplanation:
-      'Mit einer Google Drive-Verbindung kannst du automatische Backups aktivieren. Du kannst die Verbindung und die Auto-Backup-Einstellungen jederzeit in den Einstellungen ändern.',
-    missingPermissions: 'Fehlende Berechtigungen',
-    connectButton: 'Jetzt mit Google Drive verbinden',
-    oauthUnavailableTitle: 'Google OAuth nicht konfiguriert',
-    oauthUnavailableDescription:
-      'In dieser Umgebung sind keine Google OAuth-Zugangsdaten hinterlegt. Drive-Verbindung ist daher nicht möglich.',
-    feedback: {
-      connectError: 'Google Drive konnte nicht verbunden werden.',
-    },
-  },
 } as const;
 
 export default deTranslation;
-

@@ -1,7 +1,10 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 
-import { parseAbsenceSettings } from '@/shared/absence/settings';
+import {
+  mergeAbsenceSettings,
+  parseAbsenceSettings,
+} from '@/shared/absence/settings';
 import { createDefaultAppMetadata } from '@/shared/app/state';
 import { useAppKernelTestHarness } from '@/src/test-utils/app-kernel-test-harness';
 
@@ -198,6 +201,37 @@ describe('app kernel', () => {
     await expect(restartedKernel.syncAbsenceCatalog()).rejects.toThrow(
       'gueltige Anmeldung',
     );
+  });
+
+  it('does not queue an automatic absence sync prompt when auto sync is disabled', async () => {
+    const { kernel, repository } = createKernel();
+    await kernel.boot();
+
+    const persistedState = await repository.read();
+    const absenceSettings = parseAbsenceSettings(
+      persistedState.settings.current.values,
+    );
+
+    persistedState.settings.current.values = mergeAbsenceSettings(
+      {
+        ...persistedState.settings.current.values,
+        onboarding: {
+          region: {
+            subdivisionCode: 'DE-NW',
+          },
+        },
+      },
+      {
+        ...absenceSettings,
+        autoSyncHolidays: false,
+      },
+    );
+    await repository.write(persistedState);
+
+    const { kernel: restartedKernel } = createKernel();
+    const bootstrap = await restartedKernel.boot();
+
+    expect(bootstrap.absence.syncPending).toBe(false);
   });
 
   it('blocks app usage when only google auth exists but no local password is configured', async () => {
