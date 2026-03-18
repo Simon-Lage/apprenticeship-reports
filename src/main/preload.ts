@@ -45,6 +45,10 @@ const appApi: AppApi = {
     ipcRenderer.invoke(AppIpcChannel.prepareDriveBackupImport, input),
   syncAbsenceCatalog: () =>
     ipcRenderer.invoke(AppIpcChannel.syncAbsenceCatalog),
+  dismissAbsenceSync: () =>
+    ipcRenderer.invoke(AppIpcChannel.dismissAbsenceSync),
+  triggerAbsenceSyncPrompt: () =>
+    ipcRenderer.invoke(AppIpcChannel.triggerAbsenceSyncPrompt),
   requestManualBackup: () =>
     ipcRenderer.invoke(AppIpcChannel.requestManualBackup),
   recordDailyReport: () => ipcRenderer.invoke(AppIpcChannel.recordDailyReport),

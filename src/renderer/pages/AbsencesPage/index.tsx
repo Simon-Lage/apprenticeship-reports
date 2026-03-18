@@ -1,5 +1,6 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AnimatePresence, motion } from 'framer-motion';
 
 import { cn } from '@/renderer/lib/utils';
 import { FormField } from '@/renderer/components/app/FormField';
@@ -84,8 +85,7 @@ export default function AbsencesPage() {
   const [form, setForm] = useState<ManualAbsenceFormState>(
     defaultManualAbsenceFormState,
   );
-  const [publicCollapsed, setPublicCollapsed] = useState(false);
-  const [schoolCollapsed, setSchoolCollapsed] = useState(false);
+  const [isCatalogCollapsed, setIsCatalogCollapsed] = useState(true);
 
   const absenceSettings = useMemo(
     () => parseAbsenceSettings(settingsSnapshot.value?.values ?? {}),
@@ -451,27 +451,24 @@ export default function AbsencesPage() {
           </p>
         )}
       </SectionCard>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 items-start lg:grid-cols-2">
         <SectionCard
           title={t('absences.catalog.publicTitle')}
           className="h-full border-primary-tint bg-white"
+          contentClassName="p-0"
+          onClick={() => setIsCatalogCollapsed(!isCatalogCollapsed)}
           action={
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={() => setPublicCollapsed(!publicCollapsed)}
-            >
+            <div className="flex h-8 w-8 items-center justify-center">
               <div
                 className={cn(
                   'transition-transform duration-200',
-                  publicCollapsed ? '-rotate-90' : 'rotate-0',
+                  isCatalogCollapsed ? '-rotate-90' : 'rotate-0',
                 )}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
+                  width="20"
+                  height="20"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -482,50 +479,58 @@ export default function AbsencesPage() {
                   <path d="m6 9 6 6 6-6" />
                 </svg>
               </div>
-            </Button>
+            </div>
           }
         >
-          {!publicCollapsed && (
-            <div className="mt-2">
-              {currentCatalog?.publicHolidays.length ? (
-                <ul className="space-y-2 pr-1">
-                  {currentCatalog.publicHolidays.map((entry) => (
-                    <li
-                      key={entry.id}
-                      className="rounded-md border border-primary-tint/80 bg-primary-tint/20 px-3 py-2 text-sm"
-                    >
-                      {entry.startDate} - {entry.endDate} | {entry.name}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-text-color/70">
-                  {t('absences.catalog.empty')}
-                </p>
-              )}
-            </div>
-          )}
+          <AnimatePresence initial={false}>
+            {!isCatalogCollapsed && (
+              <motion.div
+                key="public-catalog"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: 'easeInOut' }}
+                className="overflow-hidden"
+              >
+                <div className="px-5 pb-5 pt-4">
+                  {currentCatalog?.publicHolidays.length ? (
+                    <ul className="space-y-2 pr-1">
+                      {currentCatalog.publicHolidays.map((entry) => (
+                        <li
+                          key={entry.id}
+                          className="rounded-md border border-primary-tint/80 bg-primary-tint/20 px-3 py-2 text-sm"
+                        >
+                          {entry.startDate} - {entry.endDate} | {entry.name}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-text-color/70">
+                      {t('absences.catalog.empty')}
+                    </p>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </SectionCard>
         <SectionCard
           title={t('absences.catalog.schoolTitle')}
           className="h-full border-primary-tint bg-white"
+          contentClassName="p-0"
+          onClick={() => setIsCatalogCollapsed(!isCatalogCollapsed)}
           action={
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={() => setSchoolCollapsed(!schoolCollapsed)}
-            >
+            <div className="flex h-8 w-8 items-center justify-center">
               <div
                 className={cn(
                   'transition-transform duration-200',
-                  schoolCollapsed ? '-rotate-90' : 'rotate-0',
+                  isCatalogCollapsed ? '-rotate-90' : 'rotate-0',
                 )}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
+                  width="20"
+                  height="20"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -536,29 +541,40 @@ export default function AbsencesPage() {
                   <path d="m6 9 6 6 6-6" />
                 </svg>
               </div>
-            </Button>
+            </div>
           }
         >
-          {!schoolCollapsed && (
-            <div className="mt-2">
-              {currentCatalog?.schoolHolidays.length ? (
-                <ul className="space-y-2 pr-1">
-                  {currentCatalog.schoolHolidays.map((entry) => (
-                    <li
-                      key={entry.id}
-                      className="rounded-md border border-primary-tint/80 bg-primary-tint/20 px-3 py-2 text-sm"
-                    >
-                      {entry.startDate} - {entry.endDate} | {entry.name}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-text-color/70">
-                  {t('absences.catalog.empty')}
-                </p>
-              )}
-            </div>
-          )}
+          <AnimatePresence initial={false}>
+            {!isCatalogCollapsed && (
+              <motion.div
+                key="school-catalog"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: 'easeInOut' }}
+                className="overflow-hidden"
+              >
+                <div className="px-5 pb-5 pt-4">
+                  {currentCatalog?.schoolHolidays.length ? (
+                    <ul className="space-y-2 pr-1">
+                      {currentCatalog.schoolHolidays.map((entry) => (
+                        <li
+                          key={entry.id}
+                          className="rounded-md border border-primary-tint/80 bg-primary-tint/20 px-3 py-2 text-sm"
+                        >
+                          {entry.startDate} - {entry.endDate} | {entry.name}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-text-color/70">
+                      {t('absences.catalog.empty')}
+                    </p>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </SectionCard>
       </div>
       <UnsavedChangesDialog

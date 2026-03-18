@@ -61,6 +61,9 @@ function createFallbackBootstrapState(): AppBootstrapState {
       weeklyReportCount: 0,
       dailyReportCount: 0,
     },
+    absence: {
+      syncPending: false,
+    },
     app: {
       status: 'blocked',
       isLocked: true,

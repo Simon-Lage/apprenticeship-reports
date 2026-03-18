@@ -138,7 +138,13 @@ export default function registerAppHandlers(
   );
 
   ipcMain.handle(AppIpcChannel.syncAbsenceCatalog, () =>
-    appKernel.syncAbsenceCatalog(true),
+    appKernel.syncAbsenceCatalog(),
+  );
+  ipcMain.handle(AppIpcChannel.dismissAbsenceSync, () =>
+    appKernel.dismissAbsenceSync(),
+  );
+  ipcMain.handle(AppIpcChannel.triggerAbsenceSyncPrompt, () =>
+    appKernel.triggerAbsenceSyncPrompt(),
   );
 
   ipcMain.handle(AppIpcChannel.requestManualBackup, () =>

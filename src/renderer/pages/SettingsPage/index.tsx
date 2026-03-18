@@ -23,6 +23,11 @@ import { germanSubdivisions } from '@/shared/absence/german-subdivisions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import {
+  mergeAbsenceSettings,
+  parseAbsenceSettings,
+} from '@/shared/absence/settings';
 import { JsonObject } from '@/shared/common/json';
 import { SettingsImportPreview } from '@/shared/settings/schema';
 
@@ -31,6 +36,7 @@ type SettingsFormValues = UiSettingsValues & {
   trainingEnd: string;
   reportsSince: string;
   subdivisionCode: string;
+  autoSyncHolidays: boolean;
   ihkLink: string;
 };
 
@@ -38,6 +44,7 @@ function resolveSettingsFormValues(values: JsonObject): SettingsFormValues {
   const parsedUiSettings = parseUiSettings(values);
   const trainingPeriod = parseOnboardingTrainingPeriod(values);
   const region = parseOnboardingRegion(values);
+  const absence = parseAbsenceSettings(values);
 
   return {
     ...parsedUiSettings,
@@ -45,6 +52,7 @@ function resolveSettingsFormValues(values: JsonObject): SettingsFormValues {
     trainingEnd: trainingPeriod.trainingEnd ?? '',
     reportsSince: trainingPeriod.reportsSince ?? '',
     subdivisionCode: region.subdivisionCode ?? '',
+    autoSyncHolidays: absence.autoSyncHolidays,
     ihkLink: '',
   };
 }
@@ -108,8 +116,12 @@ export default function SettingsPage() {
         settingsSnapshot.value.values,
         formValues,
       );
+      const absence = parseAbsenceSettings(settingsSnapshot.value.values);
       const mergedSettings = mergeOnboardingSettings({
-        values: withUiSettings,
+        values: mergeAbsenceSettings(withUiSettings, {
+          ...absence,
+          autoSyncHolidays: formValues.autoSyncHolidays,
+        }),
         trainingPeriod: {
           trainingStart: trainingPeriod.trainingStart,
           trainingEnd: trainingPeriod.trainingEnd,
@@ -413,30 +425,56 @@ export default function SettingsPage() {
         description={t('settings.region.description')}
         className="border-primary-tint bg-white"
       >
-        <FormField
-          id="region-subdivision"
-          label={t('settings.region.subdivisionCode')}
-        >
-          <select
+        <div className="grid gap-6 md:grid-cols-2">
+          <FormField
             id="region-subdivision"
-            className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
-            value={formValues.subdivisionCode}
-            onChange={(event) =>
-              setFormValues((current) =>
-                current
-                  ? { ...current, subdivisionCode: event.target.value }
-                  : current,
-              )
-            }
+            label={t('settings.region.subdivisionCode')}
           >
-            <option value="">{t('settings.region.placeholder')}</option>
-            {germanSubdivisions.map((entry) => (
-              <option key={entry.code} value={entry.code}>
-                {t(`onboarding.steps.region.options.${entry.code}`)}
-              </option>
-            ))}
-          </select>
-        </FormField>
+            <select
+              id="region-subdivision"
+              className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+              value={formValues.subdivisionCode}
+              onChange={(event) =>
+                setFormValues((current) =>
+                  current
+                    ? { ...current, subdivisionCode: event.target.value }
+                    : current,
+                )
+              }
+            >
+              <option value="">{t('settings.region.placeholder')}</option>
+              {germanSubdivisions.map((entry) => (
+                <option key={entry.code} value={entry.code}>
+                  {t(`onboarding.steps.region.options.${entry.code}`)}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          <div className="flex flex-col justify-center space-y-1">
+            <label
+              htmlFor="auto-sync-holidays"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              {t('absences.sync.autoSyncLabel')}
+            </label>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="auto-sync-holidays"
+                checked={formValues.autoSyncHolidays}
+                onCheckedChange={(checked) =>
+                  setFormValues((current) =>
+                    current
+                      ? { ...current, autoSyncHolidays: checked }
+                      : current,
+                  )
+                }
+              />
+              <span className="text-sm text-text-color/70">
+                {t('absences.sync.autoSyncEnableLabel')}
+              </span>
+            </div>
+          </div>
+        </div>
       </SectionCard>
 
       <SectionCard

@@ -49,6 +49,9 @@ export type AppBootstrapState = {
     weeklyReportCount: number;
     dailyReportCount: number;
   };
+  absence: {
+    syncPending: boolean;
+  };
   app: {
     status: 'ready' | 'blocked';
     isLocked: boolean;
@@ -81,6 +84,7 @@ export function deriveAppBootstrapState(input: {
   resolvedOnboarding?: ResolvedOnboardingState;
   pendingImport: SettingsImportPreview | null;
   lastExportedAt: string | null;
+  absenceSyncPending?: boolean;
   weeklyHashCount: number;
   weeklyReportCount: number;
   dailyReportCount: number;
@@ -155,6 +159,9 @@ export function deriveAppBootstrapState(input: {
       weeklyHashCount: input.weeklyHashCount,
       weeklyReportCount: input.weeklyReportCount,
       dailyReportCount: input.dailyReportCount,
+    },
+    absence: {
+      syncPending: input.absenceSyncPending ?? false,
     },
     app: {
       status: lockReasons.length ? 'blocked' : 'ready',

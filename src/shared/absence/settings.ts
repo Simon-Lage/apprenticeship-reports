@@ -71,6 +71,7 @@ const absenceSettingsSchema = z.object({
   lastSyncYear: z.number().int().min(2000).max(2100).nullable().default(null),
   lastSyncedAt: dateTimeSchema.nullable().default(null),
   lastSyncError: z.string().trim().min(1).nullable().default(null),
+  autoSyncHolidays: z.boolean().default(true),
   catalogsByYear: z
     .record(z.string().regex(/^\d{4}$/), yearlyAbsenceCatalogSchema)
     .default({}),

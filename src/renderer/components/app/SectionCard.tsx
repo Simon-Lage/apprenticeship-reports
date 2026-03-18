@@ -15,8 +15,10 @@ type SectionCardProps = PropsWithChildren<{
   preserveDescriptionSpace?: boolean;
   action?: ReactNode;
   className?: string;
+  headerClassName?: string;
   contentClassName?: string;
   titleClassName?: string;
+  onClick?: () => void;
 }>;
 
 function SectionCard({
@@ -25,8 +27,10 @@ function SectionCard({
   preserveDescriptionSpace,
   action,
   className,
+  headerClassName,
   contentClassName,
   titleClassName,
+  onClick,
   children,
 }: SectionCardProps) {
   const hasHeader = Boolean(title || description || action);
@@ -44,7 +48,14 @@ function SectionCard({
   return (
     <Card className={cn('overflow-hidden rounded-xl shadow-sm', className)}>
       {hasHeader ? (
-        <CardHeader className="border-b border-primary-tint/60 px-5 py-4">
+        <CardHeader
+          className={cn(
+            'border-b border-primary-tint/60 px-5 py-4',
+            onClick && 'cursor-pointer select-none hover:bg-primary-tint/10',
+            headerClassName,
+          )}
+          onClick={onClick}
+        >
           <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
             <div className="space-y-1">
               {title ? (
@@ -63,9 +74,7 @@ function SectionCard({
           </div>
         </CardHeader>
       ) : null}
-      <CardContent className={cn('px-5 py-4', contentClassName)}>
-        {children}
-      </CardContent>
+      <CardContent className={cn('', contentClassName)}>{children}</CardContent>
     </Card>
   );
 }
@@ -76,8 +85,10 @@ SectionCard.defaultProps = {
   preserveDescriptionSpace: false,
   action: undefined,
   className: undefined,
+  headerClassName: undefined,
   contentClassName: undefined,
   titleClassName: undefined,
+  onClick: undefined,
 };
 
 export { SectionCard };

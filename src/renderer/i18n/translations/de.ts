@@ -282,6 +282,12 @@ const deTranslation = {
       trigger: 'Jetzt synchronisieren',
       missingRegion:
         'Kein Bundesland im Onboarding hinterlegt. Bitte Onboarding abschließen.',
+      confirmTitle: 'Feiertage und Ferien synchronisieren?',
+      confirmDescription:
+        'Möchtest du die Feiertage und Ferien vom OpenHolidays-Server laden? Diese Daten werden lokal gespeichert.',
+      autoSyncLabel: 'Zukünftig automatisch synchronisieren',
+      confirmButton: 'Jetzt synchronisieren',
+      dismissButton: 'Vorerst nicht',
     },
     manual: {
       title: 'Manuelle Abwesenheiten',
@@ -308,6 +314,7 @@ const deTranslation = {
       publicTitle: 'Feiertage',
       schoolTitle: 'Ferien',
       empty: 'Keine Daten verfügbar.',
+      outdated: 'Veraltet',
     },
     feedback: {
       missingDate: 'Bitte gültige Datumswerte angeben.',
@@ -395,6 +402,9 @@ const deTranslation = {
         'Wird für den Import von Feiertagen und Ferien über Open Holidays verwendet.',
       subdivisionCode: 'Bundesland',
       placeholder: 'Bitte Bundesland auswählen',
+      autoSyncHolidays: 'Automatisch synchronisieren',
+      autoSyncDescription:
+        'Feiertage und Ferien beim App-Start oder Regionswechsel automatisch aktuell halten.',
     },
     exchange: {
       title: 'Settings Import/Export',

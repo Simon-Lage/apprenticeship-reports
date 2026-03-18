@@ -177,9 +177,9 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
         backup: registerLaunchBackupCheck(configuredState.backup),
       });
     });
-    const absenceSyncedState = await this.trySyncAbsenceCatalog(nextState);
+    const absenceCheckedState = this.markAbsenceSyncPending(nextState);
     const processedState =
-      await this.tryProcessPendingBackup(absenceSyncedState);
+      await this.tryProcessPendingBackup(absenceCheckedState);
 
     return this.buildBootstrapState(processedState);
   }
@@ -192,10 +192,10 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
     return this.buildBootstrapState(currentState);
   }
 
-  async syncAbsenceCatalog(force = true): Promise<AppBootstrapState> {
+  async syncAbsenceCatalog(): Promise<AppBootstrapState> {
     const currentState = await this.repository.read();
     this.accessGuard.assertOnboardingAccessible(currentState);
-    const syncedState = await this.trySyncAbsenceCatalog(currentState, force);
+    const syncedState = await this.executeAbsenceCatalogSync(currentState);
 
     return this.buildBootstrapState(syncedState);
   }

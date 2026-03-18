@@ -8,9 +8,7 @@ import {
 } from '@/shared/app/backup-archive';
 import { AppBootstrapState } from '@/shared/app/bootstrap';
 import { AppMetadataSchema } from '@/shared/app/state';
-import {
-  markBackupDirty,
-} from '@/shared/backup/policy';
+import { markBackupDirty } from '@/shared/backup/policy';
 import { JsonObject, JsonObjectSchema } from '@/shared/common/json';
 import {
   ApplyBackupImportInput,
@@ -52,6 +50,23 @@ export class AppKernel extends AppKernelReports {
     options: AppKernelOptions = {},
   ) {
     super(repository, weeklyReportHashService, options);
+  }
+
+  async getIsFullScreen(): Promise<boolean> {
+    const currentState = await this.repository.read();
+    return currentState.ui.isFullScreen;
+  }
+
+  async setIsFullScreen(enabled: boolean): Promise<void> {
+    await this.repository.update((currentState) =>
+      AppMetadataSchema.parse({
+        ...currentState,
+        ui: {
+          ...currentState.ui,
+          isFullScreen: enabled,
+        },
+      }),
+    );
   }
 
   async getSettingsSnapshot(): Promise<SettingsSnapshot> {
@@ -251,9 +266,8 @@ export class AppKernel extends AppKernelReports {
         recoverySnapshotId,
         currentState,
       );
-      const importedReports = createReportsStateFromDatabaseBackup(
-        pendingEnvelope,
-      );
+      const importedReports =
+        createReportsStateFromDatabaseBackup(pendingEnvelope);
       const mergedReports = mergeReportsState({
         currentState: currentState.reports,
         incomingState: importedReports,
@@ -303,9 +317,23 @@ export class AppKernel extends AppKernelReports {
       });
     });
 
-    const syncedState = await this.trySyncAbsenceCatalog(nextState);
+    const syncCheckedState = this.markAbsenceSyncPending(nextState);
 
-    return this.buildBootstrapState(syncedState);
+    return this.buildBootstrapState(syncCheckedState);
+  }
+
+  async dismissAbsenceSync(): Promise<AppBootstrapState> {
+    this.dismissAbsenceSyncPending();
+    const currentState = await this.repository.read();
+
+    return this.buildBootstrapState(currentState);
+  }
+
+  async triggerAbsenceSyncPrompt(): Promise<AppBootstrapState> {
+    this.triggerAbsenceSyncPending();
+    const currentState = await this.repository.read();
+
+    return this.buildBootstrapState(currentState);
   }
 
   async saveOnboardingDraft(
@@ -417,5 +445,4 @@ export class AppKernel extends AppKernelReports {
 
     return this.buildBootstrapState(nextState);
   }
-
 }

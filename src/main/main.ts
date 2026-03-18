@@ -145,7 +145,7 @@ async function createWindow(): Promise<void> {
     height: 870,
     minWidth: 1500,
     minHeight: 870,
-    fullscreen: true,
+    fullscreen: appKernel ? await appKernel.getIsFullScreen() : false,
     autoHideMenuBar: true,
     icon: getAssetPath('apprenticeship-reports-logo-small.png'),
     webPreferences: {
@@ -211,7 +211,14 @@ async function createWindow(): Promise<void> {
     }
 
     event.preventDefault();
-    mainWindow.setFullScreen(!mainWindow.isFullScreen());
+    const nextValue = !mainWindow.isFullScreen();
+    mainWindow.setFullScreen(nextValue);
+
+    if (appKernel) {
+      appKernel.setIsFullScreen(nextValue).catch((error) => {
+        log.error('Failed to persist fullscreen state', error);
+      });
+    }
   });
   new AppUpdater(mainWindow);
 }

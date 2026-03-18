@@ -19,6 +19,7 @@ import AuthLayout from '@/renderer/layouts/AuthLayout';
 import DefaultLayout from '@/renderer/layouts/DefaultLayout';
 import { appRoutes } from '@/renderer/lib/app-routes';
 import ChangeAuthMethodsPage from '@/renderer/pages/ChangeAuthMethodsPage';
+import { AbsenceSyncPrompt } from '@/renderer/components/app/AbsenceSyncPrompt';
 import AbsencesPage from '@/renderer/pages/AbsencesPage';
 import DailyReportPage from '@/renderer/pages/DailyReportPage';
 import ExportPage from '@/renderer/pages/ExportPage';

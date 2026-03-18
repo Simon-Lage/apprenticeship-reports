@@ -43,6 +43,9 @@ export const AppMetadataSchema = z.object({
     pendingImport: SettingsImportPreviewSchema.nullable().default(null),
   }),
   reports: ReportsStateSchema,
+  ui: z.object({
+    isFullScreen: z.boolean().default(false),
+  }),
 });
 
 export type AppMetadata = z.infer<typeof AppMetadataSchema>;
@@ -85,5 +88,8 @@ export function createDefaultAppMetadata(now: string): AppMetadata {
       pendingImport: null,
     },
     reports: createDefaultReportsState(),
+    ui: {
+      isFullScreen: false,
+    },
   });
 }

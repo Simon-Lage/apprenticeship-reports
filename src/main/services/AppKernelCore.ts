@@ -79,6 +79,8 @@ export class AppKernelCore {
 
   protected passwordConfigured = false;
 
+  protected absenceSyncPending = false;
+
   constructor(
     repository: AppMetadataRepository,
     weeklyReportHashService: WeeklyReportHashService,
@@ -223,9 +225,68 @@ export class AppKernelCore {
     return driveState.status === 'granted';
   }
 
-  protected async trySyncAbsenceCatalog(
+  protected shouldSyncAbsenceCatalog(currentState: AppMetadata): boolean {
+    if (!this.openHolidaysService) {
+      return false;
+    }
+
+    const subdivisionCode = resolveOnboardingSubdivisionCode(
+      currentState.settings.current.values,
+    );
+
+    if (!subdivisionCode) {
+      return false;
+    }
+
+    const nowIso = this.now();
+    const nowDate = new Date(nowIso);
+    const year = nowDate.getUTCFullYear();
+    const yearKey = createCatalogYearKey(year);
+    const parsedAbsenceSettings = parseAbsenceSettings(
+      currentState.settings.current.values,
+    );
+    const hasCatalogForYear =
+      Boolean(parsedAbsenceSettings.catalogsByYear[yearKey]) &&
+      parsedAbsenceSettings.catalogsByYear[yearKey].subdivisionCode ===
+        subdivisionCode;
+    const shouldRefreshOnNewYear =
+      nowDate.getUTCMonth() === 0 &&
+      nowDate.getUTCDate() === 1 &&
+      parsedAbsenceSettings.lastSyncYear !== year;
+
+    return (
+      !hasCatalogForYear ||
+      shouldRefreshOnNewYear ||
+      parsedAbsenceSettings.subdivisionCode !== subdivisionCode
+    );
+  }
+
+  protected markAbsenceSyncPending(currentState: AppMetadata): AppMetadata {
+    const parsedAbsenceSettings = parseAbsenceSettings(
+      currentState.settings.current.values,
+    );
+
+    if (!parsedAbsenceSettings.autoSyncHolidays) {
+      return currentState;
+    }
+
+    if (this.shouldSyncAbsenceCatalog(currentState)) {
+      this.absenceSyncPending = true;
+    }
+
+    return currentState;
+  }
+
+  dismissAbsenceSyncPending(): void {
+    this.absenceSyncPending = false;
+  }
+
+  protected triggerAbsenceSyncPending(): void {
+    this.absenceSyncPending = true;
+  }
+
+  protected async executeAbsenceCatalogSync(
     currentState: AppMetadata,
-    force = false,
   ): Promise<AppMetadata> {
     if (!this.openHolidaysService) {
       return currentState;
@@ -246,23 +307,6 @@ export class AppKernelCore {
     const parsedAbsenceSettings = parseAbsenceSettings(
       currentState.settings.current.values,
     );
-    const hasCatalogForYear =
-      Boolean(parsedAbsenceSettings.catalogsByYear[yearKey]) &&
-      parsedAbsenceSettings.catalogsByYear[yearKey].subdivisionCode ===
-        subdivisionCode;
-    const shouldRefreshOnNewYear =
-      nowDate.getUTCMonth() === 0 &&
-      nowDate.getUTCDate() === 1 &&
-      parsedAbsenceSettings.lastSyncYear !== year;
-    const shouldSync =
-      force ||
-      !hasCatalogForYear ||
-      shouldRefreshOnNewYear ||
-      parsedAbsenceSettings.subdivisionCode !== subdivisionCode;
-
-    if (!shouldSync) {
-      return currentState;
-    }
 
     try {
       const catalog = await this.openHolidaysService.fetchYearCatalog({
@@ -293,6 +337,8 @@ export class AppKernelCore {
         nextAbsenceSettings,
       );
 
+      this.absenceSyncPending = false;
+
       return this.repository.update((storedState) =>
         AppMetadataSchema.parse({
           ...storedState,
@@ -321,6 +367,8 @@ export class AppKernelCore {
         currentState.settings.current.values,
         nextAbsenceSettings,
       );
+
+      this.absenceSyncPending = false;
 
       return this.repository.update((storedState) =>
         AppMetadataSchema.parse({
@@ -394,6 +442,7 @@ export class AppKernelCore {
       },
       pendingImport: currentState.settings.pendingImport,
       lastExportedAt: currentState.settings.lastExportedAt,
+      absenceSyncPending: this.absenceSyncPending,
       weeklyHashCount: Object.keys(currentState.reports.weeklyHashes).length,
       weeklyReportCount: Object.keys(currentState.reports.weeklyReports).length,
       dailyReportCount: Object.keys(currentState.reports.dailyReports).length,
