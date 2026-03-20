@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+import { RotateCcw, Save } from 'lucide-react';
 import { z } from 'zod';
 
 import { FormField } from '@/renderer/components/app/FormField';
@@ -13,12 +15,14 @@ import { useSettingsSnapshot } from '@/renderer/hooks/useKernelData';
 import {
   mergeOnboardingSettings,
   parseOnboardingIdentity,
-  mergeUiSettings,
   parseOnboardingRegion,
   parseOnboardingTrainingPeriod,
+  mergeUiSettings,
   parseUiSettings,
+  resolveWorkplaceSettingsValues,
   UiSettingsValues,
 } from '@/renderer/lib/app-settings';
+import { appRoutes } from '@/renderer/lib/app-routes';
 import { parseOnboardingStepValues } from '@/renderer/pages/OnboardingPage/schema';
 import { germanSubdivisions } from '@/shared/absence/german-subdivisions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -51,6 +55,7 @@ function resolveSettingsFormValues(values: JsonObject): SettingsFormValues {
   const trainingPeriod = parseOnboardingTrainingPeriod(values);
   const region = parseOnboardingRegion(values);
   const absence = parseAbsenceSettings(values);
+  const workplace = resolveWorkplaceSettingsValues(values);
 
   return {
     ...parsedUiSettings,
@@ -63,7 +68,9 @@ function resolveSettingsFormValues(values: JsonObject): SettingsFormValues {
     reportsSince: trainingPeriod.reportsSince ?? '',
     subdivisionCode: region.subdivisionCode ?? '',
     autoSyncHolidays: absence.autoSyncHolidays,
-    ihkLink: '',
+    defaultDepartment: workplace.department,
+    supervisorEmailPrimary: workplace.trainerEmail,
+    ihkLink: workplace.ihkLink,
   };
 }
 
@@ -133,9 +140,17 @@ export default function SettingsPage() {
       }) as {
         subdivisionCode: string;
       };
+      const nextUiSettings: UiSettingsValues = {
+        defaultDepartment: workplace.department,
+        supervisorEmailPrimary: workplace.trainerEmail,
+        supervisorEmailSecondary: formValues.supervisorEmailSecondary,
+        teachers: formValues.teachers,
+        subjects: formValues.subjects,
+        timetable: formValues.timetable,
+      };
       const withUiSettings = mergeUiSettings(
         settingsSnapshot.value.values,
-        formValues,
+        nextUiSettings,
       );
       const absence = parseAbsenceSettings(settingsSnapshot.value.values);
       const mergedSettings = mergeOnboardingSettings({
@@ -332,7 +347,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-4 pb-24">
+    <div className="space-y-4">
       <SectionCard
         title={t('settings.general.title')}
         description={t('settings.general.description')}
@@ -455,11 +470,19 @@ export default function SettingsPage() {
             id="google-account"
             label={t('settings.general.googleAccount')}
           >
-            <div className="flex h-9 items-center">
+            <div className="flex min-h-9 items-center gap-3">
               <span className="text-sm font-medium text-text-color/80">
-                {runtime.state.drive.connectedAccountEmail ||
+                {runtime.state.drive.connectedAccountEmail ??
                   t('authMethods.google.notLinked')}
               </span>
+              {!runtime.state.drive.connectedAccountEmail ? (
+                <Link
+                  to={appRoutes.changeAuthMethods}
+                  className="text-sm font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  {t('settings.general.linkGoogleAccount')}
+                </Link>
+              ) : null}
             </div>
           </FormField>
         </div>
@@ -663,32 +686,38 @@ export default function SettingsPage() {
           </div>
         </SectionCard>
       ) : null}
-      <div className="sticky bottom-3 z-20 rounded-xl border border-primary-tint/75 bg-white/95 p-3 shadow-sm backdrop-blur">
-        <div className="flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isPending || !isDirty}
-            className="border-primary-tint"
-            onClick={() => {
-              if (baselineFormValues) {
-                setFormValues(baselineFormValues);
-                toast.info(t('settings.reset'));
-              }
-            }}
-          >
-            {t('settings.reset')}
-          </Button>
-          <Button
-            type="button"
-            disabled={isPending || !isDirty}
-            className="bg-primary text-primary-contrast hover:bg-primary-shade"
-            onClick={() => {
-              saveSettings().catch(() => undefined);
-            }}
-          >
-            {isPending ? t('common.loading') : t('settings.save')}
-          </Button>
+      <div className="sticky bottom-0 z-20 rounded-xl border border-primary-tint/75 bg-white/95 p-3 shadow-sm backdrop-blur">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isPending || !isDirty}
+              className="border-primary-tint"
+              onClick={() => {
+                if (baselineFormValues) {
+                  setFormValues(baselineFormValues);
+                  toast.info(t('settings.reset'));
+                }
+              }}
+            >
+              <RotateCcw className="size-4" />
+              {t('settings.reset')}
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              disabled={isPending || !isDirty}
+              className="bg-primary text-primary-contrast hover:bg-primary-shade"
+              onClick={() => {
+                saveSettings().catch(() => undefined);
+              }}
+            >
+              <Save className="size-4" />
+              {isPending ? t('common.loading') : t('settings.save')}
+            </Button>
+          </div>
         </div>
       </div>
       <UnsavedChangesDialog

@@ -23,6 +23,10 @@ export const PendingBackupImportStateSchema = z.object({
   serializedEnvelope: z.string().min(1),
 });
 
+export const AppUiStateSchema = z.object({
+  isFullScreen: z.boolean().default(false),
+});
+
 export const AppMetadataSchema = z.object({
   version: z.literal(1),
   auth: z.object({
@@ -43,8 +47,8 @@ export const AppMetadataSchema = z.object({
     pendingImport: SettingsImportPreviewSchema.nullable().default(null),
   }),
   reports: ReportsStateSchema,
-  ui: z.object({
-    isFullScreen: z.boolean().default(false),
+  ui: AppUiStateSchema.default({
+    isFullScreen: false,
   }),
 });
 
@@ -52,6 +56,7 @@ export type AppMetadata = z.infer<typeof AppMetadataSchema>;
 export type PendingBackupImportState = z.infer<
   typeof PendingBackupImportStateSchema
 >;
+export type AppUiState = z.infer<typeof AppUiStateSchema>;
 
 export function createDefaultAppMetadata(now: string): AppMetadata {
   return AppMetadataSchema.parse({

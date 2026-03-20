@@ -1,9 +1,11 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AnimatePresence, motion } from 'framer-motion';
 
-import { cn } from '@/renderer/lib/utils';
-import { FormField } from '@/renderer/components/app/FormField';
+import CollectionAccordion from '@/renderer/components/app/CollectionAccordion';
+import EditableAbsenceCollection, {
+  defaultManualAbsenceFormState,
+  ManualAbsenceFormState,
+} from '@/renderer/components/absence/EditableAbsenceCollection';
 import { PageHeader } from '@/renderer/components/app/PageHeader';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
 import UnsavedChangesDialog from '@/renderer/components/app/UnsavedChangesDialog';
@@ -15,8 +17,6 @@ import AbsenceSyncDialog from '@/renderer/components/absence/AbsenceSyncDialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
   createCatalogYearKey,
   getStaleAbsenceCatalogYears,
@@ -24,28 +24,21 @@ import {
   listAbsenceCatalogYears,
   ManualAbsence,
   ManualAbsenceType,
-  manualAbsenceTypeValues,
   mergeAbsenceSettings,
   parseAbsenceSettings,
   resolveOnboardingSubdivisionCode,
 } from '@/shared/absence/settings';
 
-type ManualAbsenceFormState = {
-  id: string | null;
-  type: ManualAbsenceType;
+type CatalogListItem = {
+  id: string;
+  source: 'catalog' | 'manual';
   startDate: string;
   endDate: string;
-  label: string;
-  note: string;
-};
-
-const defaultManualAbsenceFormState: ManualAbsenceFormState = {
-  id: null,
-  type: 'sick',
-  startDate: '',
-  endDate: '',
-  label: '',
-  note: '',
+  title: string;
+  note: string | null;
+  year: number | null;
+  isOutdated: boolean;
+  manualEntry: ManualAbsence | null;
 };
 
 function createManualAbsenceId() {
@@ -72,6 +65,16 @@ function toManualAbsenceTypeTranslationKey(type: ManualAbsenceType): string {
 }
 
 function serializeManualAbsenceForm(form: ManualAbsenceFormState): string {
+  if (
+    !form.id &&
+    !form.startDate &&
+    !form.endDate &&
+    !form.label.trim() &&
+    !form.note.trim()
+  ) {
+    return JSON.stringify(defaultManualAbsenceFormState);
+  }
+
   return JSON.stringify({
     id: form.id,
     type: form.type,
@@ -82,6 +85,8 @@ function serializeManualAbsenceForm(form: ManualAbsenceFormState): string {
   });
 }
 
+const manualAbsenceGroupOrder = ['sick', 'vacation'] as const;
+
 export default function AbsencesPage() {
   const { t } = useTranslation();
   const runtime = useAppRuntime();
@@ -91,10 +96,6 @@ export default function AbsencesPage() {
   const [form, setForm] = useState<ManualAbsenceFormState>(
     defaultManualAbsenceFormState,
   );
-  const [isPublicCatalogCollapsed, setIsPublicCatalogCollapsed] =
-    useState(true);
-  const [isSchoolCatalogCollapsed, setIsSchoolCatalogCollapsed] =
-    useState(true);
 
   const absenceSettings = useMemo(
     () => parseAbsenceSettings(settingsSnapshot.value?.values ?? {}),
@@ -123,24 +124,6 @@ export default function AbsencesPage() {
     () => hasStaleAbsenceCatalogs(absenceSettings, currentYear),
     [absenceSettings, currentYear],
   );
-  const hasPublicCatalogEntries = useMemo(
-    () =>
-      catalogYears.some((year) => {
-        const catalog =
-          absenceSettings.catalogsByYear[createCatalogYearKey(year)];
-        return catalog.publicHolidays.length > 0;
-      }),
-    [absenceSettings.catalogsByYear, catalogYears],
-  );
-  const hasSchoolCatalogEntries = useMemo(
-    () =>
-      catalogYears.some((year) => {
-        const catalog =
-          absenceSettings.catalogsByYear[createCatalogYearKey(year)];
-        return catalog.schoolHolidays.length > 0;
-      }),
-    [absenceSettings.catalogsByYear, catalogYears],
-  );
   const manualAbsences = useMemo(
     () =>
       [...absenceSettings.manualAbsences].sort((left, right) => {
@@ -152,6 +135,116 @@ export default function AbsencesPage() {
         return left.id.localeCompare(right.id);
       }),
     [absenceSettings.manualAbsences],
+  );
+  const manualAbsenceGroups = useMemo(
+    () =>
+      manualAbsenceGroupOrder.map((type) => ({
+        type,
+        entries: manualAbsences.filter((entry) => entry.type === type),
+      })),
+    [manualAbsences],
+  );
+  const publicHolidayItems = useMemo<CatalogListItem[]>(
+    () =>
+      [
+        ...catalogYears.flatMap((year) => {
+          const catalog =
+            absenceSettings.catalogsByYear[createCatalogYearKey(year)];
+
+          return catalog.publicHolidays.map((entry) => ({
+            id: `catalog-${entry.id}`,
+            source: 'catalog' as const,
+            startDate: entry.startDate,
+            endDate: entry.endDate,
+            title: entry.name,
+            note: null,
+            year,
+            isOutdated: staleCatalogYearSet.has(year),
+            manualEntry: null,
+          }));
+        }),
+        ...manualAbsences
+          .filter((entry) => entry.type === 'public-holiday')
+          .map((entry) => ({
+            id: `manual-${entry.id}`,
+            source: 'manual' as const,
+            startDate: entry.startDate,
+            endDate: entry.endDate,
+            title:
+              entry.label.trim() ||
+              t(toManualAbsenceTypeTranslationKey(entry.type)),
+            note: entry.note,
+            year: entry.startDate ? Number(entry.startDate.slice(0, 4)) : null,
+            isOutdated: false,
+            manualEntry: entry,
+          })),
+      ].sort((left, right) => {
+        const byDate = left.startDate.localeCompare(right.startDate);
+
+        if (byDate !== 0) {
+          return byDate;
+        }
+
+        return left.id.localeCompare(right.id);
+      }),
+    [
+      absenceSettings.catalogsByYear,
+      catalogYears,
+      manualAbsences,
+      staleCatalogYearSet,
+      t,
+    ],
+  );
+  const schoolHolidayItems = useMemo<CatalogListItem[]>(
+    () =>
+      [
+        ...catalogYears.flatMap((year) => {
+          const catalog =
+            absenceSettings.catalogsByYear[createCatalogYearKey(year)];
+
+          return catalog.schoolHolidays.map((entry) => ({
+            id: `catalog-${entry.id}`,
+            source: 'catalog' as const,
+            startDate: entry.startDate,
+            endDate: entry.endDate,
+            title: entry.name,
+            note: null,
+            year,
+            isOutdated: staleCatalogYearSet.has(year),
+            manualEntry: null,
+          }));
+        }),
+        ...manualAbsences
+          .filter((entry) => entry.type === 'school-holiday')
+          .map((entry) => ({
+            id: `manual-${entry.id}`,
+            source: 'manual' as const,
+            startDate: entry.startDate,
+            endDate: entry.endDate,
+            title:
+              entry.label.trim() ||
+              t(toManualAbsenceTypeTranslationKey(entry.type)),
+            note: entry.note,
+            year: entry.startDate ? Number(entry.startDate.slice(0, 4)) : null,
+            isOutdated: false,
+            manualEntry: entry,
+          })),
+      ].sort((left, right) => {
+        const byDate = left.startDate.localeCompare(right.startDate);
+
+        if (byDate !== 0) {
+          return byDate;
+        }
+
+        return left.id.localeCompare(right.id);
+      }),
+    [
+      absenceSettings.catalogsByYear,
+      catalogYears,
+      manualAbsences,
+      staleCatalogYearSet,
+      t,
+    ],
   );
   const baselineForm = useMemo(() => {
     if (!form.id) {
@@ -205,38 +298,49 @@ export default function AbsencesPage() {
     }
   }
 
-  async function submitManualAbsence(): Promise<boolean> {
+  async function submitManualAbsence(
+    nextForm: ManualAbsenceFormState = form,
+  ): Promise<boolean> {
     if (!runtime.api || !settingsSnapshot.value) {
       return false;
     }
 
-    if (!form.startDate || !form.endDate) {
+    if (!nextForm.startDate || !nextForm.endDate) {
       toast.error(t('absences.feedback.missingDate'));
       return false;
     }
 
-    if (form.endDate < form.startDate) {
+    if (nextForm.endDate < nextForm.startDate) {
       toast.error(t('absences.feedback.invalidRange'));
       return false;
     }
 
+    if (
+      (nextForm.type === 'public-holiday' ||
+        nextForm.type === 'school-holiday') &&
+      !nextForm.label.trim()
+    ) {
+      toast.error(t('absences.feedback.labelRequiredForHolidayType'));
+      return false;
+    }
+
     const now = new Date().toISOString();
-    const existing = form.id
-      ? absenceSettings.manualAbsences.find((entry) => entry.id === form.id)
+    const existing = nextForm.id
+      ? absenceSettings.manualAbsences.find((entry) => entry.id === nextForm.id)
       : null;
     const nextEntry: ManualAbsence = {
-      id: form.id ?? createManualAbsenceId(),
-      type: form.type,
-      startDate: form.startDate,
-      endDate: form.endDate,
-      label: form.label.trim(),
-      note: form.note.trim().length ? form.note.trim() : null,
+      id: nextForm.id ?? createManualAbsenceId(),
+      type: nextForm.type,
+      startDate: nextForm.startDate,
+      endDate: nextForm.endDate,
+      label: nextForm.label.trim(),
+      note: nextForm.note.trim().length ? nextForm.note.trim() : null,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     };
-    const nextManualAbsences = form.id
+    const nextManualAbsences = nextForm.id
       ? absenceSettings.manualAbsences.map((entry) =>
-          entry.id === form.id ? nextEntry : entry,
+          entry.id === nextForm.id ? nextEntry : entry,
         )
       : [...absenceSettings.manualAbsences, nextEntry];
 
@@ -244,68 +348,29 @@ export default function AbsencesPage() {
     return true;
   }
 
-  async function handleManualSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    await submitManualAbsence();
-  }
-
-  async function handleDeleteManualAbsence(id: string) {
+  async function handleDeleteManualAbsence(entry: ManualAbsence) {
     const nextManualAbsences = absenceSettings.manualAbsences.filter(
-      (entry) => entry.id !== id,
+      (candidate) => candidate.id !== entry.id,
     );
     await persistManualAbsences(nextManualAbsences);
     toast.info(t('absences.feedback.deleted'));
+  }
+
+  function beginManualAbsenceEdit(entry: ManualAbsence) {
+    setForm({
+      id: entry.id,
+      type: entry.type,
+      startDate: entry.startDate,
+      endDate: entry.endDate,
+      label: entry.label,
+      note: entry.note ?? '',
+    });
   }
 
   const unsavedChangesGuard = useUnsavedChangesGuard({
     isDirty,
     onSave: async () => submitManualAbsence(),
   });
-
-  function renderCatalogContent(
-    catalogType: 'publicHolidays' | 'schoolHolidays',
-  ) {
-    return (
-      <div className="space-y-4 pr-1">
-        {catalogYears.map((year) => {
-          const catalog =
-            absenceSettings.catalogsByYear[createCatalogYearKey(year)];
-          const entries = catalog[catalogType];
-
-          if (!entries.length) {
-            return null;
-          }
-
-          return (
-            <div key={`${catalogType}-${year}`} className="space-y-2">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-text-color">{year}</p>
-                {staleCatalogYearSet.has(year) ? (
-                  <Badge
-                    variant="outline"
-                    className="border-amber-300 bg-amber-100 text-amber-800"
-                  >
-                    {t('absences.catalog.outdated')}
-                  </Badge>
-                ) : null}
-              </div>
-              <ul className="space-y-2">
-                {entries.map((entry) => (
-                  <li
-                    key={entry.id}
-                    className="rounded-md border border-primary-tint/80 bg-primary-tint/20 px-3 py-2 text-sm"
-                  >
-                    {entry.startDate} - {entry.endDate} | {entry.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4">
@@ -403,270 +468,164 @@ export default function AbsencesPage() {
         description={t('absences.manual.description')}
         className="border-primary-tint bg-white"
       >
-        <form
-          className="grid gap-3 md:grid-cols-2"
-          onSubmit={handleManualSubmit}
-        >
-          <FormField id="absence-start" label={t('absences.manual.startDate')}>
-            <Input
-              id="absence-start"
-              type="date"
-              value={form.startDate}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  startDate: event.target.value,
-                }))
-              }
-            />
-          </FormField>
-          <FormField id="absence-end" label={t('absences.manual.endDate')}>
-            <Input
-              id="absence-end"
-              type="date"
-              value={form.endDate}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  endDate: event.target.value,
-                }))
-              }
-            />
-          </FormField>
-          <FormField id="absence-type" label={t('absences.manual.type')}>
-            <select
-              id="absence-type"
-              className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
-              value={form.type}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  type: event.target.value as ManualAbsenceType,
-                }))
-              }
-            >
-              {manualAbsenceTypeValues.map((typeValue) => (
-                <option key={typeValue} value={typeValue}>
-                  {t(toManualAbsenceTypeTranslationKey(typeValue))}
-                </option>
-              ))}
-            </select>
-          </FormField>
-          <FormField id="absence-label" label={t('absences.manual.label')}>
-            <Input
-              id="absence-label"
-              value={form.label}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  label: event.target.value,
-                }))
-              }
-            />
-          </FormField>
-          <div className="md:col-span-2">
-            <FormField id="absence-note" label={t('absences.manual.note')}>
-              <Textarea
-                id="absence-note"
-                value={form.note}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    note: event.target.value,
-                  }))
-                }
-              />
-            </FormField>
-          </div>
-          <div className="md:col-span-2 flex flex-wrap gap-2">
-            <Button
-              type="submit"
-              disabled={isPending}
-              className="bg-primary text-primary-contrast hover:bg-primary-shade"
-            >
-              {form.id ? t('absences.manual.update') : t('absences.manual.add')}
-            </Button>
-            {form.id ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="border-primary-tint"
-                onClick={() => {
-                  setForm(defaultManualAbsenceFormState);
-                }}
-              >
-                {t('absences.manual.cancelEdit')}
-              </Button>
-            ) : null}
-          </div>
-        </form>
-        {manualAbsences.length ? (
-          <ul className="mt-4 max-h-72 space-y-2 overflow-auto pr-1">
-            {manualAbsences.map((entry) => (
-              <li
-                key={entry.id}
-                className="rounded-md border border-primary-tint/80 bg-primary-tint/20 p-3"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
+        <CollectionAccordion summary={t('absences.manual.summary')} defaultOpen>
+          {manualAbsenceGroups.map(({ type, entries }) => (
+            <EditableAbsenceCollection
+              key={type}
+              type={type}
+              title={t(toManualAbsenceTypeTranslationKey(type))}
+              items={entries}
+              form={form}
+              isPending={isPending}
+              emptyText={t('absences.manual.emptyType', {
+                type: t(toManualAbsenceTypeTranslationKey(type)),
+              })}
+              getKey={(entry) => entry.id}
+              getEditableEntry={(entry) => entry}
+              renderItem={(entry) => (
+                <div className="space-y-1">
                   <p className="text-sm font-medium text-text-color">
-                    {entry.startDate} - {entry.endDate} |{' '}
-                    {t(toManualAbsenceTypeTranslationKey(entry.type))}
+                    {entry.startDate} - {entry.endDate}
                   </p>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="border-primary-tint"
-                      onClick={() => {
-                        setForm({
-                          id: entry.id,
-                          type: entry.type,
-                          startDate: entry.startDate,
-                          endDate: entry.endDate,
-                          label: entry.label,
-                          note: entry.note ?? '',
-                        });
-                      }}
-                    >
-                      {t('absences.manual.edit')}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="border-primary-tint"
-                      onClick={() => {
-                        handleDeleteManualAbsence(entry.id).catch(
-                          () => undefined,
-                        );
-                      }}
-                    >
-                      {t('absences.manual.delete')}
-                    </Button>
-                  </div>
+                  <p className="text-sm text-text-color/75">
+                    {entry.label || '-'}
+                  </p>
+                  <p className="text-sm text-text-color/70">
+                    {entry.note || '-'}
+                  </p>
                 </div>
-                <p className="text-sm text-text-color/75">
-                  {entry.label || '-'}
-                </p>
-                <p className="text-sm text-text-color/70">
-                  {entry.note || '-'}
-                </p>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-3 text-sm text-text-color/70">
-            {t('absences.manual.empty')}
-          </p>
-        )}
+              )}
+              setForm={setForm}
+              onSubmit={submitManualAbsence}
+              onEdit={beginManualAbsenceEdit}
+              onDelete={handleDeleteManualAbsence}
+            />
+          ))}
+        </CollectionAccordion>
       </SectionCard>
-      <div className="grid gap-4 items-start lg:grid-cols-2">
-        <SectionCard
-          title={t('absences.catalog.publicTitle')}
-          className="h-full border-primary-tint bg-white"
-          contentClassName="p-0"
-          onClick={() => setIsPublicCatalogCollapsed((current) => !current)}
-          action={
-            <div className="flex h-8 w-8 items-center justify-center">
-              <div
-                className={cn(
-                  'transition-transform duration-200',
-                  isPublicCatalogCollapsed ? '-rotate-90' : 'rotate-0',
-                )}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </div>
-            </div>
-          }
+      <SectionCard
+        title={t('absences.catalog.title')}
+        description={t('absences.catalog.description')}
+        className="border-primary-tint bg-white"
+      >
+        <CollectionAccordion
+          summary={t('absences.catalog.summary')}
+          defaultOpen
         >
-          <AnimatePresence initial={false}>
-            {!isPublicCatalogCollapsed && (
-              <motion.div
-                key="public-catalog"
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2, ease: 'easeInOut' }}
-                className="overflow-hidden"
-              >
-                <div className="px-5 pb-5 pt-4">
-                  {hasPublicCatalogEntries ? (
-                    renderCatalogContent('publicHolidays')
-                  ) : (
-                    <p className="text-sm text-text-color/70">
-                      {t('absences.catalog.empty')}
-                    </p>
-                  )}
+          <EditableAbsenceCollection
+            type="public-holiday"
+            title={t('absences.catalog.publicTitle')}
+            items={publicHolidayItems}
+            form={form}
+            isPending={isPending}
+            emptyText={t('absences.catalog.emptyType', {
+              type: t('absences.catalog.publicTitle'),
+            })}
+            getKey={(entry) => entry.id}
+            getEditableEntry={(entry) => entry.manualEntry}
+            renderItem={(entry) => (
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-medium text-text-color">
+                    {entry.startDate} - {entry.endDate} | {entry.title}
+                  </p>
+                  {entry.year ? (
+                    <Badge
+                      variant="outline"
+                      className="border-primary-tint/70 bg-primary-tint/15 text-text-color"
+                    >
+                      {entry.year}
+                    </Badge>
+                  ) : null}
+                  <Badge
+                    variant="outline"
+                    className={
+                      entry.source === 'manual'
+                        ? 'border-sky-300 bg-sky-50 text-sky-900'
+                        : 'border-primary-tint/70 bg-primary-tint/15 text-text-color'
+                    }
+                  >
+                    {entry.source === 'manual'
+                      ? t('absences.catalog.sources.manual')
+                      : t('absences.catalog.sources.synced')}
+                  </Badge>
+                  {entry.isOutdated ? (
+                    <Badge
+                      variant="outline"
+                      className="border-amber-300 bg-amber-100 text-amber-800"
+                    >
+                      {t('absences.catalog.outdated')}
+                    </Badge>
+                  ) : null}
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </SectionCard>
-        <SectionCard
-          title={t('absences.catalog.schoolTitle')}
-          className="h-full border-primary-tint bg-white"
-          contentClassName="p-0"
-          onClick={() => setIsSchoolCatalogCollapsed((current) => !current)}
-          action={
-            <div className="flex h-8 w-8 items-center justify-center">
-              <div
-                className={cn(
-                  'transition-transform duration-200',
-                  isSchoolCatalogCollapsed ? '-rotate-90' : 'rotate-0',
-                )}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
+                {entry.note ? (
+                  <p className="text-sm text-text-color/70">{entry.note}</p>
+                ) : null}
               </div>
-            </div>
-          }
-        >
-          <AnimatePresence initial={false}>
-            {!isSchoolCatalogCollapsed && (
-              <motion.div
-                key="school-catalog"
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2, ease: 'easeInOut' }}
-                className="overflow-hidden"
-              >
-                <div className="px-5 pb-5 pt-4">
-                  {hasSchoolCatalogEntries ? (
-                    renderCatalogContent('schoolHolidays')
-                  ) : (
-                    <p className="text-sm text-text-color/70">
-                      {t('absences.catalog.empty')}
-                    </p>
-                  )}
-                </div>
-              </motion.div>
             )}
-          </AnimatePresence>
-        </SectionCard>
-      </div>
+            setForm={setForm}
+            onSubmit={submitManualAbsence}
+            onEdit={beginManualAbsenceEdit}
+            onDelete={handleDeleteManualAbsence}
+          />
+          <EditableAbsenceCollection
+            type="school-holiday"
+            title={t('absences.catalog.schoolTitle')}
+            items={schoolHolidayItems}
+            form={form}
+            isPending={isPending}
+            emptyText={t('absences.catalog.emptyType', {
+              type: t('absences.catalog.schoolTitle'),
+            })}
+            getKey={(entry) => entry.id}
+            getEditableEntry={(entry) => entry.manualEntry}
+            renderItem={(entry) => (
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-medium text-text-color">
+                    {entry.startDate} - {entry.endDate} | {entry.title}
+                  </p>
+                  {entry.year ? (
+                    <Badge
+                      variant="outline"
+                      className="border-primary-tint/70 bg-primary-tint/15 text-text-color"
+                    >
+                      {entry.year}
+                    </Badge>
+                  ) : null}
+                  <Badge
+                    variant="outline"
+                    className={
+                      entry.source === 'manual'
+                        ? 'border-sky-300 bg-sky-50 text-sky-900'
+                        : 'border-primary-tint/70 bg-primary-tint/15 text-text-color'
+                    }
+                  >
+                    {entry.source === 'manual'
+                      ? t('absences.catalog.sources.manual')
+                      : t('absences.catalog.sources.synced')}
+                  </Badge>
+                  {entry.isOutdated ? (
+                    <Badge
+                      variant="outline"
+                      className="border-amber-300 bg-amber-100 text-amber-800"
+                    >
+                      {t('absences.catalog.outdated')}
+                    </Badge>
+                  ) : null}
+                </div>
+                {entry.note ? (
+                  <p className="text-sm text-text-color/70">{entry.note}</p>
+                ) : null}
+              </div>
+            )}
+            setForm={setForm}
+            onSubmit={submitManualAbsence}
+            onEdit={beginManualAbsenceEdit}
+            onDelete={handleDeleteManualAbsence}
+          />
+        </CollectionAccordion>
+      </SectionCard>
       <UnsavedChangesDialog
         open={unsavedChangesGuard.isOpen}
         isPending={unsavedChangesGuard.isPending}

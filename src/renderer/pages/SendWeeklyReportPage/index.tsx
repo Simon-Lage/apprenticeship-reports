@@ -35,12 +35,16 @@ function toDisplayDate(value: string): string {
   return `${day}.${month}.${year}`;
 }
 
-function serializeSectionContent(input: {
-  heading: string;
-  items: string[];
-}[]): string {
+function serializeSectionContent(
+  input: {
+    heading: string;
+    items: string[];
+  }[],
+): string {
   return input
-    .map((entry) => [entry.heading, ...entry.items.map((item) => `- ${item}`)].join('\n'))
+    .map((entry) =>
+      [entry.heading, ...entry.items.map((item) => `- ${item}`)].join('\n'),
+    )
     .join('\n\n');
 }
 
@@ -55,8 +59,12 @@ export default function SendWeeklyReportPage() {
   const [isPending, setIsPending] = useState(false);
   const [hasResolvedDecision, setHasResolvedDecision] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<string | null>(null);
-  const { completeWeeks, selectedWeek, selectedWeekIdentity, setSelectedWeekIdentity } =
-    useSelectedCompleteWeek(reportsState.value, location.search);
+  const {
+    completeWeeks,
+    selectedWeek,
+    selectedWeekIdentity,
+    setSelectedWeekIdentity,
+  } = useSelectedCompleteWeek(reportsState.value, location.search);
   const workplace = useMemo(
     () =>
       settingsSnapshot.value
@@ -213,7 +221,7 @@ export default function SendWeeklyReportPage() {
   });
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-6 ">
       <PageHeader
         title={t('sendWeeklyReport.title')}
         description={t('sendWeeklyReport.description')}
@@ -247,7 +255,9 @@ export default function SendWeeklyReportPage() {
               onChange={(event) => setSelectedWeekIdentity(event.target.value)}
               disabled={!completeWeeks.length}
             >
-              <option value="">{t('sendWeeklyReport.selectorPlaceholder')}</option>
+              <option value="">
+                {t('sendWeeklyReport.selectorPlaceholder')}
+              </option>
               {completeWeeks.map((week) => {
                 const identity = `${week.weeklyReport.weekStart}:${week.weeklyReport.weekEnd}`;
                 const label = `${toDisplayDate(week.weeklyReport.weekStart)} - ${toDisplayDate(week.weeklyReport.weekEnd)}`;
@@ -301,7 +311,7 @@ export default function SendWeeklyReportPage() {
         </Alert>
       )}
 
-      <div className="sticky bottom-3 z-20 rounded-xl border border-primary-tint/75 bg-white/95 p-3 shadow-sm backdrop-blur">
+      <div className="sticky bottom-0 z-20 rounded-xl border border-primary-tint/75 bg-white/95 p-3 shadow-sm backdrop-blur">
         <div className="flex justify-end gap-3">
           <Button
             type="button"
@@ -315,7 +325,10 @@ export default function SendWeeklyReportPage() {
           <Button
             type="button"
             disabled={
-              isPending || !selectedWeek || !documentData || parsedWeekValues?.submitted
+              isPending ||
+              !selectedWeek ||
+              !documentData ||
+              parsedWeekValues?.submitted
             }
             className="bg-primary text-primary-contrast hover:bg-primary-shade"
             onClick={() => {

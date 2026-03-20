@@ -1,22 +1,30 @@
-import { IconType } from 'react-icons';
-import {
-  FiCalendar,
-  FiFileText,
-  FiGrid,
-  FiList,
-  FiSlash,
-  FiSettings,
-  FiArrowRight,
-} from 'react-icons/fi';
-import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Bar, BarChart, Cell } from 'recharts';
+import { useTranslation } from 'react-i18next';
+import {
+  FiCalendar,
+  FiCheckCircle,
+  FiClock,
+  FiEdit3,
+  FiFileText,
+  FiGrid,
+  FiLayers,
+  FiList,
+  FiSettings,
+  FiSlash,
+} from 'react-icons/fi';
+import { IconType } from 'react-icons';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
-import { useReportsState } from '@/renderer/hooks/useKernelData';
+import {
+  useReportsState,
+  useSettingsSnapshot,
+} from '@/renderer/hooks/useKernelData';
+import { parseOnboardingTrainingPeriod } from '@/renderer/lib/app-settings';
 import { appRoutes } from '@/renderer/lib/app-routes';
+import { buildHomeStatsSnapshot } from '@/renderer/lib/home-stats';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -24,12 +32,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
 
 type AreaCard = {
   to: string;
@@ -94,61 +96,115 @@ const itemVariants = {
     opacity: 1,
     transition: {
       duration: 0.4,
-      ease: [0.22, 1, 0.36, 1] as const, // easeOutQuint
+      ease: [0.22, 1, 0.36, 1] as const,
     },
   },
 };
+
+function formatPercent(value: number): string {
+  return new Intl.NumberFormat('de-DE', {
+    style: 'percent',
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatDecimal(value: number): string {
+  return new Intl.NumberFormat('de-DE', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function getTodayIsoDate(): string {
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Berlin',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  const parts = formatter.formatToParts(new Date());
+  const year = parts.find((part) => part.type === 'year')?.value ?? '0000';
+  const month = parts.find((part) => part.type === 'month')?.value ?? '00';
+  const day = parts.find((part) => part.type === 'day')?.value ?? '00';
+
+  return `${year}-${month}-${day}`;
+}
 
 export default function HomePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const runtime = useAppRuntime();
   const reportsState = useReportsState();
+  const settingsSnapshot = useSettingsSnapshot();
 
   const dailyCount = runtime.state.reports.dailyReportCount;
   const weeklyCount = runtime.state.reports.weeklyReportCount;
   const reportedDays = dailyCount;
-
-  const activityData = useMemo(() => {
-    const data = [];
-    const now = new Date();
-    const reports = reportsState.value?.dailyReports || {};
-    
-    // Last 14 days
-    for (let i = 13; i >= 0; i -= 1) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      
-      const count = Object.values(reports).filter(
-        (r: any) => r.date === dateStr
-      ).length;
-      
-      data.push({
-        date: dateStr,
-        label: d.toLocaleDateString('de-DE', { 
-          weekday: 'short', 
-          day: '2-digit' 
-        }),
-        count,
-      });
-    }
-    return data;
-  }, [reportsState.value]);
+  const trainingPeriod = useMemo(
+    () => parseOnboardingTrainingPeriod(settingsSnapshot.value?.values ?? {}),
+    [settingsSnapshot.value?.values],
+  );
+  const homeStats = useMemo(
+    () =>
+      buildHomeStatsSnapshot({
+        dailyReports: Object.values(reportsState.value?.dailyReports ?? {}),
+        reportStartDate:
+          trainingPeriod.reportsSince ?? trainingPeriod.trainingStart ?? null,
+        reportEndDate: trainingPeriod.trainingEnd ?? null,
+        today: getTodayIsoDate(),
+      }),
+    [
+      reportsState.value?.dailyReports,
+      trainingPeriod.reportsSince,
+      trainingPeriod.trainingEnd,
+      trainingPeriod.trainingStart,
+    ],
+  );
+  const spotlightStats = [
+    {
+      label: t('home.stats.backlogDays'),
+      value: String(homeStats.backlogDays),
+      description: t('home.stats.backlogDaysDescription'),
+      icon: FiClock,
+    },
+    {
+      label: t('home.stats.sameDayRate'),
+      value: formatPercent(homeStats.sameDayRate),
+      description: t('home.stats.sameDayRateDescription'),
+      icon: FiCheckCircle,
+    },
+    {
+      label: t('home.stats.averageBatchSize'),
+      value: formatDecimal(homeStats.averageReportsPerEntryDay),
+      description: t('home.stats.averageBatchSizeDescription', {
+        count: homeStats.entryDayCount,
+      }),
+      icon: FiLayers,
+    },
+    {
+      label: t('home.stats.entryModes'),
+      value: t('home.stats.entryModesValue', {
+        manual: homeStats.manualCount,
+        automatic: homeStats.automaticCount,
+      }),
+      description: t('home.stats.entryModesDescription'),
+      icon: FiEdit3,
+    },
+  ];
 
   return (
-    <motion.div 
+    <motion.div
       className="space-y-6"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
     >
-      <section className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+      <section className="grid gap-4">
         <motion.div variants={itemVariants}>
-          <Card className="flex flex-col h-full border-primary-tint bg-white/50 backdrop-blur-sm p-6 shadow-sm overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
-            
-            <div className="flex-1 space-y-6 relative z-10">
+          <Card className="relative flex h-full flex-col overflow-hidden border-primary-tint bg-white/50 p-6 shadow-sm backdrop-blur-sm">
+            <div className="pointer-events-none absolute top-0 right-0 h-64 w-64 translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-3xl" />
+
+            <div className="relative z-10 flex-1 space-y-6">
               <div>
                 <motion.div
                   initial={{ opacity: 0, x: -10 }}
@@ -158,11 +214,11 @@ export default function HomePage() {
                   <CardDescription className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-shade">
                     {t('home.hero.kicker')}
                   </CardDescription>
-                  <CardTitle className="mt-1 text-4xl font-bold text-text-color tracking-tight">
+                  <CardTitle className="mt-1 text-4xl font-bold tracking-tight text-text-color">
                     {t('home.hero.title')}
                   </CardTitle>
                 </motion.div>
-                <motion.p 
+                <motion.p
                   className="mt-3 max-w-md text-base leading-relaxed text-text-color/70"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -173,78 +229,78 @@ export default function HomePage() {
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <Button 
+                <Button
                   onClick={() => navigate(appRoutes.dailyReport)}
-                  className="bg-primary hover:bg-primary-shade text-primary-contrast"
+                  className="bg-primary text-primary-contrast hover:bg-primary-shade"
                 >
                   <FiFileText className="mr-2 h-4 w-4" />
-                  Tag erfassen
-                  <FiArrowRight className="ml-2 h-4 w-4" />
+                  {t('home.actions.captureDay')}
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
                   onClick={() => navigate(appRoutes.reportsOverview)}
                   className="border-primary-tint text-text-color hover:bg-primary/5"
                 >
-                  Alle Berichte
+                  {t('home.actions.allReports')}
                 </Button>
               </div>
 
-              <div className="pt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-sm font-medium text-text-color/60 uppercase tracking-wider">
-                    Aktivität (Letzte 14 Tage)
-                  </h4>
-                </div>
-                <div className="h-[120px] w-full">
-                  <ChartContainer
-                    config={{
-                      count: {
-                        label: 'Einträge',
-                        color: 'var(--primary)',
-                      },
-                    }}
-                    className="h-full w-full"
+              <div className="grid gap-3 pt-2 sm:grid-cols-2">
+                {spotlightStats.map((stat) => (
+                  <Card
+                    key={stat.label}
+                    className="border-primary-tint/80 bg-white/90 shadow-sm"
                   >
-                    <BarChart data={activityData}>
-                      <Bar 
-                        dataKey="count" 
-                        radius={[4, 4, 0, 0]}
-                        fill="var(--primary)"
-                      >
-                        {activityData.map((entry) => (
-                          <Cell 
-                            key={`cell-${entry.date}`} 
-                            fill={entry.count > 0 ? 'var(--primary)' : 'var(--primary-tint)'} 
-                            fillOpacity={entry.count > 0 ? 1 : 0.2}
-                          />
-                        ))}
-                      </Bar>
-                      <ChartTooltip
-                        cursor={{ fill: 'var(--primary-tint)', fillOpacity: 0.1 }}
-                        content={<ChartTooltipContent hideLabel />}
-                      />
-                    </BarChart>
-                  </ChartContainer>
-                </div>
+                    <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4 pb-2">
+                      <div className="space-y-1">
+                        <CardDescription className="text-xs font-semibold uppercase tracking-[0.12em] text-text-color/55">
+                          {stat.label}
+                        </CardDescription>
+                        <CardTitle className="text-3xl font-bold tracking-tight text-primary">
+                          {stat.value}
+                        </CardTitle>
+                      </div>
+                      <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                        <stat.icon className="size-5" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <p className="text-sm leading-relaxed text-text-color/70">
+                        {stat.description}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             </div>
           </Card>
         </motion.div>
 
-        <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+        <div className="grid gap-4 grid-cols-3">
           {[
-            { label: t('home.stats.dailyReports'), value: dailyCount, icon: FiFileText },
-            { label: t('home.stats.weeklyReports'), value: weeklyCount, icon: FiCalendar },
-            { label: t('home.stats.totalEntries'), value: reportedDays, icon: FiList },
+            {
+              label: t('home.stats.dailyReports'),
+              value: dailyCount,
+              icon: FiFileText,
+            },
+            {
+              label: t('home.stats.weeklyReports'),
+              value: weeklyCount,
+              icon: FiCalendar,
+            },
+            {
+              label: t('home.stats.totalEntries'),
+              value: reportedDays,
+              icon: FiList,
+            },
           ].map((stat) => (
             <motion.div key={stat.label} variants={itemVariants}>
-              <Card className="border-primary-tint bg-white p-5 shadow-sm transition-all hover:shadow-md group">
-                <CardHeader className="p-0 flex flex-row items-center justify-between space-y-0">
+              <Card className="group border-primary-tint bg-white p-5 shadow-sm transition-all hover:shadow-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 p-0">
                   <CardDescription className="text-sm font-medium text-text-color/60">
                     {stat.label}
                   </CardDescription>
-                  <stat.icon className="size-4 text-primary/40 group-hover:text-primary transition-colors" />
+                  <stat.icon className="size-4 text-primary/40 transition-colors group-hover:text-primary" />
                 </CardHeader>
                 <CardContent className="mt-2 p-0">
                   <p className="text-4xl font-bold tracking-tight text-primary">
@@ -263,25 +319,21 @@ export default function HomePage() {
 
           return (
             <motion.div key={areaCard.to} variants={itemVariants}>
-              <Link
-                to={areaCard.to}
-                draggable={false}
-                className="block h-full"
-              >
+              <Link to={areaCard.to} draggable={false} className="block h-full">
                 <Card className="group relative h-full overflow-hidden border-primary-tint bg-white p-6 transition-all hover:border-primary hover:shadow-lg active:scale-[0.98]">
                   <div className="absolute -top-4 -right-4 p-4 opacity-[0.03] transition-transform group-hover:scale-110 group-hover:opacity-[0.05]">
                     <Icon className="size-32" />
                   </div>
-                  <div className="relative flex flex-col h-full space-y-3">
+                  <div className="relative flex h-full flex-col space-y-3">
                     <div className="flex items-center gap-3">
                       <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-contrast">
                         <Icon className="size-5" />
                       </div>
-                      <CardTitle className="text-lg font-bold text-text-color tracking-tight">
+                      <CardTitle className="text-lg font-bold tracking-tight text-text-color">
                         {t(areaCard.titleKey)}
                       </CardTitle>
                     </div>
-                    <p className="text-sm leading-relaxed text-text-color/70 flex-1">
+                    <p className="flex-1 text-sm leading-relaxed text-text-color/70">
                       {t(areaCard.descriptionKey)}
                     </p>
                   </div>

@@ -1,6 +1,12 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiFileText, FiRotateCcw, FiSave, FiSend } from 'react-icons/fi';
+import {
+  FiAlertTriangle,
+  FiFileText,
+  FiRotateCcw,
+  FiSave,
+  FiSend,
+} from 'react-icons/fi';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { FormField } from '@/renderer/components/app/FormField';
@@ -27,8 +33,17 @@ import {
   listWeekDates,
   parseWeeklyReportValues,
 } from '@/renderer/lib/report-values';
-import { resolveInitialWeeklyReportRange } from '@/renderer/pages/DailyReportPage/components/date-logic';
+import {
+  formatConflictDayTypeLabel,
+  formatConflictReasonLabel,
+  listDailyReportAbsenceConflicts,
+} from '@/renderer/lib/report-conflicts';
+import {
+  resolveDayKey,
+  resolveInitialWeeklyReportRange,
+} from '@/renderer/pages/DailyReportPage/components/date-logic';
 import { resolveAutoDayType } from '@/renderer/pages/DailyReportPage/components/day-type-defaults';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -149,6 +164,20 @@ export default function WeeklyReportPage() {
     () => buildWeeklyAggregates(currentDailyReports),
     [currentDailyReports],
   );
+  const currentWeeklyValues = useMemo(
+    () => parseWeeklyReportValues(currentWeeklyReport?.values),
+    [currentWeeklyReport?.values],
+  );
+  const dailyConflicts = useMemo(() => {
+    if (!currentDailyReports.length || currentWeeklyValues.submitted) {
+      return [];
+    }
+
+    return listDailyReportAbsenceConflicts({
+      dailyReports: currentDailyReports,
+      absenceSettings,
+    });
+  }, [absenceSettings, currentDailyReports, currentWeeklyValues.submitted]);
   const weekDates = useMemo(
     () =>
       form.weekStart && form.weekEnd
@@ -258,13 +287,19 @@ export default function WeeklyReportPage() {
       return;
     }
 
-    const parsed = parseWeeklyReportValues(currentWeeklyReport.values);
     setForm((current) => ({
       ...current,
-      area: parsed.area || fallbackArea,
-      supervisorEmail: parsed.supervisorEmailPrimary || fallbackSupervisor,
+      area: currentWeeklyValues.area || fallbackArea,
+      supervisorEmail:
+        currentWeeklyValues.supervisorEmailPrimary || fallbackSupervisor,
     }));
-  }, [currentWeeklyReport, fallbackArea, fallbackSupervisor]);
+  }, [
+    currentWeeklyReport,
+    currentWeeklyValues.area,
+    currentWeeklyValues.supervisorEmailPrimary,
+    fallbackArea,
+    fallbackSupervisor,
+  ]);
 
   useEffect(() => {
     if (!form.area.trim() || !form.supervisorEmail.trim()) {
@@ -285,7 +320,8 @@ export default function WeeklyReportPage() {
       !form.weekEnd ||
       !weekDates.length ||
       !subdivisionCode ||
-      isAutoFillingWeek
+      isAutoFillingWeek ||
+      currentWeeklyValues.submitted
     ) {
       return;
     }
@@ -314,17 +350,38 @@ export default function WeeklyReportPage() {
       setIsAutoFillingWeek(true);
       try {
         await Promise.all(
-          autoFillDates.map((date) =>
-            runtime.api!.upsertDailyReport({
+          autoFillDates.map((date) => {
+            const autoDayType = resolveAutoDayType({
+              date,
+              uiSettings,
+              absenceSettings,
+              currentYear: new Date(date).getUTCFullYear(),
+            });
+            const dayKey = resolveDayKey(date);
+            const freeDayCategory =
+              dayKey && uiSettings.timetable[dayKey].length > 0
+                ? 'school'
+                : 'work';
+
+            return runtime.api!.upsertDailyReport({
               weekStart: form.weekStart,
               weekEnd: form.weekEnd,
               date,
-              values: { type: 'free' },
-            })
-          )
+              values: {
+                entryMode: 'automatic',
+                dayType: autoDayType.dayType,
+                freeReason: autoDayType.freeReason,
+                freeDayCategory,
+                activities: [],
+                trainings: [],
+                schoolTopics: [],
+                lessons: [],
+              },
+            });
+          }),
         );
       } catch {
-        toast.error('Automatisches Ausfüllen fehlgeschlagen');
+        toast.error(t('weeklyReport.notifications.autoFillFailed'));
       } finally {
         setIsAutoFillingWeek(false);
       }
@@ -343,6 +400,7 @@ export default function WeeklyReportPage() {
     toast,
     uiSettings,
     weekDates,
+    currentWeeklyValues.submitted,
   ]);
 
   const onSave = async (e: FormEvent) => {
@@ -381,11 +439,11 @@ export default function WeeklyReportPage() {
       return;
     }
 
-    const parsed = parseWeeklyReportValues(currentWeeklyReport.values);
     setForm((current) => ({
       ...current,
-      area: parsed.area || fallbackArea,
-      supervisorEmail: parsed.supervisorEmailPrimary || fallbackSupervisor,
+      area: currentWeeklyValues.area || fallbackArea,
+      supervisorEmail:
+        currentWeeklyValues.supervisorEmailPrimary || fallbackSupervisor,
     }));
   };
 
@@ -401,8 +459,14 @@ export default function WeeklyReportPage() {
       />
 
       <SectionCard
-        title={t('weeklyReport.sections.metadata.title')}
-        description={t('weeklyReport.sections.metadata.description')}
+        title={
+          form.weekStart && form.weekEnd
+            ? t('weeklyReport.sections.metadata.titleWithRange', {
+                start: toDisplayDate(form.weekStart),
+                end: toDisplayDate(form.weekEnd),
+              })
+            : t('weeklyReport.sections.metadata.title')
+        }
       >
         <form onSubmit={onSave} className="space-y-4">
           <FormField id="area" label={t('weeklyReport.form.area')}>
@@ -412,7 +476,7 @@ export default function WeeklyReportPage() {
               onChange={(e) =>
                 setForm((current) => ({ ...current, area: e.target.value }))
               }
-              disabled={currentWeeklyReport?.values.submitted === true}
+              disabled={currentWeeklyValues.submitted}
               placeholder={fallbackArea}
             />
           </FormField>
@@ -431,7 +495,7 @@ export default function WeeklyReportPage() {
                   supervisorEmail: e.target.value,
                 }))
               }
-              disabled={currentWeeklyReport?.values.submitted === true}
+              disabled={currentWeeklyValues.submitted}
               placeholder={fallbackSupervisor}
             />
           </FormField>
@@ -444,7 +508,7 @@ export default function WeeklyReportPage() {
                 !form.weekStart ||
                 !form.weekEnd ||
                 !hasEditableChanges ||
-                currentWeeklyReport?.values.submitted === true
+                currentWeeklyValues.submitted
               }
             >
               <FiSave className="mr-2 h-4 w-4" />
@@ -453,7 +517,11 @@ export default function WeeklyReportPage() {
             <Button
               type="button"
               variant="outline"
-              disabled={isPending || !hasEditableChanges || currentWeeklyReport?.values.submitted === true}
+              disabled={
+                isPending ||
+                !hasEditableChanges ||
+                currentWeeklyValues.submitted
+              }
               onClick={onReset}
             >
               <FiRotateCcw className="mr-2 h-4 w-4" />
@@ -492,6 +560,37 @@ export default function WeeklyReportPage() {
           </div>
         </form>
       </SectionCard>
+      {dailyConflicts.length ? (
+        <Alert className="border-amber-300 bg-amber-50 text-amber-950">
+          <FiAlertTriangle className="size-4" />
+          <AlertTitle>
+            {t('reportConflicts.weeklyTitle', {
+              count: dailyConflicts.length,
+            })}
+          </AlertTitle>
+          <AlertDescription>
+            <p>{t('reportConflicts.weeklyDescription')}</p>
+            <ul className="list-disc pl-5">
+              {dailyConflicts.map((conflict) => (
+                <li key={conflict.date}>
+                  {t('reportConflicts.weeklyItem', {
+                    date: toDisplayDate(conflict.date),
+                    stored: formatConflictDayTypeLabel(t, {
+                      dayType: conflict.storedDayType,
+                      freeReason: conflict.storedFreeReason,
+                    }),
+                    expected: formatConflictDayTypeLabel(t, {
+                      dayType: conflict.expectedDayType,
+                      freeReason: conflict.expectedFreeReason,
+                    }),
+                    reason: formatConflictReasonLabel(t, conflict.reason),
+                  })}
+                </li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       <div className="grid gap-6">
         <SectionCard title={t('weeklyReport.sections.operational.title')}>
@@ -513,7 +612,7 @@ export default function WeeklyReportPage() {
         </SectionCard>
       </div>
 
-      <SectionCard 
+      <SectionCard
         title={t('weeklyReport.sections.summary.title')}
         description={t('weeklyReport.sections.summary.description')}
       >
@@ -531,7 +630,7 @@ export default function WeeklyReportPage() {
               })}
             </span>
           </div>
-          {currentWeeklyReport?.values.submitted && (
+          {currentWeeklyValues.submitted && (
             <div className="flex items-center gap-2 text-primary font-medium">
               <FiFileText className="h-4 w-4" />
               {t('weeklyReport.status.submitted')}

@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Check, Pencil, Plus, RotateCcw, Save, Trash2, X } from 'lucide-react';
 
+import CollectionAccordion from '@/renderer/components/app/CollectionAccordion';
+import EditableCollectionList from '@/renderer/components/app/EditableCollectionList';
 import { FormField } from '@/renderer/components/app/FormField';
 import { PageHeader } from '@/renderer/components/app/PageHeader';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
@@ -12,7 +15,9 @@ import { useSettingsSnapshot } from '@/renderer/hooks/useKernelData';
 import {
   mergeUiSettings,
   parseUiSettings,
+  renameUiCatalogEntry,
   TimetableSlot,
+  UiCatalogEntryKind,
   UiSettingsValues,
   weekDayKeys,
   WeekDayKey,
@@ -34,8 +39,15 @@ import {
 const lessonCount = 10;
 
 type PendingCatalogEntry = {
+  action: 'add' | 'delete';
   kind: 'teacher' | 'subject';
   value: string;
+};
+
+type EditingCatalogEntry = {
+  kind: UiCatalogEntryKind;
+  value: string;
+  draft: string;
 };
 
 function updateSlots(
@@ -62,6 +74,34 @@ function updateSlots(
   return nextSlots.sort((left, right) => left.lesson - right.lesson);
 }
 
+function removeCatalogValueFromSlots(
+  slots: TimetableSlot[],
+  key: UiCatalogEntryKind,
+  value: string,
+): TimetableSlot[] {
+  return slots
+    .map((slot) => ({
+      ...slot,
+      [key]: slot[key] === value ? '' : slot[key],
+    }))
+    .filter((slot) => slot.subject || slot.teacher)
+    .sort((left, right) => left.lesson - right.lesson);
+}
+
+function removeCatalogValueFromTimetable(
+  timetable: UiSettingsValues['timetable'],
+  key: UiCatalogEntryKind,
+  value: string,
+): UiSettingsValues['timetable'] {
+  return {
+    monday: removeCatalogValueFromSlots(timetable.monday, key, value),
+    tuesday: removeCatalogValueFromSlots(timetable.tuesday, key, value),
+    wednesday: removeCatalogValueFromSlots(timetable.wednesday, key, value),
+    thursday: removeCatalogValueFromSlots(timetable.thursday, key, value),
+    friday: removeCatalogValueFromSlots(timetable.friday, key, value),
+  };
+}
+
 export default function TimeTablePage() {
   const { t } = useTranslation();
   const runtime = useAppRuntime();
@@ -73,6 +113,8 @@ export default function TimeTablePage() {
   const [isPending, setIsPending] = useState(false);
   const [pendingCatalogEntry, setPendingCatalogEntry] =
     useState<PendingCatalogEntry | null>(null);
+  const [editingCatalogEntry, setEditingCatalogEntry] =
+    useState<EditingCatalogEntry | null>(null);
 
   useEffect(() => {
     if (!settingsSnapshot.value) {
@@ -101,6 +143,17 @@ export default function TimeTablePage() {
   function addTeacher(value: string) {
     const nextValue = value.trim();
     if (!nextValue) {
+      toast.error(
+        t('timeTable.feedback.saveError'),
+        t('timeTable.feedback.teacherRequired'),
+      );
+      return;
+    }
+    if (teacherOptions.includes(nextValue)) {
+      toast.error(
+        t('timeTable.feedback.saveError'),
+        t('timeTable.feedback.teacherExists'),
+      );
       return;
     }
     setUiSettings((current) =>
@@ -118,6 +171,17 @@ export default function TimeTablePage() {
   function addSubject(value: string) {
     const nextValue = value.trim();
     if (!nextValue) {
+      toast.error(
+        t('timeTable.feedback.saveError'),
+        t('timeTable.feedback.subjectRequired'),
+      );
+      return;
+    }
+    if (subjectOptions.includes(nextValue)) {
+      toast.error(
+        t('timeTable.feedback.saveError'),
+        t('timeTable.feedback.subjectExists'),
+      );
       return;
     }
     setUiSettings((current) =>
@@ -152,6 +216,112 @@ export default function TimeTablePage() {
     });
   }
 
+  function startCatalogEdit(kind: UiCatalogEntryKind, value: string) {
+    setEditingCatalogEntry({
+      kind,
+      value,
+      draft: value,
+    });
+  }
+
+  function saveCatalogEdit() {
+    if (!editingCatalogEntry) {
+      return;
+    }
+
+    const nextValue = editingCatalogEntry.draft.trim();
+    const currentValue = editingCatalogEntry.value.trim();
+    const isTeacher = editingCatalogEntry.kind === 'teacher';
+    const duplicateExists = isTeacher
+      ? teacherOptions.includes(nextValue) && nextValue !== currentValue
+      : subjectOptions.includes(nextValue) && nextValue !== currentValue;
+
+    if (!nextValue) {
+      toast.error(
+        t('timeTable.feedback.saveError'),
+        t(
+          isTeacher
+            ? 'timeTable.feedback.teacherRequired'
+            : 'timeTable.feedback.subjectRequired',
+        ),
+      );
+      return;
+    }
+
+    if (duplicateExists) {
+      toast.error(
+        t('timeTable.feedback.saveError'),
+        t(
+          isTeacher
+            ? 'timeTable.feedback.teacherExists'
+            : 'timeTable.feedback.subjectExists',
+        ),
+      );
+      return;
+    }
+
+    setUiSettings((current) =>
+      current
+        ? renameUiCatalogEntry({
+            uiSettings: current,
+            kind: editingCatalogEntry.kind,
+            currentValue: editingCatalogEntry.value,
+            nextValue,
+          })
+        : current,
+    );
+    setEditingCatalogEntry(null);
+  }
+
+  function cancelCatalogEdit() {
+    setEditingCatalogEntry(null);
+  }
+
+  function removeCatalogEntry(kind: UiCatalogEntryKind, value: string) {
+    setPendingCatalogEntry({
+      action: 'delete',
+      kind,
+      value,
+    });
+  }
+
+  function confirmCatalogRemoval(kind: UiCatalogEntryKind, value: string) {
+    setUiSettings((current) => {
+      if (!current) {
+        return current;
+      }
+
+      if (kind === 'teacher') {
+        return {
+          ...current,
+          teachers: current.teachers.filter((candidate) => candidate !== value),
+          timetable: removeCatalogValueFromTimetable(
+            current.timetable,
+            kind,
+            value,
+          ),
+        };
+      }
+
+      return {
+        ...current,
+        subjects: current.subjects.filter((candidate) => candidate !== value),
+        timetable: removeCatalogValueFromTimetable(
+          current.timetable,
+          kind,
+          value,
+        ),
+      };
+    });
+
+    if (
+      editingCatalogEntry?.kind === kind &&
+      editingCatalogEntry.value === value
+    ) {
+      setEditingCatalogEntry(null);
+    }
+  }
+
   function requestCatalogAdd(kind: 'teacher' | 'subject', value: string) {
     const nextValue = value.trim();
 
@@ -168,6 +338,7 @@ export default function TimeTablePage() {
     }
 
     setPendingCatalogEntry({
+      action: 'add',
       kind,
       value: nextValue,
     });
@@ -208,7 +379,7 @@ export default function TimeTablePage() {
   }
 
   return (
-    <div className="space-y-4 pb-24">
+    <div className="space-y-4 ">
       <PageHeader
         title={t('timeTable.title')}
         description={t('timeTable.description')}
@@ -301,133 +472,274 @@ export default function TimeTablePage() {
         description={t('timeTable.config.description')}
         className="border-primary-tint bg-white"
       >
-        <details className="group rounded-md border border-primary-tint/80 p-3">
-          <summary className="cursor-pointer text-sm font-medium text-text-color">
-            {t('timeTable.config.summary')}
-          </summary>
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <div className="space-y-3">
-              <FormField
-                id="new-teacher"
-                label={t('timeTable.config.newTeacher')}
-              >
-                <div className="flex gap-2">
-                  <Input
-                    id="new-teacher"
-                    value={newTeacher}
-                    onKeyDown={(event) =>
-                      handleEnterAction(event, () => {
+        <CollectionAccordion summary={t('timeTable.config.summary')}>
+          <div className="space-y-3">
+            <EditableCollectionList
+              addSlot={
+                <FormField
+                  id="new-teacher"
+                  label={t('timeTable.config.newTeacher')}
+                >
+                  <div className="flex gap-2">
+                    <Input
+                      id="new-teacher"
+                      value={newTeacher}
+                      onKeyDown={(event) =>
+                        handleEnterAction(event, () => {
+                          addTeacher(newTeacher);
+                          setNewTeacher('');
+                        })
+                      }
+                      onChange={(event) => setNewTeacher(event.target.value)}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-primary-tint"
+                      onClick={() => {
                         addTeacher(newTeacher);
                         setNewTeacher('');
-                      })
-                    }
-                    onChange={(event) => setNewTeacher(event.target.value)}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="border-primary-tint"
-                    onClick={() => {
-                      addTeacher(newTeacher);
-                      setNewTeacher('');
-                    }}
-                  >
-                    {t('common.add')}
-                  </Button>
-                </div>
-              </FormField>
-              <ul className="space-y-1 text-sm">
-                {teacherOptions.map((teacher) => (
-                  <li
-                    key={teacher}
-                    className="flex items-center justify-between rounded-md border border-primary-tint/70 px-3 py-2"
-                  >
-                    {teacher}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="h-7 px-2 text-xs"
-                      onClick={() =>
-                        setUiSettings((current) =>
-                          current
-                            ? {
-                                ...current,
-                                teachers: current.teachers.filter(
-                                  (candidate) => candidate !== teacher,
-                                ),
-                              }
-                            : current,
-                        )
-                      }
+                      }}
                     >
-                      {t('common.remove')}
+                      <Plus className="size-4" />
+                      {t('common.add')}
                     </Button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="space-y-3">
-              <FormField
-                id="new-subject"
-                label={t('timeTable.config.newSubject')}
-              >
-                <div className="flex gap-2">
+                  </div>
+                </FormField>
+              }
+              items={teacherOptions}
+              getKey={(teacher) => teacher}
+              renderItem={(teacher) =>
+                editingCatalogEntry?.kind === 'teacher' &&
+                editingCatalogEntry.value === teacher ? (
                   <Input
-                    id="new-subject"
-                    value={newSubject}
+                    value={editingCatalogEntry.draft}
+                    onChange={(event) =>
+                      setEditingCatalogEntry((current) =>
+                        current
+                          ? {
+                              ...current,
+                              draft: event.target.value,
+                            }
+                          : current,
+                      )
+                    }
                     onKeyDown={(event) =>
                       handleEnterAction(event, () => {
-                        addSubject(newSubject);
-                        setNewSubject('');
+                        saveCatalogEdit();
                       })
                     }
-                    onChange={(event) => setNewSubject(event.target.value)}
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="border-primary-tint"
-                    onClick={() => {
-                      addSubject(newSubject);
-                      setNewSubject('');
-                    }}
-                  >
-                    {t('common.add')}
-                  </Button>
-                </div>
-              </FormField>
-              <ul className="space-y-1 text-sm">
-                {subjectOptions.map((subject) => (
-                  <li
-                    key={subject}
-                    className="flex items-center justify-between rounded-md border border-primary-tint/70 px-3 py-2"
-                  >
-                    {subject}
+                ) : (
+                  <span>{teacher}</span>
+                )
+              }
+              renderActions={(teacher) =>
+                editingCatalogEntry?.kind === 'teacher' &&
+                editingCatalogEntry.value === teacher ? (
+                  <>
                     <Button
                       type="button"
                       variant="ghost"
-                      className="h-7 px-2 text-xs"
-                      onClick={() =>
-                        setUiSettings((current) =>
-                          current
-                            ? {
-                                ...current,
-                                subjects: current.subjects.filter(
-                                  (candidate) => candidate !== subject,
-                                ),
-                              }
-                            : current,
-                        )
-                      }
+                      size="icon"
+                      className="h-8 w-8"
+                      aria-label={t('timeTable.config.actions.saveEntry')}
+                      title={t('timeTable.config.actions.saveEntry')}
+                      onClick={() => {
+                        saveCatalogEdit();
+                      }}
                     >
-                      {t('common.remove')}
+                      <Check className="size-4" />
                     </Button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      aria-label={t('timeTable.config.actions.cancelEdit')}
+                      title={t('timeTable.config.actions.cancelEdit')}
+                      onClick={() => {
+                        cancelCatalogEdit();
+                      }}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      aria-label={t('timeTable.config.actions.editEntry', {
+                        value: teacher,
+                      })}
+                      title={t('timeTable.config.actions.editEntry', {
+                        value: teacher,
+                      })}
+                      onClick={() => {
+                        startCatalogEdit('teacher', teacher);
+                      }}
+                    >
+                      <Pencil className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      aria-label={t('timeTable.config.actions.removeEntry', {
+                        value: teacher,
+                      })}
+                      title={t('timeTable.config.actions.removeEntry', {
+                        value: teacher,
+                      })}
+                      onClick={() => {
+                        removeCatalogEntry('teacher', teacher);
+                      }}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </>
+                )
+              }
+            />
           </div>
-        </details>
+          <div className="space-y-3">
+            <EditableCollectionList
+              addSlot={
+                <FormField
+                  id="new-subject"
+                  label={t('timeTable.config.newSubject')}
+                >
+                  <div className="flex gap-2">
+                    <Input
+                      id="new-subject"
+                      value={newSubject}
+                      onKeyDown={(event) =>
+                        handleEnterAction(event, () => {
+                          addSubject(newSubject);
+                          setNewSubject('');
+                        })
+                      }
+                      onChange={(event) => setNewSubject(event.target.value)}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-primary-tint"
+                      onClick={() => {
+                        addSubject(newSubject);
+                        setNewSubject('');
+                      }}
+                    >
+                      <Plus className="size-4" />
+                      {t('common.add')}
+                    </Button>
+                  </div>
+                </FormField>
+              }
+              items={subjectOptions}
+              getKey={(subject) => subject}
+              renderItem={(subject) =>
+                editingCatalogEntry?.kind === 'subject' &&
+                editingCatalogEntry.value === subject ? (
+                  <Input
+                    value={editingCatalogEntry.draft}
+                    onChange={(event) =>
+                      setEditingCatalogEntry((current) =>
+                        current
+                          ? {
+                              ...current,
+                              draft: event.target.value,
+                            }
+                          : current,
+                      )
+                    }
+                    onKeyDown={(event) =>
+                      handleEnterAction(event, () => {
+                        saveCatalogEdit();
+                      })
+                    }
+                  />
+                ) : (
+                  <span>{subject}</span>
+                )
+              }
+              renderActions={(subject) =>
+                editingCatalogEntry?.kind === 'subject' &&
+                editingCatalogEntry.value === subject ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      aria-label={t('timeTable.config.actions.saveEntry')}
+                      title={t('timeTable.config.actions.saveEntry')}
+                      onClick={() => {
+                        saveCatalogEdit();
+                      }}
+                    >
+                      <Check className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      aria-label={t('timeTable.config.actions.cancelEdit')}
+                      title={t('timeTable.config.actions.cancelEdit')}
+                      onClick={() => {
+                        cancelCatalogEdit();
+                      }}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      aria-label={t('timeTable.config.actions.editEntry', {
+                        value: subject,
+                      })}
+                      title={t('timeTable.config.actions.editEntry', {
+                        value: subject,
+                      })}
+                      onClick={() => {
+                        startCatalogEdit('subject', subject);
+                      }}
+                    >
+                      <Pencil className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      aria-label={t('timeTable.config.actions.removeEntry', {
+                        value: subject,
+                      })}
+                      title={t('timeTable.config.actions.removeEntry', {
+                        value: subject,
+                      })}
+                      onClick={() => {
+                        removeCatalogEntry('subject', subject);
+                      }}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </>
+                )
+              }
+            />
+          </div>
+        </CollectionAccordion>
       </SectionCard>
       <datalist id="teachers-list">
         {teacherOptions.map((teacher) => (
@@ -443,32 +755,38 @@ export default function TimeTablePage() {
           </option>
         ))}
       </datalist>
-      <div className="sticky bottom-3 z-20 rounded-xl border border-primary-tint/75 bg-white/95 p-3 shadow-sm backdrop-blur">
-        <div className="flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isPending || !isDirty}
-            className="border-primary-tint"
-            onClick={() => {
-              if (baselineUiSettings) {
-                setUiSettings(baselineUiSettings);
-                toast.info(t('timeTable.reset'));
-              }
-            }}
-          >
-            {t('timeTable.reset')}
-          </Button>
-          <Button
-            type="button"
-            disabled={isPending || !isDirty}
-            className="bg-primary text-primary-contrast hover:bg-primary-shade"
-            onClick={() => {
-              saveTimeTable().catch(() => undefined);
-            }}
-          >
-            {isPending ? t('common.loading') : t('timeTable.save')}
-          </Button>
+      <div className="sticky bottom-0 z-20 rounded-xl border border-primary-tint/75 bg-white/95 p-3 shadow-sm backdrop-blur">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isPending || !isDirty}
+              className="border-primary-tint"
+              onClick={() => {
+                if (baselineUiSettings) {
+                  setUiSettings(baselineUiSettings);
+                  toast.info(t('timeTable.reset'));
+                }
+              }}
+            >
+              <RotateCcw className="size-4" />
+              {t('timeTable.reset')}
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              disabled={isPending || !isDirty}
+              className="bg-primary text-primary-contrast hover:bg-primary-shade"
+              onClick={() => {
+                saveTimeTable().catch(() => undefined);
+              }}
+            >
+              <Save className="size-4" />
+              {isPending ? t('common.loading') : t('timeTable.save')}
+            </Button>
+          </div>
         </div>
       </div>
       <AlertDialog
@@ -482,21 +800,32 @@ export default function TimeTablePage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {pendingCatalogEntry?.kind === 'teacher'
-                ? t('timeTable.confirmAdd.teacherTitle')
-                : t('timeTable.confirmAdd.subjectTitle')}
+              {pendingCatalogEntry?.action === 'delete'
+                ? pendingCatalogEntry.kind === 'teacher'
+                  ? t('timeTable.confirmDelete.teacherTitle')
+                  : t('timeTable.confirmDelete.subjectTitle')
+                : pendingCatalogEntry?.kind === 'teacher'
+                  ? t('timeTable.confirmAdd.teacherTitle')
+                  : t('timeTable.confirmAdd.subjectTitle')}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pendingCatalogEntry
-                ? t('timeTable.confirmAdd.description', {
-                    value: pendingCatalogEntry.value,
-                  })
+                ? t(
+                    pendingCatalogEntry.action === 'delete'
+                      ? 'timeTable.confirmDelete.description'
+                      : 'timeTable.confirmAdd.description',
+                    {
+                      value: pendingCatalogEntry.value,
+                    },
+                  )
                 : ''}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>
-              {t('timeTable.confirmAdd.cancel')}
+              {pendingCatalogEntry?.action === 'delete'
+                ? t('timeTable.confirmDelete.cancel')
+                : t('timeTable.confirmAdd.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               className="bg-primary text-primary-contrast hover:bg-primary-shade"
@@ -507,7 +836,12 @@ export default function TimeTablePage() {
                   return;
                 }
 
-                if (pendingCatalogEntry.kind === 'teacher') {
+                if (pendingCatalogEntry.action === 'delete') {
+                  confirmCatalogRemoval(
+                    pendingCatalogEntry.kind,
+                    pendingCatalogEntry.value,
+                  );
+                } else if (pendingCatalogEntry.kind === 'teacher') {
                   addTeacher(pendingCatalogEntry.value);
                 } else {
                   addSubject(pendingCatalogEntry.value);
@@ -516,7 +850,9 @@ export default function TimeTablePage() {
                 setPendingCatalogEntry(null);
               }}
             >
-              {t('timeTable.confirmAdd.confirm')}
+              {pendingCatalogEntry?.action === 'delete'
+                ? t('timeTable.confirmDelete.confirm')
+                : t('timeTable.confirmAdd.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -9,7 +9,7 @@ import {
   ManualAbsence,
 } from '@/shared/absence/settings';
 
-type BaseDayType = 'work' | 'school';
+export type BaseDayType = 'work' | 'school';
 
 export type AutoDayTypeReason =
   | { kind: 'public-holiday'; name: string }
@@ -24,6 +24,8 @@ export type AutoDayTypeResult = {
   freeReason: string;
   reason: AutoDayTypeReason;
 };
+
+const weekendReason = 'Wochenende';
 
 function coversDate(input: {
   date: string;
@@ -96,16 +98,12 @@ function resolveBaseDayType(input: {
   return input.uiSettings.timetable[dayKey].length > 0 ? 'school' : 'work';
 }
 
-export function resolveAutoDayType(input: {
+export function resolveAutoDayTypeFromBase(input: {
   date: string;
-  uiSettings: UiSettingsValues;
+  baseDayType: BaseDayType;
   absenceSettings: AbsenceSettings;
   currentYear: number;
 }): AutoDayTypeResult {
-  const baseDayType = resolveBaseDayType({
-    date: input.date,
-    uiSettings: input.uiSettings,
-  });
   const currentYearCatalog =
     input.absenceSettings.catalogsByYear[String(input.currentYear)];
   const publicHolidayFromCatalog = currentYearCatalog
@@ -154,7 +152,7 @@ export function resolveAutoDayType(input: {
   if (isWeekendDate(input.date)) {
     return {
       dayType: 'free',
-      freeReason: '',
+      freeReason: weekendReason,
       reason: {
         kind: 'weekend',
       },
@@ -176,10 +174,8 @@ export function resolveAutoDayType(input: {
     schoolHolidayFromManual?.label.trim() ||
     schoolHolidayFromCatalog?.name ||
     null;
-  const effectiveBaseDayType: BaseDayType =
-    schoolHolidayName && baseDayType === 'school' ? 'work' : baseDayType;
 
-  if (vacationFromManual && effectiveBaseDayType !== 'school') {
+  if (vacationFromManual) {
     return {
       dayType: 'free',
       freeReason: vacationFromManual.label.trim(),
@@ -190,10 +186,10 @@ export function resolveAutoDayType(input: {
     };
   }
 
-  if (schoolHolidayName && baseDayType === 'school') {
+  if (schoolHolidayName && input.baseDayType === 'school') {
     return {
-      dayType: 'work',
-      freeReason: '',
+      dayType: 'free',
+      freeReason: schoolHolidayName,
       reason: {
         kind: 'school-holiday',
         name: schoolHolidayName,
@@ -202,11 +198,28 @@ export function resolveAutoDayType(input: {
   }
 
   return {
-    dayType: effectiveBaseDayType,
+    dayType: input.baseDayType,
     freeReason: '',
     reason: {
       kind: 'base',
-      base: effectiveBaseDayType,
+      base: input.baseDayType,
     },
   };
+}
+
+export function resolveAutoDayType(input: {
+  date: string;
+  uiSettings: UiSettingsValues;
+  absenceSettings: AbsenceSettings;
+  currentYear: number;
+}): AutoDayTypeResult {
+  return resolveAutoDayTypeFromBase({
+    date: input.date,
+    baseDayType: resolveBaseDayType({
+      date: input.date,
+      uiSettings: input.uiSettings,
+    }),
+    absenceSettings: input.absenceSettings,
+    currentYear: input.currentYear,
+  });
 }

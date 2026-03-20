@@ -1,4 +1,12 @@
 import { useAppKernelTestHarness } from '@/src/test-utils/app-kernel-test-harness';
+import {
+  buildWeeklyAggregates,
+  parseDailyReportValues,
+} from '@/renderer/lib/report-values';
+import {
+  mergeAbsenceSettings,
+  parseAbsenceSettings,
+} from '@/shared/absence/settings';
 
 describe('app kernel report mutations', () => {
   const { createKernel, signIn, completeRequiredOnboarding, setCurrentTime } =
@@ -20,7 +28,9 @@ describe('app kernel report mutations', () => {
     });
 
     const stateAfterCreate = await repository.read();
-    const createdWeek = Object.values(stateAfterCreate.reports.weeklyReports).find(
+    const createdWeek = Object.values(
+      stateAfterCreate.reports.weeklyReports,
+    ).find(
       (weeklyReport) =>
         weeklyReport.weekStart === '2026-03-09' &&
         weeklyReport.weekEnd === '2026-03-13',
@@ -29,7 +39,8 @@ describe('app kernel report mutations', () => {
     expect(createdWeek?.values).toEqual({
       area: 'Backend',
     });
-    const initialHash = stateAfterCreate.reports.weeklyHashes[createdWeek!.id]?.hash;
+    const initialHash =
+      stateAfterCreate.reports.weeklyHashes[createdWeek!.id]?.hash;
 
     setCurrentTime('2026-03-13T10:30:00.000Z');
     await kernel.upsertWeeklyReport({
@@ -40,7 +51,9 @@ describe('app kernel report mutations', () => {
       },
     });
     const stateAfterNoChange = await repository.read();
-    const unchangedWeek = Object.values(stateAfterNoChange.reports.weeklyReports).find(
+    const unchangedWeek = Object.values(
+      stateAfterNoChange.reports.weeklyReports,
+    ).find(
       (weeklyReport) =>
         weeklyReport.weekStart === '2026-03-09' &&
         weeklyReport.weekEnd === '2026-03-13',
@@ -58,7 +71,9 @@ describe('app kernel report mutations', () => {
     });
 
     const stateAfterUpdate = await repository.read();
-    const updatedWeek = Object.values(stateAfterUpdate.reports.weeklyReports).find(
+    const updatedWeek = Object.values(
+      stateAfterUpdate.reports.weeklyReports,
+    ).find(
       (weeklyReport) =>
         weeklyReport.weekStart === '2026-03-09' &&
         weeklyReport.weekEnd === '2026-03-13',
@@ -68,9 +83,9 @@ describe('app kernel report mutations', () => {
       area: 'Frontend',
     });
     expect(updatedWeek?.updatedAt).toBe('2026-03-13T11:00:00.000Z');
-    expect(stateAfterUpdate.reports.weeklyHashes[updatedWeek!.id]?.hash).not.toBe(
-      initialHash,
-    );
+    expect(
+      stateAfterUpdate.reports.weeklyHashes[updatedWeek!.id]?.hash,
+    ).not.toBe(initialHash);
     expect(Object.keys(stateAfterUpdate.reports.weeklyReports)).toHaveLength(1);
   });
 
@@ -254,5 +269,218 @@ describe('app kernel report mutations', () => {
         },
       }),
     ).rejects.toThrow('within the selected week range');
+  });
+
+  it('keeps stored school-day data unchanged when the timetable settings change later', async () => {
+    const { kernel, repository } = createKernel();
+    await kernel.boot();
+    await signIn(kernel);
+    await completeRequiredOnboarding(kernel);
+    setCurrentTime('2026-03-13T10:00:00.000Z');
+
+    await kernel.upsertDailyReport({
+      weekStart: '2026-03-09',
+      weekEnd: '2026-03-13',
+      date: '2026-03-09',
+      values: {
+        dayType: 'school',
+        lessons: [
+          {
+            lesson: 1,
+            subject: 'Mathematik',
+            teacher: 'Herr Alt',
+            topics: ['Lineare Funktionen'],
+          },
+        ],
+      },
+    });
+
+    const stateBeforeSettingsChange = await repository.read();
+    const weekBeforeSettingsChange = Object.values(
+      stateBeforeSettingsChange.reports.weeklyReports,
+    ).find(
+      (weeklyReport) =>
+        weeklyReport.weekStart === '2026-03-09' &&
+        weeklyReport.weekEnd === '2026-03-13',
+    );
+    const dayBeforeSettingsChange = Object.values(
+      stateBeforeSettingsChange.reports.dailyReports,
+    ).find((dailyReport) => dailyReport.date === '2026-03-09');
+
+    expect(weekBeforeSettingsChange).toBeDefined();
+    expect(dayBeforeSettingsChange).toBeDefined();
+
+    const initialWeeklyHash =
+      stateBeforeSettingsChange.reports.weeklyHashes[
+        weekBeforeSettingsChange!.id
+      ]?.hash;
+
+    setCurrentTime('2026-03-13T11:00:00.000Z');
+    await kernel.setSettingsValues({
+      appUi: {
+        teachers: ['Herr Neu'],
+        subjects: ['Physik'],
+        timetable: {
+          monday: [
+            {
+              lesson: 1,
+              teacher: 'Herr Neu',
+              subject: 'Physik',
+            },
+          ],
+        },
+      },
+      onboarding: {
+        identity: {
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          apprenticeIdentifier: '12345',
+          profession: 'Fachinformatikerin',
+        },
+        'training-period': {
+          trainingStart: '2026-03-01',
+          trainingEnd: '2026-12-31',
+          reportsSince: '2026-03-01',
+        },
+        region: {
+          subdivisionCode: 'DE-NW',
+        },
+        workplace: {
+          department: 'Entwicklung',
+          trainerEmail: 'trainer@example.com',
+          ihkLink: null,
+        },
+      },
+    });
+
+    const stateAfterSettingsChange = await repository.read();
+    const weekAfterSettingsChange = Object.values(
+      stateAfterSettingsChange.reports.weeklyReports,
+    ).find(
+      (weeklyReport) =>
+        weeklyReport.weekStart === '2026-03-09' &&
+        weeklyReport.weekEnd === '2026-03-13',
+    );
+    const dayAfterSettingsChange = Object.values(
+      stateAfterSettingsChange.reports.dailyReports,
+    ).find((dailyReport) => dailyReport.date === '2026-03-09');
+
+    expect(weekAfterSettingsChange?.updatedAt).toBe(
+      weekBeforeSettingsChange?.updatedAt,
+    );
+    expect(
+      stateAfterSettingsChange.reports.weeklyHashes[weekAfterSettingsChange!.id]
+        ?.hash,
+    ).toBe(initialWeeklyHash);
+    expect(parseDailyReportValues(dayAfterSettingsChange?.values)).toEqual({
+      dayType: 'school',
+      freeReason: '',
+      freeDayCategory: null,
+      activities: [],
+      schoolTopics: [],
+      trainings: [],
+      lessons: [
+        {
+          lesson: 1,
+          subject: 'Mathematik',
+          teacher: 'Herr Alt',
+          topics: ['Lineare Funktionen'],
+        },
+      ],
+    });
+    expect(
+      buildWeeklyAggregates([dayAfterSettingsChange!]).schoolTopics,
+    ).toEqual(['Mathematik: Lineare Funktionen']);
+  });
+
+  it('keeps sent weekly reports unchanged when absences are added later', async () => {
+    const { kernel, repository } = createKernel();
+    await kernel.boot();
+    await signIn(kernel);
+    await completeRequiredOnboarding(kernel);
+    setCurrentTime('2026-03-13T10:00:00.000Z');
+
+    await kernel.upsertDailyReport({
+      weekStart: '2026-03-09',
+      weekEnd: '2026-03-13',
+      date: '2026-03-10',
+      values: {
+        dayType: 'work',
+        activities: ['Code Review'],
+      },
+    });
+
+    setCurrentTime('2026-03-13T10:30:00.000Z');
+    await kernel.upsertWeeklyReport({
+      weekStart: '2026-03-09',
+      weekEnd: '2026-03-13',
+      values: {
+        submitted: true,
+        submittedToEmail: 'trainer@example.com',
+      },
+    });
+
+    const stateBeforeAbsenceChange = await repository.read();
+    const weekBeforeAbsenceChange = Object.values(
+      stateBeforeAbsenceChange.reports.weeklyReports,
+    ).find(
+      (weeklyReport) =>
+        weeklyReport.weekStart === '2026-03-09' &&
+        weeklyReport.weekEnd === '2026-03-13',
+    );
+    const dayBeforeAbsenceChange = Object.values(
+      stateBeforeAbsenceChange.reports.dailyReports,
+    ).find((dailyReport) => dailyReport.date === '2026-03-10');
+    const absenceSettingsBefore = parseAbsenceSettings(
+      stateBeforeAbsenceChange.settings.current.values,
+    );
+
+    setCurrentTime('2026-03-13T11:00:00.000Z');
+    await kernel.setSettingsValues(
+      mergeAbsenceSettings(stateBeforeAbsenceChange.settings.current.values, {
+        ...absenceSettingsBefore,
+        manualAbsences: [
+          {
+            id: 'absence-1',
+            type: 'sick',
+            startDate: '2026-03-10',
+            endDate: '2026-03-10',
+            label: 'Krank',
+            note: null,
+            createdAt: '2026-03-13T11:00:00.000Z',
+            updatedAt: '2026-03-13T11:00:00.000Z',
+          },
+        ],
+      }),
+    );
+
+    const stateAfterAbsenceChange = await repository.read();
+    const weekAfterAbsenceChange = Object.values(
+      stateAfterAbsenceChange.reports.weeklyReports,
+    ).find(
+      (weeklyReport) =>
+        weeklyReport.weekStart === '2026-03-09' &&
+        weeklyReport.weekEnd === '2026-03-13',
+    );
+    const dayAfterAbsenceChange = Object.values(
+      stateAfterAbsenceChange.reports.dailyReports,
+    ).find((dailyReport) => dailyReport.date === '2026-03-10');
+
+    expect(dayAfterAbsenceChange?.values).toEqual(
+      dayBeforeAbsenceChange?.values,
+    );
+    expect(weekAfterAbsenceChange?.values).toEqual(
+      weekBeforeAbsenceChange?.values,
+    );
+    expect(weekAfterAbsenceChange?.updatedAt).toBe(
+      weekBeforeAbsenceChange?.updatedAt,
+    );
+    expect(
+      stateAfterAbsenceChange.reports.weeklyHashes[weekAfterAbsenceChange!.id]
+        ?.hash,
+    ).toBe(
+      stateBeforeAbsenceChange.reports.weeklyHashes[weekBeforeAbsenceChange!.id]
+        ?.hash,
+    );
   });
 });

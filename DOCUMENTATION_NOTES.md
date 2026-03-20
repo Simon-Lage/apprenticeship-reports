@@ -7,8 +7,6 @@ Diese Datei sammelt Regeln, Quellen und Arbeitsablaeufe fuer die Projektdokument
 ## Aktueller Kontext
 
 - Die Projektdokumentation wird abschnittsweise gemeinsam erstellt.
-- Einleitung und Projektplanung sind bereits vorhanden.
-- Aktuell beginnt die Analysephase.
 - Die Dokumentation wird nicht komplett in einem Schritt geschrieben, sondern Punkt fuer Punkt bzw. Absatz fuer Absatz.
 
 ## Verbindliche Arbeitsweise
@@ -22,7 +20,7 @@ Diese Datei sammelt Regeln, Quellen und Arbeitsablaeufe fuer die Projektdokument
 - Zusaetzlich vorhandene Beispiel-Dokumentationen dienen nur als Orientierung fuer sinnvolle Formulierungen und inhaltliche Auspraegung, nicht als hoeherrangige Quelle.
 - Es wird immer nur der aktuell besprochene Punkt bearbeitet.
 - Es wird nichts ausserhalb dieses Punktes geaendert, ausser der Nutzer verlangt es ausdruecklich.
-- Kein manuelles Styling in Google Docs vornehmen.
+- Es wird direkt in der lokalen Markdown-Datei fuer die Projektdokumentation gearbeitet.
 - Es wird nur fachlich passender Text eingefuegt oder angepasst.
 
 ## Quellen und Referenzen
@@ -37,15 +35,16 @@ Diese Datei sammelt Regeln, Quellen und Arbeitsablaeufe fuer die Projektdokument
 - Referenzdokumentation:
   `C:\Users\simon.lage\Documents\Projektdokus\ProjektdokumentationFachinformatikerAnwendungsentwicklung2022MattesOssenbeck.pdf`
 
-### Google-Docs-Arbeitsdokument
+### Arbeitsdatei
 
-- Zieldokument:
-  [Google Docs Dokument](https://docs.google.com/document/d/11kbFtVPgxzSdXIXWXJApHYfxlGxxUlY6cc5yRkcgdw8/edit?tab=t.0#heading=h.azvz4xjwxlts)
+- Primaere Arbeitsdatei:
+  `C:\Users\simon.lage\PhpstormProjects\apprenticeship-reports\AppRep-Projektdokumentation.md`
+- Das eigentliche Google-Docs-Dokument wird vom Nutzer manuell uebertragen.
 
 ## Tooling
 
-- Fuer die Bearbeitung des Google-Docs-Dokuments soll `MyLocalMCP` verwendet werden, sofern Zugriff verfuegbar ist.
-- Relevante Nutzung hier: Google-Docs-Funktionen zum Lesen und Bearbeiten von Textinhalten.
+- `MyLocalMCP` wird fuer die eigentliche Dokumentationsarbeit ignoriert.
+- Die fachliche Ausarbeitung erfolgt ab sofort direkt in der lokalen Markdown-Datei.
 - Fokus liegt ausschliesslich auf fachlich sinnvoller Formulierung, nicht auf Layout oder visueller Formatierung.
 
 ## Standardablauf pro Punkt
@@ -54,7 +53,7 @@ Diese Datei sammelt Regeln, Quellen und Arbeitsablaeufe fuer die Projektdokument
 2. Vorlage pruefen, was bei genau diesem Punkt gefordert ist.
 3. Falls sinnvoll, passende Formulierungsbeispiele aus vorhandenen Referenzdokumentationen heranziehen.
 4. Einen inhaltlich passenden Text fuer genau diesen Punkt formulieren.
-5. Den Text direkt in den betreffenden Abschnitt des Google-Docs-Dokuments eintragen.
+5. Den Text direkt in den betreffenden Abschnitt der lokalen Markdown-Datei eintragen.
 6. Keine anderen Abschnitte veraendern.
 7. Danach mit dem Nutzer abstimmen und bei Bedarf nur diesen Punkt weiter verfeinern.
 
@@ -71,4 +70,4 @@ Diese Datei sammelt Regeln, Quellen und Arbeitsablaeufe fuer die Projektdokument
 - Immer nur den aktuell angeforderten Punkt bearbeiten.
 - Nur Text aendern, kein Styling.
 - Referenzdokumentationen nur als Hilfe nutzen.
-- Google Docs ist das primäre Arbeitsziel fuer Textaenderungen.
+- Die lokale Markdown-Datei ist das primaere Arbeitsziel fuer Textaenderungen.

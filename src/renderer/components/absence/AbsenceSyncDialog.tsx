@@ -1,4 +1,4 @@
-import { MouseEvent, useEffect, useState } from 'react';
+import { MouseEvent, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
@@ -59,28 +59,31 @@ export default function AbsenceSyncDialog({
     setAutoSyncEnabled(absenceSettings.autoSyncHolidays);
   }, [absenceSettings.autoSyncHolidays, open]);
 
-  async function persistAutoSyncPreference(nextValue: boolean) {
-    if (!runtime.api || !settingsSnapshot.value) {
-      return;
-    }
+  const persistAutoSyncPreference = useCallback(
+    async (nextValue: boolean) => {
+      if (!runtime.api || !settingsSnapshot.value) {
+        return;
+      }
 
-    if (absenceSettings.autoSyncHolidays === nextValue) {
-      return;
-    }
+      if (absenceSettings.autoSyncHolidays === nextValue) {
+        return;
+      }
 
-    const nextValues = mergeAbsenceSettings(settingsSnapshot.value.values, {
-      ...absenceSettings,
-      autoSyncHolidays: nextValue,
-    });
-    await runtime.api.setSettingsValues(nextValues);
-  }
+      const nextValues = mergeAbsenceSettings(settingsSnapshot.value.values, {
+        ...absenceSettings,
+        autoSyncHolidays: nextValue,
+      });
+      await runtime.api.setSettingsValues(nextValues);
+    },
+    [runtime.api, settingsSnapshot, absenceSettings],
+  );
 
-  async function refreshState() {
+  const refreshState = useCallback(async () => {
     await runtime.refresh();
     await settingsSnapshot.refresh();
-  }
+  }, [runtime, settingsSnapshot]);
 
-  async function handleCancel() {
+  const handleCancel = useCallback(async () => {
     if (isPending) {
       return;
     }
@@ -108,9 +111,19 @@ export default function AbsenceSyncDialog({
     } finally {
       setIsPending(false);
     }
-  }
+  }, [
+    isPending,
+    mode,
+    onOpenChange,
+    runtime,
+    toast,
+    t,
+    autoSyncEnabled,
+    persistAutoSyncPreference,
+    refreshState,
+  ]);
 
-  async function handleConfirm() {
+  const handleConfirm = useCallback(async () => {
     if (!runtime.api || !settingsSnapshot.value) {
       return;
     }
@@ -131,12 +144,24 @@ export default function AbsenceSyncDialog({
     } finally {
       setIsPending(false);
     }
-  }
+  }, [
+    runtime,
+    settingsSnapshot.value,
+    toast,
+    t,
+    autoSyncEnabled,
+    onOpenChange,
+    persistAutoSyncPreference,
+    refreshState,
+  ]);
 
-  async function handleConfirmClick(event: MouseEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    await handleConfirm();
-  }
+  const handleConfirmClick = useCallback(
+    async (event: MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      await handleConfirm();
+    },
+    [handleConfirm],
+  );
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -157,6 +182,10 @@ export default function AbsenceSyncDialog({
                   : 'absences.sync.syncNowConfirmDescription',
               )}
             </p>
+            <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+              <p className="font-medium">{t('absences.sync.warningTitle')}</p>
+              <p className="mt-1">{t('absences.sync.warningDescription')}</p>
+            </div>
             <div className="rounded-md border border-primary-tint/30 bg-primary-tint/10 p-3 text-sm text-text-color/90">
               <p>
                 <strong>{t('absences.sync.stateLabel')}:</strong>{' '}

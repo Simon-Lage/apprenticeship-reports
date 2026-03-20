@@ -322,6 +322,9 @@ export default function ChangeAuthMethodsPage() {
               {t('authMethods.google.remove')}
             </Button>
           </div>
+          <p className="text-sm text-text-color/75">
+            {t('authMethods.google.browserHint')}
+          </p>
           {!isGoogleOauthConfigured ? (
             <Alert className="border-primary-tint bg-primary-tint/30">
               <AlertTitle>{t('authMethods.google.title')}</AlertTitle>

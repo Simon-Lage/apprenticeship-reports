@@ -1,12 +1,21 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { FiCheck, FiX } from 'react-icons/fi';
+import { FiAlertTriangle, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 
+import DayTypeBadge from '@/renderer/components/app/DayTypeBadge';
 import { PageHeader } from '@/renderer/components/app/PageHeader';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
-import { useReportsState } from '@/renderer/hooks/useKernelData';
+import {
+  useReportsState,
+  useSettingsSnapshot,
+} from '@/renderer/hooks/useKernelData';
 import { appRoutes } from '@/renderer/lib/app-routes';
+import {
+  formatConflictDayTypeLabel,
+  formatConflictReasonLabel,
+  resolveDailyReportAbsenceConflict,
+} from '@/renderer/lib/report-conflicts';
 import {
   listWeekDates,
   parseDailyReportValues,
@@ -26,6 +35,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { parseAbsenceSettings } from '@/shared/absence/settings';
 
 function toDisplayDate(dateValue: string): string {
   const [year, month, day] = dateValue.split('-');
@@ -41,19 +51,48 @@ export default function ReportsOverviewPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const reportsState = useReportsState();
+  const settingsSnapshot = useSettingsSnapshot();
   const [search, setSearch] = useState('');
   const [hoveredWeekKey, setHoveredWeekKey] = useState<string | null>(null);
   const [dayTypeFilter, setDayTypeFilter] = useState<
     'all' | 'work' | 'school' | 'free'
   >('all');
+  const toWeekdayShort = (dateValue: string): string => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+      return '';
+    }
 
+    const [year, month, day] = dateValue.split('-').map(Number);
+    const parsed = new Date(Date.UTC(year, month - 1, day));
+
+    if (parsed.toISOString().slice(0, 10) !== dateValue) {
+      return '';
+    }
+
+    const translationKeyByWeekday = [
+      'reportsOverview.table.weekdays.sunday',
+      'reportsOverview.table.weekdays.monday',
+      'reportsOverview.table.weekdays.tuesday',
+      'reportsOverview.table.weekdays.wednesday',
+      'reportsOverview.table.weekdays.thursday',
+      'reportsOverview.table.weekdays.friday',
+      'reportsOverview.table.weekdays.saturday',
+    ] as const;
+
+    return t(translationKeyByWeekday[parsed.getUTCDay()]);
+  };
+
+  const absenceSettings = useMemo(
+    () => parseAbsenceSettings(settingsSnapshot.value?.values ?? {}),
+    [settingsSnapshot.value?.values],
+  );
   const rows = useMemo(() => {
     if (!reportsState.value) {
       return [];
     }
 
     const sortedWeeks = Object.values(reportsState.value.weeklyReports).sort(
-      (left, right) => left.weekStart.localeCompare(right.weekStart),
+      (left, right) => right.weekStart.localeCompare(left.weekStart),
     );
 
     return sortedWeeks.flatMap((weeklyReport, weekIndex) => {
@@ -70,12 +109,21 @@ export default function ReportsOverviewPage() {
           .map((dailyReport) => [dailyReport.date, dailyReport]),
       );
 
-      return listWeekDates(weeklyReport.weekStart, weeklyReport.weekEnd).map(
-        (date, rowIndex) => {
+      return listWeekDates(weeklyReport.weekStart, weeklyReport.weekEnd)
+        .reverse()
+        .map((date, rowIndex) => {
           const dailyReport = dailyByDate.get(date) ?? null;
           const parsed = dailyReport
             ? parseDailyReportValues(dailyReport.values)
             : null;
+          const conflict =
+            dailyReport && !weeklyValues.submitted
+              ? resolveDailyReportAbsenceConflict({
+                  date: dailyReport.date,
+                  values: dailyReport.values,
+                  absenceSettings,
+                })
+              : null;
           let summary = '-';
 
           if (parsed) {
@@ -104,6 +152,7 @@ export default function ReportsOverviewPage() {
             id: dailyReport?.id ?? null,
             date,
             dayType: parsed?.dayType ?? null,
+            freeReason: parsed?.freeReason ?? '',
             summary,
             weekStart: weeklyReport.weekStart,
             weekEnd: weeklyReport.weekEnd,
@@ -111,15 +160,15 @@ export default function ReportsOverviewPage() {
             submitted: weeklyValues.submitted,
             submittedToEmail: weeklyValues.submittedToEmail ?? '-',
             area: weeklyValues.area || '-',
+            conflict,
             isWeekStart: rowIndex === 0 && weekIndex > 0,
             isWeekFirstRow: rowIndex === 0,
             weekRowSpan: 7,
             searchableContent,
           };
-        },
-      );
+        });
     });
-  }, [reportsState.value]);
+  }, [absenceSettings, reportsState.value]);
 
   const filteredRows = useMemo(
     () =>
@@ -134,6 +183,11 @@ export default function ReportsOverviewPage() {
       }),
     [dayTypeFilter, rows, search],
   );
+  const weeklyTooltip = (row: { weekStart: string; weekEnd: string }): string =>
+    t('reportsOverview.table.openWeeklyTooltip', {
+      start: toDisplayDate(row.weekStart),
+      end: toDisplayDate(row.weekEnd),
+    });
 
   return (
     <div className="space-y-4">
@@ -175,6 +229,7 @@ export default function ReportsOverviewPage() {
                 <TableHead>{t('reportsOverview.table.date')}</TableHead>
                 <TableHead>{t('reportsOverview.table.dayType')}</TableHead>
                 <TableHead>{t('reportsOverview.table.entries')}</TableHead>
+                <TableHead>{t('reportsOverview.table.conflict')}</TableHead>
                 <TableHead className="border-l border-primary-tint/70">
                   {t('reportsOverview.table.submitted')}
                 </TableHead>
@@ -212,7 +267,12 @@ export default function ReportsOverviewPage() {
                   >
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span>{toDisplayDate(row.date)}</span>
+                        <span className="inline-flex items-center gap-3">
+                          <span className="min-w-8 text-left font-medium text-text-color/70">
+                            {toWeekdayShort(row.date)}
+                          </span>
+                          <span>{toDisplayDate(row.date)}</span>
+                        </span>
                       </TooltipTrigger>
                       {row.id ? (
                         <TooltipContent side="top" sideOffset={8}>
@@ -237,9 +297,18 @@ export default function ReportsOverviewPage() {
                       );
                     }}
                   >
-                    {row.dayType
-                      ? t(`dailyReport.dayTypes.${row.dayType}`)
-                      : '-'}
+                    {row.dayType ? (
+                      <DayTypeBadge
+                        dayType={row.dayType}
+                        freeReason={row.freeReason}
+                        showFreeReason={false}
+                        className="rounded-full border border-primary-tint/70 bg-primary-tint/15 px-2.5 py-1 text-xs text-text-color"
+                        iconClassName="text-primary"
+                        labelClassName="font-medium"
+                      />
+                    ) : (
+                      '-'
+                    )}
                   </TableCell>
                   <TableCell
                     className={`max-w-[420px] whitespace-normal ${
@@ -257,6 +326,46 @@ export default function ReportsOverviewPage() {
                   >
                     {row.summary}
                   </TableCell>
+                  <TableCell>
+                    {row.conflict ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex items-center gap-2 text-amber-700">
+                            <FiAlertTriangle className="size-4" />
+                            {t('reportConflicts.badge')}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" sideOffset={8}>
+                          <p>
+                            {t('reportConflicts.storedState', {
+                              value: formatConflictDayTypeLabel(t, {
+                                dayType: row.conflict.storedDayType,
+                                freeReason: row.conflict.storedFreeReason,
+                              }),
+                            })}
+                          </p>
+                          <p>
+                            {t('reportConflicts.expectedState', {
+                              value: formatConflictDayTypeLabel(t, {
+                                dayType: row.conflict.expectedDayType,
+                                freeReason: row.conflict.expectedFreeReason,
+                              }),
+                            })}
+                          </p>
+                          <p>
+                            {t('reportConflicts.reason', {
+                              value: formatConflictReasonLabel(
+                                t,
+                                row.conflict.reason,
+                              ),
+                            })}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
                   {row.isWeekFirstRow ? (
                     <>
                       <TableCell
@@ -266,6 +375,7 @@ export default function ReportsOverviewPage() {
                             ? 'bg-primary-tint/25'
                             : ''
                         } cursor-pointer`}
+                        title={weeklyTooltip(row)}
                         onMouseEnter={() => {
                           setHoveredWeekKey(row.weekKey);
                         }}
@@ -280,23 +390,21 @@ export default function ReportsOverviewPage() {
                           );
                         }}
                       >
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-flex w-full justify-center">
-                              {row.submitted ? (
-                                <FiCheck className="size-4 text-primary" />
-                              ) : (
-                                <FiX className="size-4 text-text-color/70" />
-                              )}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" sideOffset={8}>
-                            {t('reportsOverview.table.openWeeklyTooltip', {
-                              start: toDisplayDate(row.weekStart),
-                              end: toDisplayDate(row.weekEnd),
-                            })}
-                          </TooltipContent>
-                        </Tooltip>
+                        <div className="flex w-full justify-center">
+                          <span
+                            className={`inline-flex items-center justify-center rounded-full border px-2 py-1 ${
+                              row.submitted
+                                ? 'border-emerald-300 bg-emerald-100 text-emerald-700 shadow-sm'
+                                : 'border-primary-tint/70 bg-white text-text-color/70'
+                            }`}
+                          >
+                            {row.submitted ? (
+                              <FiCheckCircle className="size-4" />
+                            ) : (
+                              <FiXCircle className="size-4" />
+                            )}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell
                         rowSpan={row.weekRowSpan}
@@ -305,6 +413,7 @@ export default function ReportsOverviewPage() {
                             ? 'bg-primary-tint/25'
                             : ''
                         } cursor-pointer`}
+                        title={weeklyTooltip(row)}
                         onMouseEnter={() => {
                           setHoveredWeekKey(row.weekKey);
                         }}
@@ -319,17 +428,7 @@ export default function ReportsOverviewPage() {
                           );
                         }}
                       >
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span>{row.submittedToEmail}</span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" sideOffset={8}>
-                            {t('reportsOverview.table.openWeeklyTooltip', {
-                              start: toDisplayDate(row.weekStart),
-                              end: toDisplayDate(row.weekEnd),
-                            })}
-                          </TooltipContent>
-                        </Tooltip>
+                        <span>{row.submittedToEmail}</span>
                       </TableCell>
                       <TableCell
                         rowSpan={row.weekRowSpan}
@@ -338,6 +437,7 @@ export default function ReportsOverviewPage() {
                             ? 'bg-primary-tint/25'
                             : ''
                         } cursor-pointer`}
+                        title={weeklyTooltip(row)}
                         onMouseEnter={() => {
                           setHoveredWeekKey(row.weekKey);
                         }}
@@ -352,17 +452,7 @@ export default function ReportsOverviewPage() {
                           );
                         }}
                       >
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span>{row.area}</span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" sideOffset={8}>
-                            {t('reportsOverview.table.openWeeklyTooltip', {
-                              start: toDisplayDate(row.weekStart),
-                              end: toDisplayDate(row.weekEnd),
-                            })}
-                          </TooltipContent>
-                        </Tooltip>
+                        <span>{row.area}</span>
                       </TableCell>
                     </>
                   ) : null}

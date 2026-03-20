@@ -11,7 +11,9 @@ const deTranslation = {
   common: {
     loading: 'Lädt...',
     add: 'Hinzufügen',
+    edit: 'Bearbeiten',
     remove: 'Entfernen',
+    save: 'Speichern',
     cancel: 'Abbrechen',
     yes: 'Ja',
     no: 'Nein',
@@ -30,6 +32,20 @@ const deTranslation = {
     errors: {
       unknown: 'Unbekannter Fehler.',
     },
+  },
+  reportConflicts: {
+    badge: 'Konflikt',
+    storedState: 'Gespeichert: {{value}}',
+    expectedState: 'Aktuell erwartet: {{value}}',
+    reason: 'Auslöser: {{value}}',
+    dailyTitle: 'Abwesenheitskonflikt erkannt',
+    dailyDescription:
+      'Der gespeicherte Tagesbericht passt nicht mehr zu den aktuellen Abwesenheiten, Feiertagen oder Ferien.',
+    weeklyTitle: '{{count}} Konflikt(e) in dieser Woche',
+    weeklyDescription:
+      'Diese Woche ist noch nicht als gesendet markiert. Prüfe die betroffenen Tage und entscheide bewusst, ob du den Tagesbericht oder die Abwesenheiten anpassen willst.',
+    weeklyItem:
+      '{{date}}: gespeichert {{stored}}, erwartet {{expected}}, Auslöser {{reason}}',
   },
   navigation: {
     brand: 'AppRep',
@@ -150,7 +166,7 @@ const deTranslation = {
         unavailableDescription:
           'Google OAuth ist in dieser Umgebung nicht konfiguriert. Du kannst diesen optionalen Schritt überspringen.',
         browserHint:
-          'Beim Verbinden wird der Browser geöffnet. Danach kehrst du automatisch zurück.',
+          'Beim Verbinden wird das Auth-Fenster im Browser geöffnet. Nach erfolgreicher Anmeldung musst du dieses Fenster schließen.',
         connectedTitle: 'Google-Konto verknüpft',
         connectedDescription:
           'Ein Google-Konto wurde erfolgreich mit der App verknüpft.',
@@ -227,14 +243,34 @@ const deTranslation = {
   home: {
     hero: {
       kicker: 'AppRep',
-      title: 'Dein Berichtsheft',
+      title: 'Dein Tool für Ausbildungsberichte!',
       description:
         'Erfasse Tages- und Wochenberichte strukturiert und springe direkt in die Bereiche, die du gerade brauchst.',
+    },
+    actions: {
+      captureDay: 'Tagesbericht schreiben',
+      allReports: 'Alle Berichte',
     },
     stats: {
       dailyReports: 'Tagesberichte',
       weeklyReports: 'Wochenberichte',
       totalEntries: 'Tage mit Berichten',
+      backlogDays: 'Rückstand',
+      backlogDaysDescription:
+        'So viele Kalendertage im aktuellen Berichtszeitraum haben noch keinen Tagesbericht.',
+      sameDayRate: 'Am selben Tag',
+      sameDayRateDescription:
+        'Anteil der Tagesberichte, die direkt am passenden Datum erfasst wurden.',
+      averageBatchSize: 'Pro Erfassungstag',
+      averageBatchSizeDescription:
+        'Im Schnitt so viele Tagesberichte pro Tag, an dem du überhaupt Berichte eingetragen hast: {{count}} Erfassungstage.',
+      entryModes: 'Manuell / Automatisch',
+      entryModesValue: '{{manual}} / {{automatic}}',
+      entryModesDescription:
+        'Vergleich zwischen selbst erfassten und automatisch angelegten Tagesberichten.',
+      insightTitle: 'Berichtsstand',
+      insightDescription:
+        'Aktuell fehlen {{backlog}} Tage. {{sameDayRate}} der Tagesberichte wurden direkt am selben Tag erfasst. Manuell: {{manual}}, automatisch: {{automatic}}.',
     },
     areas: {
       daily: {
@@ -276,6 +312,12 @@ const deTranslation = {
     title: 'Abwesenheiten',
     description:
       'Verwalte manuelle Abwesenheiten und automatisch importierte Feiertage/Ferien.',
+    confirmDelete: {
+      title: '{{type}} löschen?',
+      description: '"{{value}}" wird dauerhaft entfernt.',
+      cancel: 'Abbrechen',
+      confirm: 'Löschen',
+    },
     sync: {
       title: 'Feiertage und Ferien',
       description:
@@ -294,10 +336,13 @@ const deTranslation = {
         'Die lokalen Feiertags- und Ferieninformationen aus {{years}} sind veraltet.',
       confirmTitle: 'Feiertage und Ferien synchronisieren?',
       confirmDescription:
-        'Möchtest du die Feiertage und Ferien vom OpenHolidays-Server laden? Diese Daten werden lokal gespeichert.',
+        'Möchtest du die Feiertage und Ferien jetzt synchronisieren? Dafür wird eine Verbindung zum externen Drittanbieter OpenHolidays API hergestellt und die lokalen Feiertags- und Ferienkataloge für das betroffene Jahr werden überschrieben.',
       syncNowConfirmTitle: 'Jetzt synchronisieren?',
       syncNowConfirmDescription:
-        'Möchtest du die Feiertage und Ferien jetzt vom OpenHolidays-Server laden? Bestehende Katalogdaten werden dabei aktualisiert.',
+        'Möchtest du die Feiertage und Ferien jetzt synchronisieren? Dafür wird eine Verbindung zum externen Drittanbieter OpenHolidays API hergestellt und die lokalen Feiertags- und Ferienkataloge für das betroffene Jahr werden überschrieben.',
+      warningTitle: 'Externer Abruf und Überschreiben',
+      warningDescription:
+        'Die Synchronisation überschreibt die lokal gespeicherten Feiertags- und Ferienkataloge für das betroffene Jahr mit Daten der OpenHolidays API.',
       autoSyncLabel: 'Zukünftig automatisch synchronisieren',
       enableAutoSyncLabel: 'Automatische Synchronisierung wieder aktivieren',
       confirmButton: 'Jetzt synchronisieren',
@@ -306,6 +351,7 @@ const deTranslation = {
     manual: {
       title: 'Manuelle Abwesenheiten',
       description: 'Krankheit, Urlaub sowie manuelle Ferien/Feiertage.',
+      summary: 'Krankheit/Urlaub aufklappen',
       startDate: 'Von',
       endDate: 'Bis',
       type: 'Typ',
@@ -315,8 +361,11 @@ const deTranslation = {
       update: 'Eintrag aktualisieren',
       cancelEdit: 'Bearbeitung abbrechen',
       empty: 'Keine manuellen Abwesenheiten vorhanden.',
+      emptyType: 'Keine {{type}}-Einträge vorhanden.',
       edit: 'Bearbeiten',
       delete: 'Löschen',
+      editEntry: '{{type}} bearbeiten',
+      deleteEntry: '{{type}} löschen',
       types: {
         sick: 'Krankheit',
         vacation: 'Urlaub',
@@ -325,14 +374,25 @@ const deTranslation = {
       },
     },
     catalog: {
+      title: 'Feiertage und Ferien',
+      description:
+        'Synchronisierte und manuelle Feiertage/Ferien zentral verwalten.',
+      summary: 'Feiertage/Ferien aufklappen',
       publicTitle: 'Feiertage',
       schoolTitle: 'Ferien',
       empty: 'Keine Daten verfügbar.',
+      emptyType: 'Keine {{type}}-Einträge vorhanden.',
       outdated: 'Veraltet',
+      sources: {
+        manual: 'Manuell',
+        synced: 'Synchronisiert',
+      },
     },
     feedback: {
       missingDate: 'Bitte gültige Datumswerte angeben.',
       invalidRange: 'Das Enddatum muss am oder nach dem Startdatum liegen.',
+      labelRequiredForHolidayType:
+        'Für Feiertage und Ferien ist eine Bezeichnung erforderlich.',
       saved: 'Abwesenheiten gespeichert.',
       saveError: 'Abwesenheiten konnten nicht gespeichert werden.',
       deleted: 'Eintrag gelöscht.',
@@ -360,6 +420,8 @@ const deTranslation = {
       description: 'Google-Konto verbinden, wechseln oder entfernen.',
       notLinked: 'Kein Google-Konto verknüpft',
       unavailable: 'Google OAuth ist nicht konfiguriert.',
+      browserHint:
+        'Beim Verbinden wird das Auth-Fenster im Browser geöffnet. Nach erfolgreicher Anmeldung musst du dieses Fenster schließen.',
       connect: 'Google verbinden',
       switch: 'Google wechseln',
       remove: 'Google entfernen',
@@ -389,8 +451,8 @@ const deTranslation = {
   settings: {
     title: 'Settings',
     description: 'Globale Einstellungen, Import und Export.',
-    save: 'Settings speichern',
-    reset: 'Settings zurücksetzen',
+    save: 'Speichern',
+    reset: 'Zurücksetzen',
     loadingTitle: 'Settings werden geladen',
     loadingDescription: 'Die aktuellen Einstellungen werden abgerufen.',
     general: {
@@ -403,6 +465,7 @@ const deTranslation = {
       supervisorSecondary: 'Betreuer-E-Mail 2',
       ihkLink: 'IHK-Link',
       googleAccount: 'Verknüpftes Google-Konto',
+      linkGoogleAccount: 'Google-Konto verknüpfen',
     },
     trainingPeriod: {
       title: 'Ausbildungszeitraum',
@@ -453,8 +516,8 @@ const deTranslation = {
   timeTable: {
     title: 'Stundenplan',
     description: 'Preset-Stundenplan inklusive Lehrer- und Fächerlisten.',
-    save: 'Stundenplan speichern',
-    reset: 'Stundenplan zurücksetzen',
+    save: 'Speichern',
+    reset: 'Zurücksetzen',
     days: {
       monday: 'Montag',
       tuesday: 'Dienstag',
@@ -475,6 +538,14 @@ const deTranslation = {
       summary: 'Lehrer/Fächer aufklappen',
       newTeacher: 'Neuen Lehrer hinzufügen',
       newSubject: 'Neues Fach hinzufügen',
+      actions: {
+        addTeacher: 'Lehrer hinzufügen',
+        addSubject: 'Fach hinzufügen',
+        editEntry: '"{{value}}" bearbeiten',
+        saveEntry: 'Änderung speichern',
+        cancelEdit: 'Bearbeitung abbrechen',
+        removeEntry: '"{{value}}" entfernen',
+      },
     },
     confirmAdd: {
       teacherTitle: 'Lehrer hinzufügen?',
@@ -483,9 +554,21 @@ const deTranslation = {
       cancel: 'Nein',
       confirm: 'Hinzufügen',
     },
+    confirmDelete: {
+      teacherTitle: 'Lehrer löschen?',
+      subjectTitle: 'Fach löschen?',
+      description:
+        '"{{value}}" wird aus der Liste und aus allen Stundenplanfeldern entfernt.',
+      cancel: 'Abbrechen',
+      confirm: 'Löschen',
+    },
     feedback: {
       saved: 'Stundenplan gespeichert.',
       saveError: 'Stundenplan konnte nicht gespeichert werden.',
+      teacherRequired: 'Bitte einen Lehrernamen eingeben.',
+      subjectRequired: 'Bitte einen Fachnamen eingeben.',
+      teacherExists: 'Dieser Lehrer existiert bereits.',
+      subjectExists: 'Dieses Fach existiert bereits.',
     },
   },
   dailyReport: {
@@ -498,14 +581,33 @@ const deTranslation = {
       free: 'Freier Tag',
     },
     meta: {
-      title: 'Datum und Tagestyp',
+      title: 'Tagestyp - Datum',
+      titleWithValues: '{{dayType}} - {{date}}',
       description: 'Datum und Tagestyp festlegen.',
       editingDescription: 'Du bearbeitest den Tagesbericht vom {{date}}.',
       creatingDescription: 'Du legst einen neuen Tagesbericht für {{date}} an.',
+      submittedDescription:
+        'Du siehst den gesendeten Tagesbericht vom {{date}}.',
       weekStart: 'Wochenstart',
       weekEnd: 'Wochenende',
       date: 'Datum',
       dayType: 'Tagestyp',
+    },
+    calendar: {
+      title: 'Tageskalender',
+      description:
+        'Wähle einen Tag aus und erkenne sofort, welche Berichte schon gesendet, nur gespeichert oder noch offen sind.',
+      legendSubmitted: 'Bereits gesendet',
+      legendDraft: 'Eingetragen, noch nicht gesendet',
+      legendEmpty: 'Noch kein Tagesbericht',
+    },
+    status: {
+      editingTitle: 'Bearbeitungsmodus',
+      editingDescription: 'Du bearbeitest den Tagesbericht vom {{date}}.',
+      submittedTitle: 'Nur Lesemodus',
+      submittedDescription:
+        'Dieser Tagesbericht gehört zu einem bereits gesendeten Wochenbericht und kann nicht mehr bearbeitet werden.',
+      submittedAt: 'Gesendet am {{date}}.',
     },
     auto: {
       reasonPublicHoliday: 'Automatisch erkannt: Feiertag ({{name}}).',
@@ -554,6 +656,8 @@ const deTranslation = {
     },
     feedback: {
       missingDates: 'Bitte ein gültiges Datum angeben.',
+      missingFreeReason:
+        'Bei freien Tagen muss ein genauer Grund eingetragen werden.',
       missingWorkEntries:
         'Bei Arbeitstagen muss mindestens eine Arbeitstätigkeit oder eine Schulung eingetragen werden.',
       missingSchoolLessonTopics:
@@ -593,6 +697,10 @@ const deTranslation = {
       noWeek: 'Keine passende Woche mit Tagesberichten gefunden.',
     },
     sections: {
+      metadata: {
+        title: 'Wochenmetadaten',
+        titleWithRange: 'Wochenbericht {{start}} - {{end}}',
+      },
       operational: {
         title: 'Betriebliche Tätigkeiten',
       },
@@ -617,6 +725,7 @@ const deTranslation = {
     notifications: {
       saved: 'Wochenbericht wurde gespeichert.',
       saveFailed: 'Wochenbericht konnte nicht gespeichert werden.',
+      autoFillFailed: 'Automatisches Ausfüllen der freien Tage fehlgeschlagen.',
     },
     status: {
       submitted: 'Bericht abgeschickt',
@@ -726,6 +835,16 @@ const deTranslation = {
       date: 'Datum',
       dayType: 'Typ',
       entries: 'Einträge',
+      conflict: 'Konflikt',
+      weekdays: {
+        monday: 'Mo.',
+        tuesday: 'Di.',
+        wednesday: 'Mi.',
+        thursday: 'Do.',
+        friday: 'Fr.',
+        saturday: 'Sa.',
+        sunday: 'So.',
+      },
       submitted: 'Gesendet',
       submittedTo: 'Empfänger',
       area: 'Abteilung',

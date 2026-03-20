@@ -53,9 +53,11 @@ describe('app kernel', () => {
       },
     };
 
+    const { ui: _legacyUi, ...legacyStateWithoutUi } = legacyState;
+
     await fs.writeFile(
       legacyFilePath,
-      JSON.stringify(legacyState, null, 2),
+      JSON.stringify(legacyStateWithoutUi, null, 2),
       'utf-8',
     );
 
@@ -67,6 +69,9 @@ describe('app kernel', () => {
       backup: {
         enabled: true,
       },
+    });
+    expect(migratedState.ui).toEqual({
+      isFullScreen: false,
     });
   });
 

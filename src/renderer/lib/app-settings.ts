@@ -77,6 +77,12 @@ export type OnboardingWorkplaceValues = z.infer<
   typeof onboardingWorkplaceSchema
 >;
 export type OnboardingRegionValues = z.infer<typeof onboardingRegionSchema>;
+export type ResolvedWorkplaceSettingsValues = {
+  department: string;
+  trainerEmail: string;
+  ihkLink: string;
+};
+export type UiCatalogEntryKind = 'teacher' | 'subject';
 
 function normalizeSubdivisionOrNull(value: unknown): string | null {
   if (typeof value !== 'string') {
@@ -218,6 +224,19 @@ export function parseOnboardingWorkplace(
   });
 }
 
+export function resolveWorkplaceSettingsValues(
+  values: JsonObject,
+): ResolvedWorkplaceSettingsValues {
+  const uiSettings = parseUiSettings(values);
+  const workplace = parseOnboardingWorkplace(values);
+
+  return {
+    department: workplace.department ?? uiSettings.defaultDepartment,
+    trainerEmail: workplace.trainerEmail ?? uiSettings.supervisorEmailPrimary,
+    ihkLink: workplace.ihkLink ?? '',
+  };
+}
+
 export function parseOnboardingRegion(
   values: JsonObject,
 ): OnboardingRegionValues {
@@ -240,6 +259,46 @@ export function mergeUiSettings(
       teachers: uniqStrings(uiSettings.teachers),
       subjects: uniqStrings(uiSettings.subjects),
     },
+  };
+}
+
+export function renameUiCatalogEntry(input: {
+  uiSettings: UiSettingsValues;
+  kind: UiCatalogEntryKind;
+  currentValue: string;
+  nextValue: string;
+}): UiSettingsValues {
+  const currentValue = input.currentValue.trim();
+  const nextValue = input.nextValue.trim();
+
+  if (!currentValue || !nextValue) {
+    return input.uiSettings;
+  }
+
+  const listKey = input.kind === 'teacher' ? 'teachers' : 'subjects';
+  const slotKey = input.kind === 'teacher' ? 'teacher' : 'subject';
+  const nextCatalogValues = uniqStrings(
+    input.uiSettings[listKey].map((value) =>
+      value.trim() === currentValue ? nextValue : value,
+    ),
+  );
+
+  return {
+    ...input.uiSettings,
+    [listKey]: nextCatalogValues,
+    timetable: Object.fromEntries(
+      weekDayKeys.map((day) => [
+        day,
+        input.uiSettings.timetable[day].map((slot) =>
+          slot[slotKey].trim() === currentValue
+            ? {
+                ...slot,
+                [slotKey]: nextValue,
+              }
+            : slot,
+        ),
+      ]),
+    ) as UiSettingsValues['timetable'],
   };
 }
 
