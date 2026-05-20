@@ -1,7 +1,18 @@
-# Offene issues
-- [ ] Man muss in der Lage sein, Tätigkeiten nur für die Vorschlagsliste zu bearbeiten udn zu entfernen.
-- [ ] Rechtschreibprüfung bei Tätigkeiten
-- [ ] Backups verschlüsseln
-- [ ] Prüfen/Entscheiden, ob in der Lage sein sollte, ob man bei nicht Schultagen auch Schultätigkeiten eintragen können soll.
+# Offene Issues
+- [x] Vorname und Azubi-Ident-Nummer in der Reihenfolge tauschen beim Onboarding
+- [x] Alle Card Descriptions sind beim Onboarding überflüssig, da steht nur redundanter Müll drinnen.
+- [x] Windowbar sollte nach Möglichkeit enforced weiß sein.
+- [ ] "Bootstrap Daten werden geladen" ist missverständlich, da geht auch easy eine schönere Ladeanimation, ggf. Tailwind-Spinner oder Framer Motion.
+- [ ] Inputs beim Onboarding werden bei "Zurück" nicht gespeichert.
+- [ ] "Google OAuth ist in dieser Umgebung nicht verfügbar" beim Onboarding trotz Prod-Install. Auch nach dem Onboarding steht das nicht zur Verfügung.
+- [ ] Wochen bei der Übersicht stimmen nicht mit dem Datum des Berichtsstarts überein. Angegeben 19.01.2026. Erster Tag bei Übersicht: 22.12.2025. Dabei sollte der erste Tag in der Übersicht genau der des Berichtsstarts, oder falls nicht angegeben, der des Ausbildungsstarts sein.
+- [ ] "Für JAHR fehlen noch automatische Ferien und Feiertagsdaten, die Daten werden automatisch nachgeladen" steht beim ersten Start bei Abwesenheiten, aber es wirkt nicht so, als würden sie wirklich nachgeladen werden, solange ich nicht auf den Button drücke.
+- [ ] Es gibt im Onboarding den Punkt, wo man das Bundesland angeben muss, aber da fehlt komplett der Default-On-Switch, um die Open Holiday API zu nutzen. Dafür muss ja einfach nur das Setting umgestellt werden und es muss geprüft werden, dass beim ersten Anwendungsstart auf keinen Fall Connections zu Open Holiday hergestellt werden, vor diesem Onboarding-Schritt. Der Text zur API, also um das zu erklären, ist auch zu lang.
+- [ ] Beim ersten Mal Aufrufen des Stundenplans sollte ein Modal aufgehen und alles erklären, genau so bei Abwesenheiten.
+- [ ] Man muss in der Lage sein, Tätigkeiten nur für die Vorschlagsliste zu bearbeiten und zu entfernen.
+- [ ] Der User wird beim Installieren gar nicht gefragt, ob das Programm an Start angeheftet werden soll o. Ä.
+- [ ] Prüfen/Entscheiden, ob man in der Lage sein sollte, an Nicht-Schultagen auch Schultätigkeiten eintragen zu können.
 - [ ] Pagination bei Übersicht einbauen, die Suche muss dann aber auch angepasst werden.
-- [ ] Stundenplan muss optional sein, es braucht die Möglichkeit Tage in diesem Als Schultag zu markieren und wenn dann keine Stunden eingetragen sind, werden Schultätigkeiten unabhängig von der Schulstunde aufgelistet. Wenn doch Stunden eingetragen sind, sollten die Tätigkeiten im Wochenbericht nicht nur nach Tagen, sondern auch nach Stunden mit Lehrer udn Fach aufgelistet sein.
+- [ ] Stundenplan muss optional sein, es braucht die Möglichkeit, Tage in diesem als Schultag zu markieren und wenn dann keine Stunden eingetragen sind, werden Schultätigkeiten unabhängig von der Schulstunde aufgelistet. Wenn doch Stunden eingetragen sind, sollten die Tätigkeiten im Wochenbericht nicht nur nach Tagen, sondern auch nach Stunden mit Lehrer und Fach aufgelistet sein.
+- [ ] Rechtschreibprüfung bei Tätigkeiten
+- [x] Backups verschlüsseln

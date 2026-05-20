@@ -257,6 +257,7 @@ function RuntimeRouter() {
       <AppStateView
         title={t('appState.loadingTitle')}
         description={t('appState.loadingDescription')}
+        isLoading
       />
     );
   }

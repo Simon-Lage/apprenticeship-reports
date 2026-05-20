@@ -662,10 +662,7 @@ export default function AbsencesPage() {
         ) : null}
       </SectionCard>
       <SectionCard
-        title={titleWithIcon(
-          <Thermometer className="size-4 text-primary" />,
-          t('absences.manual.title'),
-        )}
+        title={titleWithIcon(t('absences.manual.title'))}
         className="border-primary-tint bg-white"
       >
         <div className="flex flex-row w-full gap-4">

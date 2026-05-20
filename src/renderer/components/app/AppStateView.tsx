@@ -2,10 +2,12 @@ import { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import LoadingSpinner from '@/renderer/components/app/LoadingSpinner';
 
 type AppStateViewProps = {
   title: string;
   description: string;
+  isLoading?: boolean;
   actionLabel?: string;
   onAction?: () => void;
   children?: ReactNode;
@@ -14,6 +16,7 @@ type AppStateViewProps = {
 export function AppStateView({
   title,
   description,
+  isLoading = false,
   actionLabel,
   onAction,
   children,
@@ -22,7 +25,10 @@ export function AppStateView({
     <div className="mx-auto flex min-h-screen w-full max-w-3xl items-center justify-center p-6">
       <Card className="w-full border-primary-tint bg-white">
         <CardHeader>
-          <CardTitle className="text-xl text-text-color">{title}</CardTitle>
+          <CardTitle className="flex items-center gap-3 text-xl text-text-color">
+            {isLoading ? <LoadingSpinner /> : null}
+            {title}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-text-color/80">{description}</p>

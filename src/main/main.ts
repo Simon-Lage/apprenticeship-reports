@@ -1,6 +1,6 @@
 import path from 'path';
 import { stat } from 'node:fs/promises';
-import { app, BrowserWindow, dialog, shell } from 'electron';
+import { app, BrowserWindow, dialog, nativeTheme, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 
@@ -227,6 +227,8 @@ async function createWindow(): Promise<void> {
     await installExtensions();
   }
 
+  nativeTheme.themeSource = 'light';
+
   const resourcesPath = app.isPackaged
     ? path.join(process.resourcesPath, 'assets')
     : path.join(__dirname, '../../assets');
@@ -242,6 +244,7 @@ async function createWindow(): Promise<void> {
     minHeight: 870,
     fullscreen: appKernel ? await appKernel.getIsFullScreen() : false,
     autoHideMenuBar: true,
+    backgroundColor: '#ffffff',
     icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: app.isPackaged

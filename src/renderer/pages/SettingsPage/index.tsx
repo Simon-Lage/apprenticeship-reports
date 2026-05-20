@@ -5,6 +5,7 @@ import { ImageIcon, RotateCcw, Save, Trash2, Upload } from 'lucide-react';
 import { z } from 'zod';
 
 import { FormField } from '@/renderer/components/app/FormField';
+import LoadingSpinner from '@/renderer/components/app/LoadingSpinner';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
 import SettingsBackupScopeSwitches from '@/renderer/components/backup/SettingsBackupScopeSwitches';
 import UnsavedChangesDialog from '@/renderer/components/app/UnsavedChangesDialog';
@@ -599,7 +600,10 @@ export default function SettingsPage() {
   if (!formValues) {
     return (
       <Alert className="border-primary-tint bg-primary-tint/30">
-        <AlertTitle>{t('settings.loadingTitle')}</AlertTitle>
+        <AlertTitle className="flex items-center gap-2">
+          <LoadingSpinner className="size-4" />
+          {t('settings.loadingTitle')}
+        </AlertTitle>
         <AlertDescription>{t('settings.loadingDescription')}</AlertDescription>
       </Alert>
     );

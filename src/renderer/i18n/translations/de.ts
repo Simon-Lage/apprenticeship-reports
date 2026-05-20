@@ -4,7 +4,7 @@ const deTranslation = {
     bridgeMissingDescription:
       'Die Anwendung kann ohne Renderer-Bridge keine Daten laden.',
     loadingTitle: 'Anwendung wird geladen',
-    loadingDescription: 'Bootstrap-Status wird geprüft.',
+    loadingDescription: 'Daten und Einstellungen werden vorbereitet.',
     errorTitle: 'Bootstrap-Fehler',
     retry: 'Erneut laden',
     drivePermissionsTitle: 'Google-Drive-Berechtigung erforderlich',

@@ -443,7 +443,6 @@ export default function OnboardingPage() {
       <div className="mx-auto w-full max-w-3xl">
         <SectionCard
           title={t(`onboarding.steps.${currentStepId}.title`)}
-          description={t(`onboarding.steps.${currentStepId}.description`)}
           className="border-primary-tint bg-white"
           titleClassName="text-xl md:text-2xl"
         >
