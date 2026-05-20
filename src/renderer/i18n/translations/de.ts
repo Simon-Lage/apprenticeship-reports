@@ -39,6 +39,7 @@ const deTranslation = {
     export: 'Exportieren',
     yes: 'Ja',
     no: 'Nein',
+    understood: 'Verstanden',
     unsavedChanges: {
       title: 'Ungespeicherte Änderungen',
       description:
@@ -326,11 +327,12 @@ const deTranslation = {
           'Bundesland für Feiertage und Ferien sowie automatische Synchronisierung auswählen.',
         subdivisionCode: 'Bundesland',
         placeholder: 'Bundesland auswählen',
+        autoSyncHolidays: 'Feiertage und Ferien automatisch synchronisieren',
         openHolidaysNoticeBefore:
-          'Die automatische Synchronisierung von Feiertagen und Ferien wird empfohlen, damit freie Tage korrekt erkannt werden. Dafür wird eine Verbindung zur Drittanbieter-API ',
+          'Optionaler Abruf über die ',
         openHolidaysLink: 'OpenHolidays API',
         openHolidaysNoticeAfter:
-          ' hergestellt und der passende Jahreskatalog anhand des Bundeslands geladen.',
+          '. Der Abruf startet erst nach dieser Auswahl.',
         validationSubdivision: 'Gültiges Bundesland erforderlich.',
         options: {
           'DE-BB': 'Brandenburg',
@@ -469,6 +471,17 @@ const deTranslation = {
     title: 'Abwesenheiten',
     description:
       'Manuelle Abwesenheiten und automatisch importierte Feiertage/Ferien verwalten.',
+    intro: {
+      title: 'Abwesenheiten verwalten',
+      description:
+        'Hier pflegst du Krankheit, Urlaub, Feiertage und Ferien für die Berichtserstellung.',
+      sync:
+        'Feiertage und Ferien können automatisch über dein Bundesland synchronisiert werden. Fehlende Jahre werden bei aktivierter Automatik nachgeladen.',
+      manual:
+        'Krankheit, Urlaub und eigene Feiertage oder Ferien kannst du manuell erfassen und später bearbeiten.',
+      locked:
+        'Bereits gesendete Wochenberichte schützen ältere Zeiträume vor nachträglichen Änderungen.',
+    },
     confirmDelete: {
       title: '{{type}} löschen?',
       description: '"{{value}}" wird dauerhaft entfernt.',
@@ -737,6 +750,17 @@ const deTranslation = {
     description: 'Preset-Stundenplan inklusive Lehrer- und Fächerlisten.',
     save: 'Speichern',
     reset: 'Zurücksetzen',
+    intro: {
+      title: 'Stundenplan einrichten',
+      description:
+        'Der Stundenplan hilft der App, Schultage und Berichtsvorschläge zuverlässiger vorzubereiten.',
+      schedule:
+        'Trage pro Wochentag und Stunde Fach und Lehrer ein, wenn du diese Struktur nutzen möchtest.',
+      catalogs:
+        'Neue Lehrer und Fächer werden beim Eintragen vorgeschlagen und können in den Listen gepflegt werden.',
+      optional:
+        'Wenn du den Stundenplan nicht brauchst, kannst du ihn leer lassen und deine Tage weiter manuell setzen.',
+    },
     days: {
       monday: 'Montag',
       tuesday: 'Dienstag',

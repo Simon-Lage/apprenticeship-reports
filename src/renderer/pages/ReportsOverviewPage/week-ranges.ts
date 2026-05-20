@@ -54,3 +54,45 @@ export function filterWeekRangesThroughCurrentWeek(
 
   return ranges.filter((range) => range.weekStart <= currentWeek.weekStart);
 }
+
+export function listReportWeekRanges(input: {
+  startDate: string | null;
+  now?: Date;
+}): WeekRange[] {
+  if (!input.startDate) {
+    return [];
+  }
+
+  const firstWeek = resolveWeekRangeForDate(input.startDate);
+  const today = toLocalIsoDate(input.now ?? new Date());
+  const currentWeek = resolveWeekRangeForDate(today);
+
+  if (!firstWeek || !currentWeek || input.startDate > currentWeek.weekEnd) {
+    return [];
+  }
+
+  const ranges: WeekRange[] = [
+    {
+      weekStart: input.startDate,
+      weekEnd: firstWeek.weekEnd,
+    },
+  ];
+  let cursor = addIsoDays(firstWeek.weekEnd, 1);
+
+  for (
+    let attempts = 0;
+    attempts < 3660 && cursor && cursor <= currentWeek.weekStart;
+    attempts += 1
+  ) {
+    const range = resolveWeekRangeForDate(cursor);
+
+    if (!range) {
+      break;
+    }
+
+    ranges.push(range);
+    cursor = addIsoDays(range.weekEnd, 1);
+  }
+
+  return ranges;
+}

@@ -49,6 +49,7 @@ const regionSchema = z.object({
     .refine((value) => isGermanSubdivisionCode(value), {
       message: 'invalid-subdivision',
     }),
+  autoSyncHolidays: z.boolean(),
 });
 
 const workplaceSchema = z.object({
@@ -112,7 +113,13 @@ export function parseOnboardingStepValues(
   }
 
   if (stepId === 'region') {
-    return regionSchema.parse(value);
+    const parsedValue = value as Record<string, unknown>;
+
+    return regionSchema.parse({
+      ...parsedValue,
+      autoSyncHolidays:
+        String(parsedValue.autoSyncHolidays ?? 'true') === 'true',
+    });
   }
 
   if (stepId === 'company-logo') {
@@ -180,6 +187,10 @@ export function getOnboardingStepDefaults(input: {
         typeof input.source.subdivisionCode === 'string'
           ? input.source.subdivisionCode
           : '',
+      autoSyncHolidays:
+        typeof input.source.autoSyncHolidays === 'boolean'
+          ? String(input.source.autoSyncHolidays)
+          : 'true',
     };
   }
 

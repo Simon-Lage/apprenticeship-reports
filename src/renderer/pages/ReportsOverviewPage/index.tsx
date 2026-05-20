@@ -66,8 +66,10 @@ import { parseAbsenceSettings } from '@/shared/absence/settings';
 import { WeeklyReportRecord } from '@/shared/reports/models';
 import {
   filterWeekRangesThroughCurrentWeek,
+  listReportWeekRanges,
   listCoveredWeekRanges,
 } from '@/renderer/pages/ReportsOverviewPage/week-ranges';
+import { resolveReportStartDateFromSettings } from '@/shared/settings/report-start-date';
 
 type WeeklyNavigationRow = {
   canOpenWeeklyReport: boolean;
@@ -122,6 +124,13 @@ export default function ReportsOverviewPage() {
     () => parseUiSettings(settingsSnapshot.value?.values ?? {}),
     [settingsSnapshot.value?.values],
   );
+  const reportStartDate = useMemo(
+    () =>
+      settingsSnapshot.value
+        ? resolveReportStartDateFromSettings(settingsSnapshot.value.values)
+        : null,
+    [settingsSnapshot.value],
+  );
   const dayTypeFilterOptions = useMemo<DayTypeFilterOption[]>(
     () => [
       {
@@ -172,6 +181,9 @@ export default function ReportsOverviewPage() {
       ]),
     );
     const derivedRanges = [
+      ...listReportWeekRanges({
+        startDate: reportStartDate,
+      }),
       ...absenceSettings.manualAbsences.flatMap((entry) =>
         listCoveredWeekRanges({
           startDate: entry.startDate,
@@ -209,6 +221,29 @@ export default function ReportsOverviewPage() {
         };
       })
       .filter((range) => range.weekStart && range.weekEnd)
+      .map((range) => {
+        if (!reportStartDate || range.weekEnd < reportStartDate) {
+          return reportStartDate ? null : range;
+        }
+
+        return range.weekStart < reportStartDate
+          ? {
+              weekStart: reportStartDate,
+              weekEnd: range.weekEnd,
+            }
+          : range;
+      })
+      .filter((range): range is { weekStart: string; weekEnd: string } =>
+        Boolean(range),
+      )
+      .filter(
+        (range, index, ranges) =>
+          ranges.findIndex(
+            (candidate) =>
+              candidate.weekStart === range.weekStart &&
+              candidate.weekEnd === range.weekEnd,
+          ) === index,
+      )
       .sort((left, right) => right.weekStart.localeCompare(left.weekStart));
     const sortedWeekRanges = filterWeekRangesThroughCurrentWeek(weekRanges);
     const dailyReportsByDate = new Map(
@@ -319,7 +354,7 @@ export default function ReportsOverviewPage() {
         };
       });
     });
-  }, [absenceSettings, reportsState.value, t, uiSettings]);
+  }, [absenceSettings, reportStartDate, reportsState.value, t, uiSettings]);
 
   const normalizedSearch = useMemo(
     () => deferredSearch.trim().toLowerCase(),

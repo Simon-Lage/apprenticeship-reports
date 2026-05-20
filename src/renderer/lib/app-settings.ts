@@ -68,6 +68,7 @@ const onboardingWorkplaceSchema = z.object({
 
 const onboardingRegionSchema = z.object({
   subdivisionCode: z.string().trim().min(1).max(16).nullable(),
+  autoSyncHolidays: z.boolean(),
 });
 
 export type TimetableSlot = z.infer<typeof timetableSlotSchema>;
@@ -294,6 +295,10 @@ export function parseOnboardingRegion(
 
   return onboardingRegionSchema.parse({
     subdivisionCode: normalizeSubdivisionOrNull(region.subdivisionCode),
+    autoSyncHolidays:
+      typeof region.autoSyncHolidays === 'boolean'
+        ? region.autoSyncHolidays
+        : true,
   });
 }
 
@@ -448,8 +453,11 @@ export function mergeOnboardingSettings(input: {
     },
     region: {
       subdivisionCode: input.region.subdivisionCode,
+      autoSyncHolidays: input.region.autoSyncHolidays,
     },
   };
+
+  const absence = ensureJsonObject(input.values.absence ?? {});
 
   if (input.companyLogo) {
     nextOnboarding['company-logo'] = {
@@ -459,6 +467,10 @@ export function mergeOnboardingSettings(input: {
 
   return {
     ...input.values,
+    absence: {
+      ...absence,
+      autoSyncHolidays: input.region.autoSyncHolidays,
+    },
     onboarding: nextOnboarding,
   };
 }

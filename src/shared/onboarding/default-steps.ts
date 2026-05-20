@@ -46,6 +46,7 @@ const regionSchema = z
       .refine((value) => isGermanSubdivisionCode(value), {
         message: 'invalid-subdivision',
       }),
+    autoSyncHolidays: z.boolean().default(true),
   })
   .transform((value) => ensureJsonObject(value));
 

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { OnboardingStepId } from '@/renderer/pages/OnboardingPage/schema';
+import { Switch } from '@/components/ui/switch';
 import {
   CompanyLogoFileError,
   readTransparentPngLogoFile,
@@ -287,6 +288,24 @@ export default function OnboardingStepFields({
             ))}
           </select>
         </FormField>
+        <div className="flex items-center gap-3 rounded-md border border-primary-tint/50 bg-white px-3 py-2">
+          <Switch
+            id="region-auto-sync-holidays"
+            checked={stepValues.autoSyncHolidays !== 'false'}
+            onCheckedChange={(checked) =>
+              setStepValues((current) => ({
+                ...current,
+                autoSyncHolidays: String(checked),
+              }))
+            }
+          />
+          <label
+            htmlFor="region-auto-sync-holidays"
+            className="text-sm text-text-color"
+          >
+            {t('onboarding.steps.region.autoSyncHolidays')}
+          </label>
+        </div>
       </>
     );
   }

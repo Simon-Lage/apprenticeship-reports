@@ -23,9 +23,21 @@ import {
   weekDayKeys,
   WeekDayKey,
 } from '@/renderer/lib/app-settings';
+import {
+  hasSeenFirstRunDialog,
+  markFirstRunDialogSeen,
+} from '@/renderer/lib/first-run-dialogs';
 import handleEnterAction from '@/renderer/lib/keyboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -272,6 +284,7 @@ export default function TimeTablePage() {
     useState<PendingCatalogEntry | null>(null);
   const [editingCatalogEntry, setEditingCatalogEntry] =
     useState<EditingCatalogEntry | null>(null);
+  const [isIntroOpen, setIsIntroOpen] = useState(false);
 
   useEffect(() => {
     if (!settingsSnapshot.value) {
@@ -280,6 +293,12 @@ export default function TimeTablePage() {
 
     setUiSettings(parseUiSettings(settingsSnapshot.value.values));
   }, [settingsSnapshot.value]);
+
+  useEffect(() => {
+    if (!hasSeenFirstRunDialog('timetable')) {
+      setIsIntroOpen(true);
+    }
+  }, []);
 
   const teacherOptions = useMemo(
     () => uiSettings?.teachers ?? [],
@@ -541,6 +560,10 @@ export default function TimeTablePage() {
     isDirty,
     onSave: async () => saveTimeTable(),
   });
+  function closeIntroDialog() {
+    markFirstRunDialogSeen('timetable');
+    setIsIntroOpen(false);
+  }
 
   if (!uiSettings) {
     return null;
@@ -548,6 +571,40 @@ export default function TimeTablePage() {
 
   return (
     <div className="space-y-4 ">
+      <Dialog
+        open={isIntroOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            setIsIntroOpen(true);
+            return;
+          }
+
+          closeIntroDialog();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('timeTable.intro.title')}</DialogTitle>
+            <DialogDescription>
+              {t('timeTable.intro.description')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 text-sm text-text-color/80">
+            <p>{t('timeTable.intro.schedule')}</p>
+            <p>{t('timeTable.intro.catalogs')}</p>
+            <p>{t('timeTable.intro.optional')}</p>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              className="bg-primary text-primary-contrast hover:bg-primary-shade"
+              onClick={closeIntroDialog}
+            >
+              {t('common.understood')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <SectionCard className="border-primary-tint bg-white">
         <div className="overflow-x-auto rounded-md border border-primary-tint/60">
           <table className="w-full min-w-[900px] border-separate border-spacing-2">
