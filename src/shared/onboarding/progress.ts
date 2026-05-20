@@ -1,0 +1,235 @@
+import { z } from 'zod';
+
+import { JsonObject, JsonObjectSchema } from '@/shared/common/json';
+
+export const OnboardingProgressSchema = z.object({
+  definitionVersion: z.string().min(1).nullable().default(null),
+  drafts: z.record(z.string(), JsonObjectSchema).default({}),
+  completedStepIds: z.array(z.string().min(1)).default([]),
+  skippedStepIds: z.array(z.string().min(1)).default([]),
+  lastActiveStepId: z.string().min(1).nullable().default(null),
+  completedAt: z.string().datetime().nullable().default(null),
+  updatedAt: z.string().datetime().nullable().default(null),
+});
+
+export type OnboardingProgress = z.infer<typeof OnboardingProgressSchema>;
+
+export type OnboardingStepDefinition = {
+  id: string;
+  optional?: boolean;
+  includeInInitialFlow?: boolean;
+  schema: z.ZodType<JsonObject>;
+};
+
+export type OnboardingStepValueMap = Record<string, JsonObject | undefined>;
+
+function getStepDefinition(
+  definitions: OnboardingStepDefinition[],
+  stepId: string,
+): OnboardingStepDefinition {
+  const stepDefinition = definitions.find(
+    (definition) => definition.id === stepId,
+  );
+
+  if (!stepDefinition) {
+    throw new Error(`Unknown onboarding step: ${stepId}`);
+  }
+
+  return stepDefinition;
+}
+
+function deriveCompletionState(
+  definitions: OnboardingStepDefinition[],
+  completedStepIds: string[],
+  progress: OnboardingProgress,
+  now: string,
+): string | null {
+  const completedStepIdSet = new Set(completedStepIds);
+  const skippedStepIdSet = new Set(progress.skippedStepIds);
+  const completionDefinitions = definitions.filter(
+    (definition) => !definition.optional || definition.includeInInitialFlow,
+  );
+  const isComplete = completionDefinitions.every(
+    (definition) =>
+      completedStepIdSet.has(definition.id) ||
+      (definition.optional && skippedStepIdSet.has(definition.id)),
+  );
+
+  return isComplete ? now : progress.completedAt;
+}
+
+export function createOnboardingProgress(
+  now: string,
+  definitionVersion: string | null = null,
+): OnboardingProgress {
+  return OnboardingProgressSchema.parse({
+    definitionVersion,
+    updatedAt: now,
+  });
+}
+
+export function saveOnboardingStepDraft(
+  definitions: OnboardingStepDefinition[],
+  progress: OnboardingProgress,
+  stepId: string,
+  value: JsonObject,
+  now: string,
+): OnboardingProgress {
+  const stepDefinition = getStepDefinition(definitions, stepId);
+  const parsedValue = stepDefinition.schema.parse(value);
+
+  return OnboardingProgressSchema.parse({
+    ...progress,
+    drafts: {
+      ...progress.drafts,
+      [stepId]: parsedValue,
+    },
+    lastActiveStepId: stepId,
+    updatedAt: now,
+  });
+}
+
+export function completeOnboardingStep(
+  definitions: OnboardingStepDefinition[],
+  progress: OnboardingProgress,
+  stepId: string,
+  now: string,
+): OnboardingProgress {
+  const stepDefinition = getStepDefinition(definitions, stepId);
+  const draft = progress.drafts[stepId];
+
+  if (!stepDefinition.optional || draft) {
+    stepDefinition.schema.parse(draft ?? {});
+  }
+
+  const completedStepIds = Array.from(
+    new Set([...progress.completedStepIds, stepId]),
+  );
+
+  return OnboardingProgressSchema.parse({
+    ...progress,
+    completedStepIds,
+    skippedStepIds: progress.skippedStepIds.filter(
+      (skippedStepId) => skippedStepId !== stepId,
+    ),
+    lastActiveStepId: stepId,
+    completedAt: deriveCompletionState(
+      definitions,
+      completedStepIds,
+      progress,
+      now,
+    ),
+    updatedAt: now,
+  });
+}
+
+export function skipOnboardingStep(
+  definitions: OnboardingStepDefinition[],
+  progress: OnboardingProgress,
+  stepId: string,
+  now: string,
+): OnboardingProgress {
+  const stepDefinition = getStepDefinition(definitions, stepId);
+
+  if (!stepDefinition.optional) {
+    throw new Error(`Onboarding step is not optional: ${stepId}`);
+  }
+
+  const completedStepIds = Array.from(
+    new Set([...progress.completedStepIds, stepId]),
+  );
+  const skippedStepIds = Array.from(
+    new Set([...progress.skippedStepIds, stepId]),
+  );
+
+  return OnboardingProgressSchema.parse({
+    ...progress,
+    completedStepIds,
+    skippedStepIds,
+    lastActiveStepId: stepId,
+    completedAt: deriveCompletionState(
+      definitions,
+      completedStepIds,
+      progress,
+      now,
+    ),
+    updatedAt: now,
+  });
+}
+
+export function deriveOnboardingState(
+  definitions: OnboardingStepDefinition[],
+  progress: OnboardingProgress,
+  valuesByStep: OnboardingStepValueMap = {},
+) {
+  const persistedCompletedStepIdSet = new Set(progress.completedStepIds);
+  const skippedStepIdSet = new Set(progress.skippedStepIds);
+  const isStepCompleted = (definition: OnboardingStepDefinition): boolean => {
+    const isSkipped = Boolean(
+      definition.optional && skippedStepIdSet.has(definition.id),
+    );
+    const persistedValue = valuesByStep[definition.id];
+    const draftValue = progress.drafts[definition.id];
+    const hasValidPersistedValue =
+      typeof persistedValue !== 'undefined' &&
+      definition.schema.safeParse(persistedValue).success;
+    const hasValidDraftValue =
+      typeof draftValue !== 'undefined' &&
+      definition.schema.safeParse(draftValue).success;
+    const requiresPersistedValue = persistedCompletedStepIdSet.has(
+      definition.id,
+    );
+    const hasValidValue = requiresPersistedValue
+      ? hasValidPersistedValue
+      : hasValidPersistedValue || hasValidDraftValue;
+
+    return isSkipped || hasValidValue;
+  };
+  const completedStepIds = definitions
+    .filter((definition) => isStepCompleted(definition))
+    .map((definition) => definition.id);
+  const completedStepIdSet = new Set(completedStepIds);
+  const requiredDefinitions = definitions.filter(
+    (definition) => !definition.optional,
+  );
+  const requiredStepsComplete = requiredDefinitions.every((definition) =>
+    completedStepIdSet.has(definition.id),
+  );
+  const completionDefinitions = definitions.filter(
+    (definition) => !definition.optional || definition.includeInInitialFlow,
+  );
+  const flowStepsComplete = completionDefinitions.every((definition) =>
+    completedStepIdSet.has(definition.id),
+  );
+  const isComplete =
+    requiredStepsComplete &&
+    (Boolean(progress.completedAt) || flowStepsComplete);
+  const shouldHideOptionalSteps = Boolean(progress.completedAt) || isComplete;
+  const activeDefinitions = shouldHideOptionalSteps
+    ? requiredDefinitions
+    : definitions;
+  const activeStepIds = activeDefinitions.map((definition) => definition.id);
+  const nextStep = activeDefinitions.find(
+    (definition) => !completedStepIdSet.has(definition.id),
+  );
+  const remainingStepIds = activeDefinitions
+    .filter((definition) => !completedStepIdSet.has(definition.id))
+    .map((definition) => definition.id);
+  const lastActiveMissingStep =
+    progress.lastActiveStepId &&
+    remainingStepIds.includes(progress.lastActiveStepId)
+      ? progress.lastActiveStepId
+      : null;
+
+  return {
+    isConfigured: definitions.length > 0,
+    isComplete,
+    nextStepId: isComplete
+      ? null
+      : (lastActiveMissingStep ?? nextStep?.id ?? null),
+    activeStepIds,
+    completedStepIds,
+    remainingStepIds,
+    skippedStepIds: Array.from(skippedStepIdSet),
+  };
+}
