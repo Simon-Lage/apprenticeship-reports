@@ -1,0 +1,843 @@
+{
+  "exportedAt": "2026-05-11T10:36:14.210Z",
+  "settings": {
+    "onboarding": {
+      "identity": {
+        "firstName": "Max",
+        "lastName": "Mustermann",
+        "apprenticeIdentifier": "4711",
+        "profession": "Fachinformatiker Anwendungsentwicklung"
+      },
+      "training-period": {
+        "trainingStart": "2024-08-01",
+        "trainingEnd": "2027-07-31",
+        "reportsSince": "2025-05-11"
+      },
+      "region": {
+        "subdivisionCode": "DE-NI"
+      },
+      "workplace": {
+        "department": "Backend und Integration",
+        "trainerEmail": "musterausbilder@muster.de",
+        "ihkLink": "https://www.ihk.de"
+      },
+      "google": {
+        "linked": false,
+        "email": null
+      }
+    },
+    "appUi": {
+      "defaultDepartment": "Backend und Integration",
+      "supervisorEmailPrimary": "musterausbilder@muster.de",
+      "teachers": [
+        "Frau Beck",
+        "Frau Koch",
+        "Frau Nguyen",
+        "Frau Walter",
+        "Herr Braun",
+        "Herr Keller",
+        "Herr Lehmann",
+        "Herr Scholz"
+      ],
+      "subjects": [
+        "Anwendungsentwicklung",
+        "Betriebssysteme",
+        "Datenbanken",
+        "Englisch",
+        "Netzwerktechnik",
+        "Projektmanagement",
+        "Qualitaetssicherung",
+        "Wirtschaft"
+      ],
+      "timetable": {
+        "monday": [],
+        "tuesday": [
+          {
+            "lesson": 1,
+            "subject": "Anwendungsentwicklung",
+            "teacher": "Herr Keller"
+          },
+          {
+            "lesson": 2,
+            "subject": "Anwendungsentwicklung",
+            "teacher": "Herr Keller"
+          },
+          {
+            "lesson": 3,
+            "subject": "Datenbanken",
+            "teacher": "Frau Nguyen"
+          },
+          {
+            "lesson": 4,
+            "subject": "Datenbanken",
+            "teacher": "Frau Nguyen"
+          },
+          {
+            "lesson": 5,
+            "subject": "Wirtschaft",
+            "teacher": "Herr Braun"
+          },
+          {
+            "lesson": 6,
+            "subject": "Wirtschaft",
+            "teacher": "Herr Braun"
+          },
+          {
+            "lesson": 7,
+            "subject": "Englisch",
+            "teacher": "Frau Beck"
+          },
+          {
+            "lesson": 8,
+            "subject": "Englisch",
+            "teacher": "Frau Beck"
+          }
+        ],
+        "wednesday": [],
+        "thursday": [
+          {
+            "lesson": 1,
+            "subject": "Netzwerktechnik",
+            "teacher": "Herr Scholz"
+          },
+          {
+            "lesson": 2,
+            "subject": "Netzwerktechnik",
+            "teacher": "Herr Scholz"
+          },
+          {
+            "lesson": 3,
+            "subject": "Betriebssysteme",
+            "teacher": "Frau Walter"
+          },
+          {
+            "lesson": 4,
+            "subject": "Betriebssysteme",
+            "teacher": "Frau Walter"
+          },
+          {
+            "lesson": 5,
+            "subject": "Projektmanagement",
+            "teacher": "Herr Lehmann"
+          },
+          {
+            "lesson": 6,
+            "subject": "Projektmanagement",
+            "teacher": "Herr Lehmann"
+          },
+          {
+            "lesson": 7,
+            "subject": "Qualitaetssicherung",
+            "teacher": "Frau Koch"
+          },
+          {
+            "lesson": 8,
+            "subject": "Qualitaetssicherung",
+            "teacher": "Frau Koch"
+          },
+          {
+            "lesson": 9,
+            "subject": "Anwendungsentwicklung",
+            "teacher": "Herr Keller"
+          },
+          {
+            "lesson": 10,
+            "subject": "Anwendungsentwicklung",
+            "teacher": "Herr Keller"
+          },
+          {
+            "lesson": 11,
+            "subject": "Datenbanken",
+            "teacher": "Frau Nguyen"
+          },
+          {
+            "lesson": 12,
+            "subject": "Datenbanken",
+            "teacher": "Frau Nguyen"
+          }
+        ],
+        "friday": []
+      }
+    },
+    "absence": {
+      "subdivisionCode": "DE-NI",
+      "lastSyncYear": 2026,
+      "lastSyncedAt": "2026-05-11T10:36:01.278Z",
+      "lastSyncError": null,
+      "autoSyncHolidays": true,
+      "catalogsByYear": {
+        "2025": {
+          "year": 2025,
+          "subdivisionCode": "DE-NI",
+          "fetchedAt": "2026-05-11T10:36:01.278Z",
+          "publicHolidays": [
+            {
+              "id": "27f0d8cd-76b2-47e7-89ac-a3a9f6a6b1ba",
+              "startDate": "2025-01-01",
+              "endDate": "2025-01-01",
+              "name": "Neujahr",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Neujahr"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            },
+            {
+              "id": "c7aef0d5-f292-4d08-b878-a25a6c05fc12",
+              "startDate": "2025-04-18",
+              "endDate": "2025-04-18",
+              "name": "Karfreitag",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Karfreitag"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            },
+            {
+              "id": "12776265-e638-4112-a11f-f24bb37d8a3d",
+              "startDate": "2025-04-21",
+              "endDate": "2025-04-21",
+              "name": "Ostermontag",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Ostermontag"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            },
+            {
+              "id": "5db64014-1aaf-46f0-be83-d8baa826cfef",
+              "startDate": "2025-05-01",
+              "endDate": "2025-05-01",
+              "name": "Tag der Arbeit",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Tag der Arbeit"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            },
+            {
+              "id": "9fbbb949-8b22-4916-a16c-0a799a2dd79f",
+              "startDate": "2025-05-29",
+              "endDate": "2025-05-29",
+              "name": "Christi Himmelfahrt",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Christi Himmelfahrt"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            },
+            {
+              "id": "b52574c0-0e5d-44ff-ac6b-4e3c6d71f1d7",
+              "startDate": "2025-06-09",
+              "endDate": "2025-06-09",
+              "name": "Pfingstmontag",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Pfingstmontag"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            },
+            {
+              "id": "ac964e18-2d34-497a-a9c5-b8ab065b7238",
+              "startDate": "2025-10-03",
+              "endDate": "2025-10-03",
+              "name": "Tag der Deutschen Einheit",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Tag der Deutschen Einheit"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            },
+            {
+              "id": "2514f889-8ff3-460c-b12c-c886f8b653de",
+              "startDate": "2025-10-31",
+              "endDate": "2025-10-31",
+              "name": "Reformationstag",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Reformationstag"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-SH",
+                "DE-ST",
+                "DE-HH",
+                "DE-HB",
+                "DE-TH",
+                "DE-MV",
+                "DE-SN",
+                "DE-NI",
+                "DE-BB"
+              ]
+            },
+            {
+              "id": "92b270e3-247f-4f82-b79d-b5ad77a67d95",
+              "startDate": "2025-12-25",
+              "endDate": "2025-12-25",
+              "name": "1. Weihnachtsfeiertag",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "1. Weihnachtsfeiertag"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            },
+            {
+              "id": "28bf580c-9787-4d67-ab3e-06a5e6597c1c",
+              "startDate": "2025-12-26",
+              "endDate": "2025-12-26",
+              "name": "2. Weihnachtsfeiertag",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "2. Weihnachtsfeiertag"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            }
+          ],
+          "schoolHolidays": [
+            {
+              "id": "bda62161-7ff6-4c23-b763-4a2b759bdef6",
+              "startDate": "2024-12-23",
+              "endDate": "2025-01-04",
+              "name": "Weihnachtsferien",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Weihnachtsferien"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            },
+            {
+              "id": "ffe7e5cd-9930-4a99-a2a5-8eab0b2bfd68",
+              "startDate": "2025-02-03",
+              "endDate": "2025-02-04",
+              "name": "Halbjahresferien",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Halbjahresferien"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            },
+            {
+              "id": "2961cf1a-ac80-497b-8107-988e36e86669",
+              "startDate": "2025-04-07",
+              "endDate": "2025-04-19",
+              "name": "Osterferien",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Osterferien"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            },
+            {
+              "id": "a8277b25-f715-4692-8562-614590dc1daf",
+              "startDate": "2025-04-30",
+              "endDate": "2025-04-30",
+              "name": "Kirchentag",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Kirchentag"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            },
+            {
+              "id": "59f8b3d7-516b-4b12-b436-05706fbde63e",
+              "startDate": "2025-05-02",
+              "endDate": "2025-05-02",
+              "name": "Tag nach dem 1. Mai",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Tag nach dem 1. Mai"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            },
+            {
+              "id": "3d645eaf-a1d3-4b84-a98c-19e0ed7142fd",
+              "startDate": "2025-05-30",
+              "endDate": "2025-05-30",
+              "name": "Tag nach Himmelfahrt",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Tag nach Himmelfahrt"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            },
+            {
+              "id": "befe1648-94e4-4b4a-a5a7-690051edd8ef",
+              "startDate": "2025-06-10",
+              "endDate": "2025-06-10",
+              "name": "Pfingstferien",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Pfingstferien"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            },
+            {
+              "id": "e7df00a7-8a7c-4b6d-99fe-802c18caef70",
+              "startDate": "2025-07-03",
+              "endDate": "2025-08-13",
+              "name": "Sommerferien",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Sommerferien"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            },
+            {
+              "id": "c1767d00-1904-4c33-95a5-b7c74f0dea96",
+              "startDate": "2025-10-13",
+              "endDate": "2025-10-25",
+              "name": "Herbstferien",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Herbstferien"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            },
+            {
+              "id": "511c6b06-758a-4935-9cbb-5e9fd674ce9f",
+              "startDate": "2025-12-22",
+              "endDate": "2026-01-05",
+              "name": "Weihnachtsferien",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Weihnachtsferien"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            }
+          ]
+        },
+        "2026": {
+          "year": 2026,
+          "subdivisionCode": "DE-NI",
+          "fetchedAt": "2026-05-11T10:36:01.278Z",
+          "publicHolidays": [
+            {
+              "id": "9ac6fd8b-aec4-41f0-916b-f03af58ecdab",
+              "startDate": "2026-01-01",
+              "endDate": "2026-01-01",
+              "name": "Neujahr",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Neujahr"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            },
+            {
+              "id": "f80fd9dc-41b4-4203-8fea-2cf36d365fbb",
+              "startDate": "2026-04-03",
+              "endDate": "2026-04-03",
+              "name": "Karfreitag",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Karfreitag"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            },
+            {
+              "id": "8d8ad831-8d60-429f-ad46-7f842c9fe2d9",
+              "startDate": "2026-04-06",
+              "endDate": "2026-04-06",
+              "name": "Ostermontag",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Ostermontag"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            },
+            {
+              "id": "6f661249-94cb-4a54-a063-20dde86ebde6",
+              "startDate": "2026-05-01",
+              "endDate": "2026-05-01",
+              "name": "Tag der Arbeit",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Tag der Arbeit"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            },
+            {
+              "id": "0905ed2a-46a7-4731-87e2-a8c53c42b0e2",
+              "startDate": "2026-05-14",
+              "endDate": "2026-05-14",
+              "name": "Christi Himmelfahrt",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Christi Himmelfahrt"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            },
+            {
+              "id": "ce6dcd62-b512-4075-be98-73ffc3dee4db",
+              "startDate": "2026-05-25",
+              "endDate": "2026-05-25",
+              "name": "Pfingstmontag",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Pfingstmontag"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            },
+            {
+              "id": "555eaa64-b8f6-44ce-850b-6af0d75555e9",
+              "startDate": "2026-10-03",
+              "endDate": "2026-10-03",
+              "name": "Tag der Deutschen Einheit",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Tag der Deutschen Einheit"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            },
+            {
+              "id": "6febea3c-594a-42ff-9e77-eb5e53c4aadd",
+              "startDate": "2026-10-31",
+              "endDate": "2026-10-31",
+              "name": "Reformationstag",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Reformationstag"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-SH",
+                "DE-ST",
+                "DE-HH",
+                "DE-HB",
+                "DE-TH",
+                "DE-MV",
+                "DE-SN",
+                "DE-NI",
+                "DE-BB"
+              ]
+            },
+            {
+              "id": "b37c8536-925e-455c-9e61-8e2b984a74d1",
+              "startDate": "2026-12-25",
+              "endDate": "2026-12-25",
+              "name": "1. Weihnachtsfeiertag",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "1. Weihnachtsfeiertag"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            },
+            {
+              "id": "fafc28cf-c8fc-4290-97b0-99904f920d4f",
+              "startDate": "2026-12-26",
+              "endDate": "2026-12-26",
+              "name": "2. Weihnachtsfeiertag",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "2. Weihnachtsfeiertag"
+                }
+              ],
+              "nationwide": true,
+              "subdivisionCodes": []
+            }
+          ],
+          "schoolHolidays": [
+            {
+              "id": "511c6b06-758a-4935-9cbb-5e9fd674ce9f",
+              "startDate": "2025-12-22",
+              "endDate": "2026-01-05",
+              "name": "Weihnachtsferien",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Weihnachtsferien"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            },
+            {
+              "id": "84fc149f-5a2e-44f4-b01f-7ec103e93e33",
+              "startDate": "2026-02-02",
+              "endDate": "2026-02-03",
+              "name": "Halbjahresferien",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Halbjahresferien"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            },
+            {
+              "id": "3df2322a-8fbd-49bb-a390-a41451dddc33",
+              "startDate": "2026-03-23",
+              "endDate": "2026-04-07",
+              "name": "Osterferien",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Osterferien"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            },
+            {
+              "id": "9457b164-1eab-4e97-903a-9eecc5a4e777",
+              "startDate": "2026-05-15",
+              "endDate": "2026-05-15",
+              "name": "Tag nach Himmelfahrt",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Tag nach Himmelfahrt"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            },
+            {
+              "id": "151fd363-157b-4ecd-ac18-79c815cce3af",
+              "startDate": "2026-05-26",
+              "endDate": "2026-05-26",
+              "name": "Pfingstferien",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Pfingstferien"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            },
+            {
+              "id": "33549564-dce8-4d67-8fb7-722140ebd17e",
+              "startDate": "2026-07-02",
+              "endDate": "2026-08-12",
+              "name": "Sommerferien",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Sommerferien"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            },
+            {
+              "id": "a6dee455-36a5-4052-95cc-9718def865a4",
+              "startDate": "2026-10-12",
+              "endDate": "2026-10-24",
+              "name": "Herbstferien",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Herbstferien"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            },
+            {
+              "id": "dff6eef5-93a1-4137-8953-2fba1dc16cf1",
+              "startDate": "2026-12-23",
+              "endDate": "2027-01-09",
+              "name": "Weihnachtsferien",
+              "names": [
+                {
+                  "language": "DE",
+                  "text": "Weihnachtsferien"
+                }
+              ],
+              "nationwide": false,
+              "subdivisionCodes": [
+                "DE-NI"
+              ]
+            }
+          ]
+        }
+      },
+      "manualAbsences": [
+        {
+          "id": "manual-1",
+          "type": "vacation",
+          "startDate": "2026-02-10",
+          "endDate": "2026-03-01",
+          "label": "",
+          "note": null,
+          "updatedAt": "2026-05-11T09:11:55.240Z",
+          "createdAt": "2026-05-11T09:11:55.240Z"
+        },
+        {
+          "id": "manual-2",
+          "type": "vacation",
+          "startDate": "2025-08-31",
+          "endDate": "2025-09-11",
+          "label": "",
+          "note": null,
+          "updatedAt": "2026-05-11T09:11:55.240Z",
+          "createdAt": "2026-05-11T09:11:55.240Z"
+        },
+        {
+          "id": "manual-3",
+          "type": "sick",
+          "startDate": "2026-03-02",
+          "endDate": "2026-03-04",
+          "label": "",
+          "note": null,
+          "updatedAt": "2026-05-11T09:11:55.240Z",
+          "createdAt": "2026-05-11T09:11:55.240Z"
+        },
+        {
+          "id": "manual-4",
+          "type": "sick",
+          "startDate": "2025-11-16",
+          "endDate": "2025-11-20",
+          "label": "",
+          "note": null,
+          "updatedAt": "2026-05-11T09:11:55.240Z",
+          "createdAt": "2026-05-11T09:11:55.240Z"
+        },
+        {
+          "id": "manual-5",
+          "type": "public-holiday",
+          "startDate": "2025-05-15",
+          "endDate": "2025-05-15",
+          "label": "Betrieblicher Feiertag",
+          "note": null,
+          "updatedAt": "2026-05-11T09:11:55.240Z",
+          "createdAt": "2026-05-11T09:11:55.240Z"
+        },
+        {
+          "id": "manual-6",
+          "type": "school-holiday",
+          "startDate": "2025-05-22",
+          "endDate": "2025-05-22",
+          "label": "Beweglicher Ferientag",
+          "note": null,
+          "updatedAt": "2026-05-11T09:11:55.240Z",
+          "createdAt": "2026-05-11T09:11:55.240Z"
+        }
+      ]
+    },
+    "backup": {
+      "enabled": true
+    }
+  }
+}

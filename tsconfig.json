@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@/main/*": ["./src/main/*"],
+      "@/renderer/*": ["./src/renderer/*"],
+      "@/components/*": ["./src/renderer/components/*"],
+      "@/lib/*": ["./src/renderer/lib/*"],
+      "@/hooks/*": ["./src/renderer/hooks/*"],
+      "@/shared/*": ["./src/shared/*"]
+    },
+    "incremental": true,
+    "target": "es2022",
+    "module": "node16",
+    "lib": ["dom", "es2022"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "moduleResolution": "node16",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "outDir": ".erb/dll"
+  },
+  "exclude": ["test", "release/build", "release/app/dist", ".erb/dll"]
+}

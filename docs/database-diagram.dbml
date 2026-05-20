@@ -1,0 +1,359 @@
+// https://dbdiagram.io/
+Project apprenticeship_reports {
+  database_type: 'SQLite'
+  Note: 'Physical database uses SQLCipher SQLite. app_metadata.payload stores serialized AppMetadata JSON. The payload schema below is a logical projection, not physical SQLite tables.'
+}
+
+Enum auth_provider {
+  password
+  google
+}
+
+Enum day_type {
+  work
+  school
+  free
+}
+
+Enum free_day_category {
+  work
+  school
+}
+
+Enum weekday {
+  monday
+  tuesday
+  wednesday
+  thursday
+  friday
+}
+
+Enum manual_absence_type {
+  sick
+  vacation
+  "public-holiday"
+  "school-holiday"
+}
+
+Enum absence_catalog_entry_kind {
+  public_holiday
+  school_holiday
+}
+
+Table sqlite.schema_migrations {
+  version integer [pk, not null]
+  applied_at text [not null]
+}
+
+Table sqlite.app_metadata {
+  id integer [pk, not null]
+  payload text [not null, note: 'Serialized AppMetadata JSON']
+  updated_at text [not null]
+
+  checks {
+    `id = 1` [name: 'app_metadata_singleton']
+  }
+}
+
+Table payload.app_metadata_sections {
+  metadata_id integer [pk, not null]
+  version integer [not null]
+}
+
+Table payload.user_accounts {
+  id text [pk, not null]
+  email text [not null]
+  display_name text [not null]
+  avatar_url text
+}
+
+Table payload.auth_sessions {
+  metadata_id integer [pk, not null]
+  provider auth_provider [not null]
+  account_id text [not null]
+  remember_me boolean [not null]
+  authenticated_at datetime [not null]
+  last_validated_at datetime [not null]
+}
+
+Table payload.drive_permission_state {
+  metadata_id integer [pk, not null]
+  account_id text
+  required_scopes json [not null]
+  granted_scopes json [not null]
+  access_token text
+  refresh_token text
+  connected_at datetime
+  last_validated_at datetime
+  last_prompted_at datetime
+  explanation text
+}
+
+Table payload.backup_state {
+  metadata_id integer [pk, not null]
+  last_successful_backup_at datetime
+  last_attempted_backup_at datetime
+  last_failed_backup_at datetime
+  pending_reasons json [not null]
+  daily_reports_since_last_backup integer [not null]
+  has_unsaved_changes boolean [not null]
+}
+
+Table payload.recovery_state {
+  metadata_id integer [pk, not null]
+  pending_backup_import_id text
+  last_recovery_snapshot_path text
+  last_restored_at datetime
+}
+
+Table payload.pending_backup_imports {
+  id text [pk, not null]
+  metadata_id integer [not null]
+  created_at datetime [not null]
+  serialized_envelope text [not null]
+}
+
+Table payload.onboarding_progress {
+  metadata_id integer [pk, not null]
+  definition_version text
+  drafts json [not null]
+  completed_step_ids json [not null]
+  skipped_step_ids json [not null]
+  last_active_step_id text
+  completed_at datetime
+  updated_at datetime
+}
+
+Table payload.app_ui_state {
+  metadata_id integer [pk, not null]
+  is_full_screen boolean [not null]
+}
+
+Table payload.settings_state {
+  metadata_id integer [pk, not null]
+  current_snapshot_id text [not null]
+  last_exported_at datetime
+  pending_import_id text
+}
+
+Table payload.settings_snapshots {
+  id text [pk, not null]
+  metadata_id integer [not null]
+  schema_version integer [not null]
+  captured_at datetime [not null]
+  values json [not null]
+}
+
+Table payload.settings_import_previews {
+  id text [pk, not null]
+  metadata_id integer [not null]
+  created_at datetime [not null]
+  imported_at datetime
+  affected_keys json [not null]
+  current_snapshot_id text [not null]
+  incoming_snapshot_id text [not null]
+  differences json [not null]
+  warning text [not null]
+}
+
+Table payload.settings_app_ui {
+  snapshot_id text [pk, not null]
+  default_department text [not null]
+  supervisor_email_primary text [not null]
+  teachers json [not null]
+  subjects json [not null]
+}
+
+Table payload.timetable_slots {
+  id text [pk, not null]
+  snapshot_id text [not null]
+  weekday weekday [not null]
+  lesson integer [not null]
+  subject text [not null]
+  teacher text [not null]
+
+  indexes {
+    (snapshot_id, weekday, lesson) [unique]
+  }
+}
+
+Table payload.settings_onboarding {
+  snapshot_id text [pk, not null]
+  google json
+  identity json
+  training_period json
+  region json
+  workplace json
+  company_logo json
+}
+
+Table payload.settings_backup {
+  snapshot_id text [pk, not null]
+  reports_enabled boolean [not null]
+  reports_daily_threshold integer [not null]
+  settings_enabled boolean [not null]
+  automatic_settings_scope json [not null]
+  manual_settings_scope json [not null]
+}
+
+Table payload.absence_settings {
+  snapshot_id text [pk, not null]
+  subdivision_code text
+  last_sync_year integer
+  last_synced_at datetime
+  last_sync_error text
+  auto_sync_holidays boolean [not null]
+}
+
+Table payload.manual_absences {
+  id text [pk, not null]
+  snapshot_id text [not null]
+  type manual_absence_type [not null]
+  start_date date [not null]
+  end_date date [not null]
+  label text [not null]
+  note text
+  created_at datetime [not null]
+  updated_at datetime [not null]
+}
+
+Table payload.absence_catalogs {
+  id text [pk, not null]
+  snapshot_id text [not null]
+  year integer [not null]
+  subdivision_code text [not null]
+  fetched_at datetime [not null]
+
+  indexes {
+    (snapshot_id, year) [unique]
+  }
+}
+
+Table payload.absence_catalog_entries {
+  id text [pk, not null]
+  catalog_id text [not null]
+  kind absence_catalog_entry_kind [not null]
+  start_date date [not null]
+  end_date date [not null]
+  name text [not null]
+  names json [not null]
+  nationwide boolean [not null]
+  subdivision_codes json [not null]
+}
+
+Table payload.weekly_reports {
+  id text [pk, not null]
+  metadata_id integer [not null]
+  week_start date [not null]
+  week_end date [not null]
+  values json [not null]
+  daily_report_ids json [not null]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+
+  indexes {
+    (week_start, week_end) [unique]
+  }
+}
+
+Table payload.weekly_report_values {
+  weekly_report_id text [pk, not null]
+  report_date text [not null]
+  area text
+  supervisor_email_primary text [not null]
+  submitted boolean [not null]
+  submitted_to_email text
+  work_activities json [not null]
+  school_topics json [not null]
+  trainings json [not null]
+  notes text [not null]
+}
+
+Table payload.daily_reports {
+  id text [pk, not null]
+  weekly_report_id text [not null]
+  date date [not null]
+  values json [not null]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+
+  indexes {
+    (weekly_report_id, date) [unique]
+  }
+}
+
+Table payload.daily_report_values {
+  daily_report_id text [pk, not null]
+  entry_mode text
+  day_type day_type [not null]
+  free_reason text [not null]
+  free_day_category free_day_category
+  activities json [not null]
+  school_topics json [not null]
+  trainings json [not null]
+}
+
+Table payload.daily_report_lessons {
+  id text [pk, not null]
+  daily_report_id text [not null]
+  lesson integer [not null]
+  subject text [not null]
+  teacher text [not null]
+  topics json [not null]
+
+  indexes {
+    (daily_report_id, lesson) [unique]
+  }
+}
+
+Table payload.weekly_hashes {
+  weekly_report_id text [pk, not null]
+  hash text [not null]
+  created_at datetime [not null]
+}
+
+Table storage.auth_envelope_file {
+  path text [pk, not null]
+  version integer [not null]
+  password_credential json
+  password_key_wrap json
+  remembered_key_wrap text
+  google_key_wrap text
+  persisted_session json
+  google_account json
+
+  Note: 'External sibling .auth.json file, not an SQLite table.'
+}
+
+Ref: sqlite.app_metadata.id - payload.app_metadata_sections.metadata_id
+Ref: payload.app_metadata_sections.metadata_id - payload.auth_sessions.metadata_id
+Ref: payload.auth_sessions.account_id > payload.user_accounts.id
+Ref: payload.app_metadata_sections.metadata_id - payload.drive_permission_state.metadata_id
+Ref: payload.drive_permission_state.account_id > payload.user_accounts.id
+Ref: payload.app_metadata_sections.metadata_id - payload.backup_state.metadata_id
+Ref: payload.app_metadata_sections.metadata_id - payload.recovery_state.metadata_id
+Ref: payload.recovery_state.pending_backup_import_id > payload.pending_backup_imports.id
+Ref: payload.pending_backup_imports.metadata_id > payload.app_metadata_sections.metadata_id
+Ref: payload.app_metadata_sections.metadata_id - payload.onboarding_progress.metadata_id
+Ref: payload.app_metadata_sections.metadata_id - payload.app_ui_state.metadata_id
+Ref: payload.app_metadata_sections.metadata_id - payload.settings_state.metadata_id
+Ref: payload.settings_state.current_snapshot_id > payload.settings_snapshots.id
+Ref: payload.settings_state.pending_import_id > payload.settings_import_previews.id
+Ref: payload.settings_snapshots.metadata_id > payload.app_metadata_sections.metadata_id
+Ref: payload.settings_import_previews.metadata_id > payload.app_metadata_sections.metadata_id
+Ref: payload.settings_import_previews.current_snapshot_id > payload.settings_snapshots.id
+Ref: payload.settings_import_previews.incoming_snapshot_id > payload.settings_snapshots.id
+Ref: payload.settings_snapshots.id - payload.settings_app_ui.snapshot_id
+Ref: payload.settings_snapshots.id < payload.timetable_slots.snapshot_id
+Ref: payload.settings_snapshots.id - payload.settings_onboarding.snapshot_id
+Ref: payload.settings_snapshots.id - payload.settings_backup.snapshot_id
+Ref: payload.settings_snapshots.id - payload.absence_settings.snapshot_id
+Ref: payload.settings_snapshots.id < payload.manual_absences.snapshot_id
+Ref: payload.settings_snapshots.id < payload.absence_catalogs.snapshot_id
+Ref: payload.absence_catalogs.id < payload.absence_catalog_entries.catalog_id
+Ref: payload.app_metadata_sections.metadata_id < payload.weekly_reports.metadata_id
+Ref: payload.weekly_reports.id - payload.weekly_report_values.weekly_report_id
+Ref: payload.weekly_reports.id < payload.daily_reports.weekly_report_id
+Ref: payload.daily_reports.id - payload.daily_report_values.daily_report_id
+Ref: payload.daily_reports.id < payload.daily_report_lessons.daily_report_id
+Ref: payload.weekly_reports.id - payload.weekly_hashes.weekly_report_id
