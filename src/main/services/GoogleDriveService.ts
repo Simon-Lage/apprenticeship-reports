@@ -65,7 +65,9 @@ async function findDriveFolder(input: {
   name: string;
   parentId?: string;
 }): Promise<string | null> {
-  const escapedName = input.name.replace(/'/g, "\\'");
+  const escapedName = input.name
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'");
   const queryParts = [
     `name = '${escapedName}'`,
     "mimeType = 'application/vnd.google-apps.folder'",
@@ -161,7 +163,9 @@ async function findDriveFile(input: {
   name: string;
   parentId: string;
 }): Promise<DriveBackupFile | null> {
-  const escapedName = input.name.replace(/'/g, "\\'");
+  const escapedName = input.name
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'");
   const url = new URL('https://www.googleapis.com/drive/v3/files');
 
   url.searchParams.set(
@@ -356,7 +360,9 @@ export class GoogleDriveService {
       kind,
     );
     const fileNamePrefix = getDriveBackupFileNamePrefix(kind);
-    const escapedFileNamePrefix = fileNamePrefix.replace(/'/g, "\\'");
+    const escapedFileNamePrefix = fileNamePrefix
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'");
     const query = [
       `'${folderId}' in parents`,
       'trashed = false',
