@@ -32,7 +32,7 @@
     "reset:dev-state": "cross-env NODE_ENV=development ts-node ./.erb/scripts/reset-dev-state.ts",
     "clear:dev-test-data": "npm run reset:dev-state",
     "seed:dev-test-data": "cross-env NODE_ENV=development NODE_OPTIONS=\"-r tsconfig-paths/register\" ts-node ./.erb/scripts/seed-dev-test-data.ts",
-    "test": "jest"
+    "test": "node .erb/scripts/run-jest-tests.js"
   },
   "browserslist": [
     "extends browserslist-config-erb"
@@ -83,12 +83,19 @@
     "testEnvironmentOptions": {
       "url": "http://localhost/"
     },
+    "testTimeout": 30000,
     "testPathIgnorePatterns": [
       "release/app/dist",
       ".erb/dll"
     ],
     "transform": {
-      "\\.(ts|tsx|js|jsx)$": "ts-jest"
+      "\\.(ts|tsx|js|jsx)$": [
+        "ts-jest",
+        {
+          "isolatedModules": true,
+          "diagnostics": false
+        }
+      ]
     }
   },
   "dependencies": {

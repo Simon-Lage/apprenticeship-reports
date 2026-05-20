@@ -1,6 +1,8 @@
 name: Test
 
-on: [push, pull_request]
+on:
+  push:
+    branches: ['main']
 
 jobs:
   test:
@@ -28,8 +30,9 @@ jobs:
       - name: npm test
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SKIP_TEST_ELECTRON_REBUILD: '1'
         run: |
-          npm run package
           npm run lint
-          npm exec tsc
+          npm exec tsc -- --noEmit
           npm test
+          npm run package

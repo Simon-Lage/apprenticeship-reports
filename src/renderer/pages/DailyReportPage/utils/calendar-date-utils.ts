@@ -156,7 +156,11 @@ export function resolveInitialDailyReportDate(input: {
     cursor = next;
   }
 
-  return upperLimit;
+  return resolveCandidateDate({
+    startDate: cursor,
+    reportsState: input.reportsState,
+    isAutoEnteredDate: input.isAutoEnteredDate,
+  });
 }
 
 export function resolveInitialWeeklyReportRange(input: {
