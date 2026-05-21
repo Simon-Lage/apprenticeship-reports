@@ -2,6 +2,7 @@
 !include MUI2.nsh
 !include nsDialogs.nsh
 
+!ifndef BUILD_UNINSTALLER
 Var StartMenuShortcutCheckbox
 Var DesktopShortcutCheckbox
 Var ShouldCreateStartMenuShortcut
@@ -53,3 +54,4 @@ FunctionEnd
     Delete "$newDesktopLink"
   ${EndIf}
 !macroend
+!endif
