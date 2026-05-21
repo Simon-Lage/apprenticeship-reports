@@ -1,16 +1,18 @@
 # Offene Issues (von easy zu schwer)
 
+- [?] In die Readme einbauen, dass Google Services aktuell noch in der Closed-Test-Phase sind und deswegen es nicht möglich ist, diese ohne freigegebenen Google-Account zu nutzen.
 - [ ] Bei der Übersicht sollten immer 14 Einträge pro Pagination-Page sichtbar sein.
+- [ ] Bei Übersicht statt - bei Schultagen die Themen unformatiert anzeigen genau wie arbeitstätigkeiten (Ohne nach stunden aufzuschlüsseln, egal was bei dem tagesberticht gemacht wurde).
+  - [ ] Bei Übersicht sollten Tätigkeiten/Themen maximal 3 Zeilen Bilden bei der Auflistung innerhalb eines Tages und sie sollen sonst mit ... beendet werden.
 - [ ] Toasts sollten unten links stehen und einen halbtransparenten Hintergrund haben.
-- [ ] In die Readme einbauen, dass Google Services aktuell noch in der Closed-Test-Phase sind und deswegen es nicht möglich ist, diese ohne freigegebenen Google-Account zu nutzen.
 - [ ] Bei Import/Export muss es jeweils an einer passenden Stelle einen Link zu dem Backup-Drive-Ordner geben, falls Google connected ist.
 - [ ] Bei Urlaub und bei Krankheit sollten die Einträge sortiert sein nach neuestem Enddatum zu ältestem. Wenn in der Liste dort Delete- oder Edit-Buttons gehovert werden, steht dort object object bearbeiten. Außerdem muss, sobald das Start- oder Enddatum eingetragen ist und bei dem jeweils anderen nichts, dort ein Button dazwischen erscheinen, der vom ausgefüllten zum nicht ausgefüllten zeigt und beim Drücken übernimmt das leere Feld das vom gefüllten. Dabei soll der Button nicht beschriftet sein, nur ein kleiner Pfeil als Iconbutton und mit einem Tooltip.
 - [ ] Der Switch bei Doppelstunden sorgt dafür, dass kein Switch da ist mit "Freistunden". Freistunden-Switches sollten anders aussehen als Doppelstunden-Switches, aber die Freistunden-Switches sollen bei Doppelstunden ganz normal unter dem Doppelstunden-Switch sein.
 - [ ] Im Stundenplan sollten die Dropdowns genau so wie bei den Tätigkeiten aufgehen, solange ein Input-Feld im Fokus ist, es sei denn, es wurde geklickt und eins gewählt aus den Vorschlägen, die die Suchergebnisse des bereits Eingegebenen sind, halt genau wie bei den Tätigkeiten.
-- [ ] Prüfen/Entscheiden, ob man in der Lage sein sollte, an Nicht-Schultagen auch Schultätigkeiten eintragen zu können.
 - [ ] Falls Urlaub der Grund für deinen freien Tag ist, soll man trotzdem bei dem Tag noch Tätigkeiten eintragen können. (Arbeit und Unterweisung). Falls an einem Tag, in dem Urlaub steht, Arbeitstätigkeiten aber trotzdem zusätzlich noch vorhanden sind, sollte in dem Wochenbericht statt "Urlaub" bei dem Tag "Urlaub (halbtags)" stehen.
+- [ ] Prüfen/Entscheiden, ob man in der Lage sein sollte, an Nicht-Schultagen auch Schultätigkeiten eintragen zu können.
 - [ ] Wenn ein Google-Account verbunden wird, nach dem initialen Öffnen, soll das aktuelle Passwort per Modal abgefragt werden.
 - [ ] Bei Passwort ändern sollte der Nutzer das alte Passwort eingeben müssen, wenn kein Google-Account verbunden ist. Wenn doch einer verbunden ist, sollte die Anwendung sicher prüfen, dass der Account jetzt gerade sicher authentifiziert ist, und ansonsten das Passwort per Modal fordern.
-- [ ] Rechtschreibprüfung bei Tätigkeiten
 - [ ] Issues vermeiden, die durch Dev-Environment und Prod-Build auf dem gleichen Computer auftreten.
+- [ ] Rechtschreibprüfung bei Tätigkeiten einbauen mit local prüfung
 - [ ] Bei Schultagen gibt es ja schon die Option, das in eine Liste einzutragen, ohne dass es in Stunden aufgetrennt ist. Jetzt soll es bei Schultagen oben rechts in der Card von den Tätigkeiten einen Button geben, um zwischen den Cards umzuschalten: nach Stunden aufgetrennt oder nur für den Schultag die Themen aufgezählt. Dann kann man auch, wenn man keine Lehrer/Stunden für den Tag angegeben hat, das mit Lehrern und Stunden angeben, und man kann auch bei einem Tag, wo man das angegeben hat, die Themen einfach für den Tag auflisten. Wichtig ist, dass beim Umschalten die Infos nicht verloren gehen.

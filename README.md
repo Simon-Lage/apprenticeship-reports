@@ -63,6 +63,7 @@ Nur die Datei `Apprenticeship-Reports-Setup.exe` ist für die manuelle Installat
 - Windows, macOS oder Linux für die Entwicklung
 
 Für Google OAuth und Google Drive ist eine eigene Google-OAuth-Konfiguration erforderlich.
+Google Services befinden sich aktuell noch in der Closed-Test-Phase und können deshalb nur mit freigegebenen Google-Accounts genutzt werden.
 
 ## Installation für Entwicklung
 
