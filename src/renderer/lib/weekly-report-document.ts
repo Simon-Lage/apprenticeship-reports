@@ -34,6 +34,7 @@ export type WeeklyDocumentSection = {
   title: string;
   entries: WeeklyDocumentSectionEntry[];
   emptyValue: string;
+  copyDisabledReason: string;
 };
 
 export type WeeklyDocumentTranslations = {
@@ -56,11 +57,14 @@ export type WeeklyDocumentTranslations = {
     school: string;
   };
   emptyValue: string;
+  noDataToCopy: string;
 };
 
 export type WeeklyDocumentData = {
   title: string;
   pageLabel: string;
+  emptyValue: string;
+  noDataToCopy: string;
   companyLogoDataUrl: string | null;
   summaryFields: WeeklyDocumentField[];
   rangeStartField: WeeklyDocumentField;
@@ -97,6 +101,7 @@ export function createWeeklyDocumentTranslations(
       school: t('weeklyDocument.sections.school'),
     },
     emptyValue: t('weeklyDocument.emptyValue'),
+    noDataToCopy: t('weeklyDocument.noDataToCopy'),
   };
 }
 
@@ -179,16 +184,19 @@ export function buildWeeklyDocumentSections(input: {
       title: input.translations.sections.work,
       entries: resolveSectionEntries(groups.work),
       emptyValue: input.translations.emptyValue,
+      copyDisabledReason: input.translations.noDataToCopy,
     },
     {
       title: input.translations.sections.training,
       entries: resolveSectionEntries(groups.trainings),
       emptyValue: input.translations.emptyValue,
+      copyDisabledReason: input.translations.noDataToCopy,
     },
     {
       title: input.translations.sections.school,
       entries: resolveSectionEntries(groups.school),
       emptyValue: input.translations.emptyValue,
+      copyDisabledReason: input.translations.noDataToCopy,
     },
   ];
 }
@@ -264,6 +272,8 @@ export function buildWeeklyDocumentData(input: {
       input.week.weeklyReport.weekStart,
     )} - ${formatGermanDate(input.week.weeklyReport.weekEnd)}`,
     pageLabel: input.translations.pageLabel,
+    emptyValue: input.translations.emptyValue,
+    noDataToCopy: input.translations.noDataToCopy,
     companyLogoDataUrl: companyLogo.dataUrl,
     summaryFields: [
       {
@@ -372,15 +382,15 @@ export function buildWeeklyDocumentHtml(input: {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(input.document.title)}</title>
   <style>
-    @page { size: A4; margin: 10mm; }
+    @page { size: A4; margin: 8mm 9mm; }
     html, body { margin: 0; padding: 0; background: #ffffff; color: #111827; font-family: "Segoe UI", Arial, sans-serif; }
     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .page { width: 190mm; min-height: 277mm; box-sizing: border-box; margin: 0 auto; padding: 8mm 7.5mm; }
+    .page { width: 192mm; min-height: 281mm; box-sizing: border-box; margin: 0 auto; padding: 6mm 6.5mm; }
     .page.regular { font-size: 12px; }
     .page.compact { font-size: 11px; }
     .page.dense { font-size: 10px; }
-    h1 { box-sizing: border-box; margin: 0 0 6mm; padding: 0 34mm; text-align: center; font-size: 20px; font-weight: 700; }
-    .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2.5mm 4mm; margin-bottom: 5mm; }
+    h1 { box-sizing: border-box; margin: 0 0 4mm; padding: 0 30mm; text-align: center; font-size: 18px; font-weight: 700; white-space: nowrap; }
+    .summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.8mm 7mm; margin-bottom: 3.5mm; }
     .summary-field { display: flex; justify-content: space-between; gap: 2mm; align-items: baseline; }
     .summary-label { font-weight: 700; white-space: nowrap; }
     .summary-value { text-align: right; min-width: 0; word-break: break-word; }
@@ -394,7 +404,7 @@ export function buildWeeklyDocumentHtml(input: {
     .section-entry + .section-entry { margin-top: 2.5mm; }
     .section-entry h3 { margin: 0 0 1.5mm; font-size: 1em; font-weight: 700; }
     .section-entry ul { margin: 0; padding-left: 4.5mm; }
-    .section-entry li { margin: 0 0 1mm; line-height: 1.35; }
+    .section-entry li { margin: 0 0 1mm; line-height: 1.35; white-space: pre-wrap; }
     .section-empty { margin: 0; }
     .page.compact .summary-grid { gap: 2mm 3.5mm; margin-bottom: 4mm; }
     .page.compact .box-row { gap: 3.5mm; margin-bottom: 2.75mm; }
@@ -408,8 +418,8 @@ export function buildWeeklyDocumentHtml(input: {
     .page.dense .content-section + .content-section { margin-top: 3mm; }
     .page.dense .section-entry + .section-entry { margin-top: 1.5mm; }
     .page.dense .section-entry li { margin-bottom: 0.7mm; line-height: 1.28; }
-    .document-header { position: relative; border-bottom: 1px solid #d1d5db; padding-bottom: 5mm; margin-bottom: 5mm; }
-    .company-logo { position: absolute; top: 0; right: 0; max-width: 30mm; max-height: 18mm; object-fit: contain; }
+    .document-header { position: relative; border-bottom: 1px solid #d1d5db; padding-bottom: 3.5mm; margin-bottom: 3.5mm; }
+    .company-logo { position: absolute; top: 0; right: 0; max-width: 28mm; max-height: 15mm; object-fit: contain; }
   </style>
 </head>
 <body>

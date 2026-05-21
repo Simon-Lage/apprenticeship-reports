@@ -33,7 +33,13 @@ export default function WeeklyReportSectionCards({
                 variant="ghost"
                 size="icon"
                 className="text-text-color/60 hover:bg-primary-tint/30 hover:text-text-color"
-                aria-label={`${copyActionLabel}: ${section.title}`}
+                aria-label={
+                  section.entries.length
+                    ? `${copyActionLabel}: ${section.title}`
+                    : section.copyDisabledReason
+                }
+                disabled={!section.entries.length}
+                disabledReason={section.copyDisabledReason}
                 onClick={() => onCopySection(sectionIndex)}
               >
                 <FiCopy className="size-4" />
@@ -51,7 +57,12 @@ export default function WeeklyReportSectionCards({
                     </h3>
                     <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-text-color/75">
                       {entry.items.map((item) => (
-                        <li key={`${entry.heading}-${item}`}>{item}</li>
+                        <li
+                          key={`${entry.heading}-${item}`}
+                          className="whitespace-pre-wrap"
+                        >
+                          {item}
+                        </li>
                       ))}
                     </ul>
                   </>

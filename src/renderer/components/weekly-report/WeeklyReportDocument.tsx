@@ -67,7 +67,9 @@ function resolveContentCapacity(
 }
 
 function estimateTextUnits(value: string): number {
-  return Math.max(1, Math.ceil(value.length / 92));
+  return value
+    .split('\n')
+    .reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / 92)), 0);
 }
 
 function estimateEntryUnits(entry: WeeklyDocumentSectionEntry): number {
@@ -226,27 +228,75 @@ export default function WeeklyReportDocument({
       label: string;
       value: string;
     },
-    copyField?: WeeklyReportCopyField,
-  ) => (
-    <div key={field.label} className="flex items-start gap-2">
-      <span className="shrink-0 font-semibold">{field.label}</span>
-      <span className="min-w-0 flex-1 break-words">{field.value}</span>
-      {onCopyField && copyActionLabel && copyField ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-7 shrink-0 text-text-color/60 hover:bg-primary-tint/30 hover:text-text-color"
-          aria-label={`${copyActionLabel}: ${field.label}`}
-          data-copy-field={copyField}
-          data-copy-value={field.value}
-          onClick={handleCopyFieldClick}
-        >
-          <FiCopy className="h-4 w-4" />
-        </Button>
-      ) : null}
-    </div>
-  );
+    options: { copyField?: WeeklyReportCopyField; compact?: boolean } = {},
+  ) => {
+    const hasCopyValue = field.value.trim() !== document.emptyValue;
+
+    return (
+      <div
+        key={field.label}
+        className={cn(
+          'flex items-start gap-2',
+          options.compact && 'justify-between',
+        )}
+      >
+        <span className="shrink-0 font-semibold">{field.label}</span>
+        <span className="min-w-0 flex-1 break-words text-right">
+          {field.value}
+        </span>
+        {onCopyField && copyActionLabel && options.copyField ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-7 shrink-0 text-text-color/60 hover:bg-primary-tint/30 hover:text-text-color"
+            aria-label={
+              hasCopyValue
+                ? `${copyActionLabel}: ${field.label}`
+                : document.noDataToCopy
+            }
+            data-copy-field={options.copyField}
+            data-copy-value={field.value}
+            disabled={!hasCopyValue}
+            disabledReason={document.noDataToCopy}
+            onClick={handleCopyFieldClick}
+          >
+            <FiCopy className="h-4 w-4" />
+          </Button>
+        ) : null}
+      </div>
+    );
+  };
+
+  const renderSectionCopyButton = (section: PaginatedSection) => {
+    const hasCopyValue = section.entries.length > 0;
+
+    return onCopySection && copyActionLabel ? (
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="border-primary-tint"
+        aria-label={
+          hasCopyValue
+            ? `${copyActionLabel}: ${section.title}`
+            : document.noDataToCopy
+        }
+        title={
+          hasCopyValue
+            ? `${copyActionLabel}: ${section.title}`
+            : document.noDataToCopy
+        }
+        data-section-index={section.sourceIndex}
+        disabled={!hasCopyValue}
+        disabledReason={document.noDataToCopy}
+        onClick={handleCopySectionClick}
+      >
+        <FiCopy className="h-4 w-4" />
+        {copyActionLabel}
+      </Button>
+    ) : null;
+  };
 
   return (
     <article
@@ -259,27 +309,29 @@ export default function WeeklyReportDocument({
         <section
           key={resolvePageKey(page)}
           className={cn(
-            'weekly-report-pdf-page mx-auto flex h-[297mm] w-[210mm] flex-col bg-white px-[18mm] py-[14mm] text-text-color shadow-[0_24px_80px_rgba(15,23,42,0.12)]',
+            'weekly-report-pdf-page mx-auto flex h-[297mm] w-[210mm] flex-col bg-white px-[15mm] py-[10mm] text-text-color shadow-[0_24px_80px_rgba(15,23,42,0.12)]',
             resolvePageTextClassName(document.density),
           )}
         >
-          <header className="relative shrink-0 space-y-5 border-b border-primary-tint/70 pb-5">
+          <header className="relative shrink-0 space-y-3 border-b border-primary-tint/70 pb-3">
             {document.companyLogoDataUrl ? (
               <img
                 src={document.companyLogoDataUrl}
                 alt=""
-                className="absolute right-0 top-0 max-h-[18mm] max-w-[30mm] object-contain"
+                className="absolute right-0 top-0 max-h-[15mm] max-w-[28mm] object-contain"
               />
             ) : null}
-            <h2 className="px-[34mm] text-center text-[1.7em] font-semibold">
+            <h2 className="whitespace-nowrap px-[30mm] text-center text-[1.45em] font-semibold">
               {document.title}
             </h2>
-            <div className="space-y-2 text-[1.08em]">
-              {document.summaryFields.map((field) => renderDetailField(field))}
+            <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 text-[1.02em]">
+              {document.summaryFields.map((field) =>
+                renderDetailField(field, { compact: true }),
+              )}
             </div>
           </header>
 
-          <main className="min-h-0 flex-1 space-y-4 pt-5">
+          <main className="min-h-0 flex-1 space-y-4 pt-4">
             {page.sections.map((section) => (
               <div
                 key={resolvePageSectionKey(section)}
@@ -289,19 +341,7 @@ export default function WeeklyReportDocument({
                   <h3 className="text-[1.08em] font-semibold">
                     {section.title}
                   </h3>
-                  {onCopySection && copyActionLabel ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="border-primary-tint"
-                      data-section-index={section.sourceIndex}
-                      onClick={handleCopySectionClick}
-                    >
-                      <FiCopy className="h-4 w-4" />
-                      {copyActionLabel}
-                    </Button>
-                  ) : null}
+                  {renderSectionCopyButton(section)}
                 </div>
                 <div
                   className={`transition-colors ${
@@ -320,7 +360,12 @@ export default function WeeklyReportDocument({
                           <p className="font-semibold">{entry.heading}</p>
                           <ul className="list-disc space-y-1 pl-5">
                             {entry.items.map((item) => (
-                              <li key={`${entry.heading}-${item}`}>{item}</li>
+                              <li
+                                key={`${entry.heading}-${item}`}
+                                className="whitespace-pre-wrap"
+                              >
+                                {item}
+                              </li>
                             ))}
                           </ul>
                         </div>
@@ -334,7 +379,7 @@ export default function WeeklyReportDocument({
             ))}
           </main>
 
-          <footer className="mt-5 shrink-0 border-t border-primary-tint/70 pt-3 text-center text-[0.92em] text-text-color/70">
+          <footer className="mt-3 shrink-0 border-t border-primary-tint/70 pt-2 text-center text-[0.86em] text-text-color/70">
             {document.pageLabel
               .replace('{{page}}', String(pageIndex + 1))
               .replace('{{total}}', String(pages.length))}

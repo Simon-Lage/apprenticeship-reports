@@ -592,6 +592,16 @@ const deTranslation = {
       next: 'Neues Passwort',
       submit: 'Passwort aktualisieren',
     },
+    currentPassword: {
+      title: 'Aktuelles Passwort bestätigen',
+      googleDescription:
+        'Bitte bestätige dein aktuelles Passwort, bevor ein Google-Konto verbunden oder gewechselt wird.',
+      passwordDescription:
+        'Bitte bestätige dein aktuelles Passwort, bevor du ein neues Passwort speicherst.',
+      required: 'Aktuelles Passwort erforderlich.',
+      invalid: 'Das aktuelle Passwort ist nicht korrekt.',
+      confirm: 'Bestätigen',
+    },
     google: {
       title: 'Google (optional)',
       description: 'Google-Konto verbinden, wechseln oder entfernen.',
@@ -925,6 +935,8 @@ const deTranslation = {
       lessonLabel: '{{lesson}}. Stunde',
       freeLesson: 'Freistunde',
       doubleLesson: 'Doppelstunde',
+      showTopicList: 'Themenliste',
+      showLessons: 'Nach Stunden',
       subjectPlaceholder: 'Fach',
       teacherPlaceholder: 'Lehrer',
       topicPlaceholder: 'Thema',
@@ -1064,6 +1076,7 @@ const deTranslation = {
     title: 'Ausbildungsnachweis',
     pageLabel: 'Seite {{page}} von {{total}}',
     emptyValue: '-',
+    noDataToCopy: 'Keine Daten zum Kopieren vorhanden',
     labels: {
       name: 'Name:',
       apprenticeIdentifier: 'Azubi-Ident-Nummer:',
