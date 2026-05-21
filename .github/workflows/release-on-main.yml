@@ -112,7 +112,7 @@ jobs:
             git commit -m "ci(release): v${{ env.ver }} [skip ci]"
           fi
           git tag "v${{ env.ver }}"
-          git push origin HEAD:${{ github.ref_name }} --follow-tags
+          git push origin HEAD:${{ github.ref_name }} "v${{ env.ver }}"
 
       # 5) Release explizit mit den gebauten Assets erstellen
       - name: Create GitHub Release
