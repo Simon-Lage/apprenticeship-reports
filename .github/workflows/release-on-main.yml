@@ -39,15 +39,15 @@ jobs:
       - name: Validate Google OAuth config
         shell: pwsh
         env:
-          GOOGLE_OAUTH_CLIENT_ID: ${{ vars.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_ID: ${{ vars.GOOGLE_OAUTH_CLIENT_ID || secrets.GOOGLE_OAUTH_CLIENT_ID }}
         run: |
           if ([string]::IsNullOrWhiteSpace($env:GOOGLE_OAUTH_CLIENT_ID)) {
-            throw "Missing repository variable GOOGLE_OAUTH_CLIENT_ID for release build."
+            throw "Missing GOOGLE_OAUTH_CLIENT_ID repository variable or secret for release build."
           }
 
       - name: Build app (webpack -> release/app)
         env:
-          GOOGLE_OAUTH_CLIENT_ID: ${{ vars.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_ID: ${{ vars.GOOGLE_OAUTH_CLIENT_ID || secrets.GOOGLE_OAUTH_CLIENT_ID }}
           GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
           GOOGLE_DRIVE_REQUIRED_SCOPES: https://www.googleapis.com/auth/drive.file
         run: npm run build
