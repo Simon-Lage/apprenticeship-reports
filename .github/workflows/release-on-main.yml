@@ -167,12 +167,34 @@ jobs:
             }
           }
 
-          gh release view $tag *> $null
-          if ($LASTEXITCODE -eq 0) {
-            gh release upload $tag @assets --clobber
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-            gh release edit $tag --title $tag --notes-file $bodyPath --latest
-          } else {
-            gh release create $tag @assets --title $tag --notes-file $bodyPath --latest
+          $retryCount = 5
+          $success = $false
+
+          for ($i = 1; $i -le $retryCount; $i++) {
+            $global:LASTEXITCODE = 0
+            gh release view $tag *> $null
+            if ($global:LASTEXITCODE -eq 0) {
+              gh release upload $tag @assets --clobber
+              if ($global:LASTEXITCODE -eq 0) {
+                gh release edit $tag --title $tag --notes-file $bodyPath --latest
+                if ($global:LASTEXITCODE -eq 0) {
+                  $success = $true
+                  break
+                }
+              }
+            } else {
+              $global:LASTEXITCODE = 0
+              gh release create $tag @assets --title $tag --notes-file $bodyPath --latest
+              if ($global:LASTEXITCODE -eq 0) {
+                $success = $true
+                break
+              }
+            }
+            Write-Host "GitHub CLI Fehler (502 o..). Versuche es in 5 Sekunden erneut (Versuch $i von $retryCount)..."
+            Start-Sleep -Seconds 5
           }
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          if (-not $success) {
+            Write-Error "GitHub Release konnte nach $retryCount Versuchen nicht erstellt werden."
+            exit 1
+          }
