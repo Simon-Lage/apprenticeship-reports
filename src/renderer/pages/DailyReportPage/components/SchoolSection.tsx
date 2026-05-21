@@ -337,30 +337,10 @@ export default function SchoolSection({
                       ) : null}
                     </div>
                     <div className="flex flex-col gap-2 text-sm">
-                      {!block.isDoubleLesson ? (
-                        <div
-                          className={cn(
-                            'flex cursor-pointer items-center gap-2',
-                            block.isFreeLesson
-                              ? 'font-semibold text-primary'
-                              : '',
-                          )}
-                        >
-                          <Switch
-                            className="cursor-pointer"
-                            checked={block.isFreeLesson}
-                            aria-label={t('dailyReport.school.freeLesson')}
-                            onCheckedChange={(checked) =>
-                              onSetLessonFreeState(block.start, checked)
-                            }
-                          />
-                          <span>{t('dailyReport.school.freeLesson')}</span>
-                        </div>
-                      ) : null}
                       {block.canUseDoubleLesson ? (
                         <div className="flex cursor-pointer items-center gap-2">
                           <Switch
-                            className="cursor-pointer"
+                            className="cursor-pointer data-[state=checked]:bg-primary"
                             checked={block.isDoubleLesson}
                             aria-label={t('dailyReport.school.doubleLesson')}
                             onCheckedChange={(checked) =>
@@ -370,6 +350,22 @@ export default function SchoolSection({
                           <span>{t('dailyReport.school.doubleLesson')}</span>
                         </div>
                       ) : null}
+                      <div
+                        className={cn(
+                          'flex cursor-pointer items-center gap-2',
+                          block.isFreeLesson ? 'font-semibold text-primary' : '',
+                        )}
+                      >
+                        <Switch
+                          className="cursor-pointer data-[state=checked]:bg-amber-500"
+                          checked={block.isFreeLesson}
+                          aria-label={t('dailyReport.school.freeLesson')}
+                          onCheckedChange={(checked) =>
+                            onSetLessonFreeState(block.start, checked)
+                          }
+                        />
+                        <span>{t('dailyReport.school.freeLesson')}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
