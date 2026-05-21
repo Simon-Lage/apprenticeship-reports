@@ -23,6 +23,8 @@ const appApi: AppApi = {
     ipcRenderer.invoke(AppIpcChannel.initializePasswordAuth, input),
   authenticateWithPassword: (input) =>
     ipcRenderer.invoke(AppIpcChannel.authenticateWithPassword, input),
+  verifyPassword: (input) =>
+    ipcRenderer.invoke(AppIpcChannel.verifyPassword, input),
   changePassword: (input) =>
     ipcRenderer.invoke(AppIpcChannel.changePassword, input),
   savePasswordSession: (input) =>

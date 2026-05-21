@@ -41,6 +41,7 @@ export const AppIpcChannel = {
   exportWeeklyReportPdf: 'app:export-weekly-report-pdf',
   initializePasswordAuth: 'app:initialize-password-auth',
   authenticateWithPassword: 'app:authenticate-with-password',
+  verifyPassword: 'app:verify-password',
   changePassword: 'app:change-password',
   savePasswordSession: 'app:save-password-session',
   saveGoogleSession: 'app:save-google-session',
@@ -101,6 +102,11 @@ export const AuthenticateWithPasswordInputSchema = z.object({
 
 export const ChangePasswordInputSchema = z.object({
   nextPassword: PasswordSecretSchema,
+  currentPassword: PasswordLoginSchema.optional(),
+});
+
+export const VerifyPasswordInputSchema = z.object({
+  password: PasswordLoginSchema,
 });
 
 export const AuthenticateWithGoogleInputSchema = z.object({
@@ -263,6 +269,7 @@ export type AuthenticateWithPasswordInput = z.input<
   typeof AuthenticateWithPasswordInputSchema
 >;
 export type ChangePasswordInput = z.input<typeof ChangePasswordInputSchema>;
+export type VerifyPasswordInput = z.input<typeof VerifyPasswordInputSchema>;
 export type AuthenticateWithGoogleInput = z.input<
   typeof AuthenticateWithGoogleInputSchema
 >;
@@ -356,6 +363,7 @@ export type AppApi = {
   authenticateWithPassword: (
     input: AuthenticateWithPasswordInput,
   ) => Promise<AppBootstrapState>;
+  verifyPassword: (input: VerifyPasswordInput) => Promise<boolean>;
   changePassword: (input: ChangePasswordInput) => Promise<AppBootstrapState>;
   savePasswordSession: (
     input: SavePasswordSessionInput,

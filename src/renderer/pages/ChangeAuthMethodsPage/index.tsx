@@ -26,6 +26,16 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
+type SensitiveAction = 'password-change' | 'google-connect';
 
 export default function ChangeAuthMethodsPage() {
   const { t } = useTranslation();
@@ -36,6 +46,12 @@ export default function ChangeAuthMethodsPage() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isPasswordPending, setIsPasswordPending] = useState(false);
   const [isGooglePending, setIsGooglePending] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [currentPasswordError, setCurrentPasswordError] = useState<
+    string | null
+  >(null);
+  const [pendingSensitiveAction, setPendingSensitiveAction] =
+    useState<SensitiveAction | null>(null);
   const [isPasswordConfirmOpen, setIsPasswordConfirmOpen] = useState(false);
   const [isGoogleRemoveConfirmOpen, setIsGoogleRemoveConfirmOpen] =
     useState(false);
@@ -43,6 +59,8 @@ export default function ChangeAuthMethodsPage() {
   const hasLinkedGoogleAccount = Boolean(
     runtime.state.drive.connectedAccountEmail,
   );
+  const hasActiveGoogleSession =
+    runtime.state.auth.provider === 'google' && hasLinkedGoogleAccount;
   const googleAuthorizationUrl = usePendingGoogleAuthorizationUrl({
     isPending: isGooglePending,
     api: runtime.api,
@@ -79,10 +97,31 @@ export default function ChangeAuthMethodsPage() {
       return;
     }
 
-    setIsPasswordConfirmOpen(true);
+    if (hasActiveGoogleSession) {
+      setIsPasswordConfirmOpen(true);
+      return;
+    }
+
+    requestCurrentPassword('password-change');
   }
 
-  async function confirmPasswordChange() {
+  function requestCurrentPassword(action: SensitiveAction) {
+    setPendingSensitiveAction(action);
+    setCurrentPassword('');
+    setCurrentPasswordError(null);
+  }
+
+  function closeCurrentPasswordDialog() {
+    if (isPasswordPending || isGooglePending) {
+      return;
+    }
+
+    setPendingSensitiveAction(null);
+    setCurrentPassword('');
+    setCurrentPasswordError(null);
+  }
+
+  async function confirmPasswordChange(verifiedCurrentPassword?: string) {
     if (!runtime.api) {
       return;
     }
@@ -92,10 +131,14 @@ export default function ChangeAuthMethodsPage() {
     try {
       await runtime.api.changePassword({
         nextPassword: nextPassword.trim(),
+        currentPassword: verifiedCurrentPassword,
       });
       setNextPassword('');
       setPasswordConfirm('');
       setValidationError(null);
+      setPendingSensitiveAction(null);
+      setCurrentPassword('');
+      setCurrentPasswordError(null);
       await runtime.refresh();
       setIsPasswordConfirmOpen(false);
       toast.success(t('authMethods.feedback.passwordChanged'));
@@ -127,6 +170,47 @@ export default function ChangeAuthMethodsPage() {
       const message =
         error instanceof Error ? error.message : t('common.errors.unknown');
       toast.error(t('authMethods.feedback.googleError'), message);
+    } finally {
+      setIsGooglePending(false);
+    }
+  }
+
+  async function confirmCurrentPassword() {
+    if (!runtime.api || !pendingSensitiveAction) {
+      return;
+    }
+
+    const password = currentPassword.trim();
+
+    if (!password) {
+      setCurrentPasswordError(t('authMethods.currentPassword.required'));
+      return;
+    }
+
+    setCurrentPasswordError(null);
+
+    if (pendingSensitiveAction === 'password-change') {
+      await confirmPasswordChange(password);
+      return;
+    }
+
+    setIsGooglePending(true);
+
+    try {
+      const isValid = await runtime.api.verifyPassword({ password });
+
+      if (!isValid) {
+        setCurrentPasswordError(t('authMethods.currentPassword.invalid'));
+        return;
+      }
+
+      setPendingSensitiveAction(null);
+      setCurrentPassword('');
+      await handleGoogleConnect();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : t('common.errors.unknown');
+      setCurrentPasswordError(message);
     } finally {
       setIsGooglePending(false);
     }
@@ -327,7 +411,7 @@ export default function ChangeAuthMethodsPage() {
               }
               className="bg-primary text-primary-contrast hover:bg-primary-shade"
               onClick={() => {
-                handleGoogleConnect();
+                requestCurrentPassword('google-connect');
               }}
             >
               <FaGoogle className="size-4" />
@@ -389,6 +473,63 @@ export default function ChangeAuthMethodsPage() {
           ) : null}
         </div>
       </SectionCard>
+      <Dialog
+        open={Boolean(pendingSensitiveAction)}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeCurrentPasswordDialog();
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('authMethods.currentPassword.title')}</DialogTitle>
+            <DialogDescription>
+              {pendingSensitiveAction === 'google-connect'
+                ? t('authMethods.currentPassword.googleDescription')
+                : t('authMethods.currentPassword.passwordDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          <FormField
+            id="current-password"
+            label={t('authMethods.password.current')}
+            error={currentPasswordError ?? undefined}
+          >
+            <PasswordInput
+              id="current-password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              showLabel={t('common.password.show')}
+              hideLabel={t('common.password.hide')}
+            />
+          </FormField>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isPasswordPending || isGooglePending}
+              disabledReason={t('common.disabledReasons.pending')}
+              onClick={closeCurrentPasswordDialog}
+            >
+              {t('authMethods.confirm.cancel')}
+            </Button>
+            <Button
+              type="button"
+              disabled={isPasswordPending || isGooglePending}
+              disabledReason={t('common.disabledReasons.pending')}
+              className="bg-primary text-primary-contrast hover:bg-primary-shade"
+              onClick={() => {
+                confirmCurrentPassword();
+              }}
+            >
+              {isPasswordPending || isGooglePending
+                ? t('common.loading')
+                : t('authMethods.currentPassword.confirm')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

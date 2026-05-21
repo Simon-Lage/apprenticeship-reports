@@ -36,6 +36,7 @@ import {
   SaveGoogleSessionInput,
   SavePasswordSessionInput,
   SetDriveScopesInput,
+  VerifyPasswordInput,
 } from '@/shared/ipc/app-api';
 import { parseBackupSettings } from '@/shared/backup/settings';
 import { AppKernelCore } from '@/main/services/AppKernelCore';
@@ -485,7 +486,40 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
     });
   }
 
+  async verifyPassword(input: VerifyPasswordInput): Promise<boolean> {
+    this.accessGuard.assertPasswordConfigured();
+    const currentState = await this.repository.read();
+    this.accessGuard.assertAuthenticated(currentState);
+
+    return this.getPasswordAuthService().verify(input.password);
+  }
+
+  private isCurrentGoogleSession(currentState: AppMetadata): boolean {
+    return (
+      this.getCurrentSession(currentState)?.provider === 'google' &&
+      Boolean(currentState.drive.account)
+    );
+  }
+
   async changePassword(input: ChangePasswordInput): Promise<AppBootstrapState> {
+    const currentState = await this.repository.read();
+    this.accessGuard.assertAuthenticated(currentState);
+    const isGoogleAuthenticated = this.isCurrentGoogleSession(currentState);
+
+    if (!isGoogleAuthenticated) {
+      if (!input.currentPassword) {
+        throw new Error('Aktuelles Passwort erforderlich.');
+      }
+
+      const isCurrentPasswordValid = await this.getPasswordAuthService().verify(
+        input.currentPassword,
+      );
+
+      if (!isCurrentPasswordValid) {
+        throw new Error('Das aktuelle Passwort ist ungueltig.');
+      }
+    }
+
     await this.getPasswordAuthService().changePassword({
       nextPassword: input.nextPassword,
     });

@@ -32,6 +32,7 @@ import {
   SetDriveScopesInputSchema,
   UpsertDailyReportInputSchema,
   UpsertWeeklyReportInputSchema,
+  VerifyPasswordInputSchema,
 } from '@/shared/ipc/app-api';
 
 export default function registerAppHandlers(
@@ -98,6 +99,10 @@ export default function registerAppHandlers(
     appKernel.authenticateWithPassword(
       AuthenticateWithPasswordInputSchema.parse(input),
     ),
+  );
+
+  ipcMain.handle(AppIpcChannel.verifyPassword, (_event, input) =>
+    appKernel.verifyPassword(VerifyPasswordInputSchema.parse(input)),
   );
 
   ipcMain.handle(AppIpcChannel.changePassword, (_event, input) =>
