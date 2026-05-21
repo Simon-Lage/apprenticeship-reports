@@ -21,7 +21,7 @@ Nur die Datei `Apprenticeship-Reports-Setup.exe` ist für die manuelle Installat
 
 ## Aktuelle Version
 
-- Version: `v0.0.23`
+- Version: `v0.0.24`
 - Veröffentlicht am: `21.05.2026`
 
 ## Funktionen
