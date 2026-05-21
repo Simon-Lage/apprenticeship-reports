@@ -1,4 +1,4 @@
-# AppRep
+# Apprenticeship Reports
 
 AppRep ist eine Desktop-App für Auszubildende in Deutschland, die ihre Ausbildungsberichte für die IHK schreiben.
 
