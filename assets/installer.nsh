@@ -1,4 +1,5 @@
 !include LogicLib.nsh
+!include FileFunc.nsh
 !include MUI2.nsh
 !include nsDialogs.nsh
 
@@ -13,7 +14,10 @@ Var ShouldCreateDesktopShortcut
 !macroend
 
 Function ShortcutOptionsPageCreate
-  ${If} ${isUpdated}
+  ${GetParameters} $R0
+  ClearErrors
+  ${GetOptions} $R0 "--updated" $R1
+  ${IfNot} ${Errors}
     Abort
   ${EndIf}
 
