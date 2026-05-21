@@ -528,6 +528,8 @@ const deTranslation = {
       summary: 'Krankheit/Urlaub',
       startDate: 'Von',
       endDate: 'Bis',
+      copyStartDateToEndDate: 'Startdatum als Enddatum übernehmen',
+      copyEndDateToStartDate: 'Enddatum als Startdatum übernehmen',
       type: 'Typ',
       label: 'Bezeichnung',
       note: 'Notiz',

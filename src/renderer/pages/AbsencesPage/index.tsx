@@ -149,6 +149,25 @@ function getCatalogEditableEntry(entry: CatalogListItem): ManualAbsence | null {
   return entry.manualEntry;
 }
 
+function compareManualAbsenceByNewestEndDate(
+  left: ManualAbsence,
+  right: ManualAbsence,
+): number {
+  const byEndDate = right.endDate.localeCompare(left.endDate);
+
+  if (byEndDate !== 0) {
+    return byEndDate;
+  }
+
+  const byStartDate = right.startDate.localeCompare(left.startDate);
+
+  if (byStartDate !== 0) {
+    return byStartDate;
+  }
+
+  return left.id.localeCompare(right.id);
+}
+
 export default function AbsencesPage() {
   const { t } = useTranslation();
   const runtime = useAppRuntime();
@@ -215,7 +234,9 @@ export default function AbsencesPage() {
     () =>
       manualAbsenceGroupOrder.map((type) => ({
         type,
-        entries: manualAbsences.filter((entry) => entry.type === type),
+        entries: manualAbsences
+          .filter((entry) => entry.type === type)
+          .sort(compareManualAbsenceByNewestEndDate),
       })),
     [manualAbsences],
   );
@@ -788,7 +809,7 @@ export default function AbsencesPage() {
         ) : null}
       </SectionCard>
       <SectionCard
-        title={titleWithIcon(t('absences.manual.title'))}
+        title={t('absences.manual.title')}
         className="border-primary-tint bg-white"
       >
         <div className="flex flex-row w-full gap-4">
@@ -806,6 +827,7 @@ export default function AbsencesPage() {
                 <EditableAbsenceCollection
                   type={type}
                   title={titleNode}
+                  titleLabel={title}
                   items={entries}
                   form={form}
                   isPending={isPending}
@@ -848,6 +870,7 @@ export default function AbsencesPage() {
               <PartyPopper className="size-4 text-primary" />,
               t('absences.catalog.publicTitle'),
             )}
+            titleLabel={t('absences.catalog.publicTitle')}
             items={publicHolidayItems}
             form={form}
             isPending={isPending}
@@ -871,6 +894,7 @@ export default function AbsencesPage() {
               <CalendarDays className="size-4 text-primary" />,
               t('absences.catalog.schoolTitle'),
             )}
+            titleLabel={t('absences.catalog.schoolTitle')}
             items={schoolHolidayItems}
             form={form}
             isPending={isPending}

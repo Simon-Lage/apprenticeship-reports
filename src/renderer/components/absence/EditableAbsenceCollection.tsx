@@ -1,12 +1,17 @@
 import { Dispatch, ReactNode, SetStateAction, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Pencil, Plus, Trash2 } from 'lucide-react';
 
 import EditableCollectionList from '@/renderer/components/app/EditableCollectionList';
 import { FormField } from '@/renderer/components/app/FormField';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +45,7 @@ export const defaultManualAbsenceFormState: ManualAbsenceFormState = {
 type EditableAbsenceCollectionProps<T> = {
   type: ManualAbsenceType;
   title: ReactNode;
+  titleLabel: string;
   items: T[];
   form: ManualAbsenceFormState;
   isPending: boolean;
@@ -59,6 +65,7 @@ type EditableAbsenceCollectionProps<T> = {
 export default function EditableAbsenceCollection<T>({
   type,
   title,
+  titleLabel,
   items,
   form,
   isPending,
@@ -92,6 +99,13 @@ export default function EditableAbsenceCollection<T>({
   const submitDisabledReason = isPending
     ? t('common.disabledReasons.pending')
     : formDisabledReason;
+  const canCopyStartDateToEndDate =
+    Boolean(activeForm.startDate) && !activeForm.endDate;
+  const canCopyEndDateToStartDate =
+    Boolean(activeForm.endDate) && !activeForm.startDate;
+  const copyDateTooltip = canCopyStartDateToEndDate
+    ? t('absences.manual.copyStartDateToEndDate')
+    : t('absences.manual.copyEndDateToStartDate');
 
   function updateFormField(
     key: keyof Omit<ManualAbsenceFormState, 'id' | 'type'>,
@@ -121,8 +135,8 @@ export default function EditableAbsenceCollection<T>({
             <div
               className={`grid gap-2 ${
                 requiresCustomLabel
-                  ? 'xl:grid-cols-[11rem_11rem_minmax(0,1fr)_auto]'
-                  : 'xl:grid-cols-[11rem_11rem_auto]'
+                  ? 'xl:grid-cols-[11rem_auto_11rem_minmax(0,1fr)_auto]'
+                  : 'xl:grid-cols-[11rem_auto_11rem_auto]'
               }`}
             >
               <FormField
@@ -139,6 +153,40 @@ export default function EditableAbsenceCollection<T>({
                   }}
                 />
               </FormField>
+              <div className="flex items-end justify-center">
+                {canCopyStartDateToEndDate || canCopyEndDateToStartDate ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-10 w-10 border-primary-tint"
+                        aria-label={copyDateTooltip}
+                        onClick={() => {
+                          if (canCopyStartDateToEndDate) {
+                            updateFormField('endDate', activeForm.startDate);
+                            return;
+                          }
+
+                          updateFormField('startDate', activeForm.endDate);
+                        }}
+                      >
+                        {canCopyStartDateToEndDate ? (
+                          <ArrowRight className="size-4" />
+                        ) : (
+                          <ArrowLeft className="size-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>{copyDateTooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <div className="h-10 w-10" aria-hidden="true" />
+                )}
+              </div>
               <FormField
                 id={`${type}-end-date`}
                 label={t('absences.manual.endDate')}
@@ -234,10 +282,10 @@ export default function EditableAbsenceCollection<T>({
                 disabled={Boolean(entryDisabledReason)}
                 disabledReason={entryDisabledReason ?? undefined}
                 aria-label={t('absences.manual.editEntry', {
-                  type: title,
+                  type: titleLabel,
                 })}
                 title={t('absences.manual.editEntry', {
-                  type: title,
+                  type: titleLabel,
                 })}
                 onClick={() => {
                   onEdit(editableEntry);
@@ -253,10 +301,10 @@ export default function EditableAbsenceCollection<T>({
                 disabled={Boolean(entryDisabledReason)}
                 disabledReason={entryDisabledReason ?? undefined}
                 aria-label={t('absences.manual.deleteEntry', {
-                  type: title,
+                  type: titleLabel,
                 })}
                 title={t('absences.manual.deleteEntry', {
-                  type: title,
+                  type: titleLabel,
                 })}
                 onClick={() => {
                   setPendingDeleteEntry(editableEntry);
@@ -282,14 +330,14 @@ export default function EditableAbsenceCollection<T>({
           <AlertDialogHeader>
             <AlertDialogTitle>
               {t('absences.confirmDelete.title', {
-                type: title,
+                type: titleLabel,
               })}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pendingDeleteEntry
                 ? t('absences.confirmDelete.description', {
-                    type: title,
-                    value: pendingDeleteEntry.label || title,
+                    type: titleLabel,
+                    value: pendingDeleteEntry.label || titleLabel,
                   })
                 : ''}
             </AlertDialogDescription>
