@@ -1,5 +1,6 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ListChecks, Rows3 } from 'lucide-react';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
 import useUnsavedChangesGuard from '@/renderer/hooks/useUnsavedChangesGuard';
@@ -23,7 +24,10 @@ import {
   TextSuggestionKind,
 } from '@/renderer/lib/app-settings';
 import { notifyReportsStateChanged } from '@/renderer/lib/report-state-events';
-import { parseDailyReportValues } from '@/renderer/lib/report-values';
+import {
+  isVacationFreeReason,
+  parseDailyReportValues,
+} from '@/renderer/lib/report-values';
 import { isWeeklyReportSubmitted } from '@/shared/reports/edit-locks';
 import {
   DailyReportRecord,
@@ -70,6 +74,8 @@ type PendingSuggestion = {
   kind: TextSuggestionKind;
   value: string;
 };
+
+type SchoolEntryMode = 'topics' | 'lessons';
 
 type EditableSuggestionOccurrence = {
   dailyReport: DailyReportRecord;
@@ -185,6 +191,8 @@ export default function DailyReportPage() {
     useState(false);
   const [isSuggestionActionPending, setIsSuggestionActionPending] =
     useState(false);
+  const [schoolEntryMode, setSchoolEntryMode] =
+    useState<SchoolEntryMode>('topics');
   const formHook = useDailyReportForm();
   const { saveDailyReport, deleteDailyReport } = useDailyReportSave();
 
@@ -253,7 +261,7 @@ export default function DailyReportPage() {
       ? nextCandidateDate
       : null;
   const usesSchoolLessons =
-    form.dayType === 'school' && form.lessons.length > 0;
+    form.dayType === 'school' && schoolEntryMode === 'lessons';
   const editableSuggestionOccurrences =
     pendingSuggestionEdit && formHook.reportsState.value
       ? findEditableSuggestionOccurrences({
@@ -264,6 +272,42 @@ export default function DailyReportPage() {
       : [];
   const editableSuggestionDates = editableSuggestionOccurrences.map(
     ({ dailyReport }) => formatGermanDate(dailyReport.date),
+  );
+
+  useEffect(() => {
+    if (form.dayType !== 'school') {
+      return;
+    }
+
+    setSchoolEntryMode(
+      currentDailyValues?.lessons.length ? 'lessons' : 'topics',
+    );
+  }, [currentDailyValues?.lessons.length, form.date, form.dayType]);
+
+  const schoolModeToggle = (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="border-primary-tint"
+      onClick={() => {
+        setSchoolEntryMode((current) =>
+          current === 'lessons' ? 'topics' : 'lessons',
+        );
+      }}
+    >
+      {schoolEntryMode === 'lessons' ? (
+        <>
+          <ListChecks className="size-4" />
+          {t('dailyReport.school.showTopicList')}
+        </>
+      ) : (
+        <>
+          <Rows3 className="size-4" />
+          {t('dailyReport.school.showLessons')}
+        </>
+      )}
+    </Button>
   );
 
   const persistUiSettings = async (
@@ -492,15 +536,67 @@ export default function DailyReportPage() {
           className={isContentReadOnly ? 'space-y-4 opacity-80' : 'space-y-4'}
         >
           {form.dayType === 'free' ? (
-            <FreeDaySection
-              freeReason={form.freeReason}
-              onChange={(value) =>
-                formHook.setForm((current) => ({
-                  ...current,
-                  freeReason: value,
-                }))
-              }
-            />
+            <>
+              <FreeDaySection
+                freeReason={form.freeReason}
+                onChange={(value) =>
+                  formHook.setForm((current) => ({
+                    ...current,
+                    freeReason: value,
+                  }))
+                }
+              />
+              {isVacationFreeReason(form.freeReason) ? (
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <ActivitiesSection
+                    title={t('dailyReport.activities.title')}
+                    items={form.activities}
+                    placeholder={t('dailyReport.activities.placeholder')}
+                    suggestions={activitySuggestions}
+                    addLabel={t('dailyReport.list.addEntry')}
+                    removeLabel={t('dailyReport.list.removeEntry')}
+                    onChange={(items) =>
+                      formHook.setForm((current) => ({
+                        ...current,
+                        activities: items,
+                      }))
+                    }
+                    editSuggestionLabel={t('dailyReport.suggestions.edit')}
+                    deleteSuggestionLabel={t('dailyReport.suggestions.delete')}
+                    onEditSuggestion={(value) =>
+                      openSuggestionEdit('activities', value)
+                    }
+                    onDeleteSuggestion={(value) =>
+                      setPendingSuggestionDelete({
+                        kind: 'activities',
+                        value,
+                      })
+                    }
+                  />
+                  <TrainingsSection
+                    items={form.trainings}
+                    suggestions={trainingSuggestions}
+                    onChange={(items) =>
+                      formHook.setForm((current) => ({
+                        ...current,
+                        trainings: items,
+                      }))
+                    }
+                    editSuggestionLabel={t('dailyReport.suggestions.edit')}
+                    deleteSuggestionLabel={t('dailyReport.suggestions.delete')}
+                    onEditSuggestion={(value) =>
+                      openSuggestionEdit('trainings', value)
+                    }
+                    onDeleteSuggestion={(value) =>
+                      setPendingSuggestionDelete({
+                        kind: 'trainings',
+                        value,
+                      })
+                    }
+                  />
+                </div>
+              ) : null}
+            </>
           ) : (
             <>
               <div className="grid gap-4 lg:grid-cols-2">
@@ -555,9 +651,10 @@ export default function DailyReportPage() {
                   }
                 />
               </div>
-              {form.dayType === 'school' && !usesSchoolLessons ? (
+              {form.dayType === 'school' && schoolEntryMode === 'topics' ? (
                 <ActivitiesSection
                   title={t('dailyReport.school.title')}
+                  action={schoolModeToggle}
                   items={form.schoolTopics}
                   placeholder={t('dailyReport.school.topicPlaceholder')}
                   suggestions={lessonTopicSuggestions}
@@ -584,6 +681,7 @@ export default function DailyReportPage() {
               ) : null}
               {usesSchoolLessons ? (
                 <SchoolSection
+                  action={schoolModeToggle}
                   lessons={form.lessons}
                   expandedDoubleLessonPairs={form.expandedDoubleLessonPairs}
                   onSetLessonFreeState={setLessonFreeState}

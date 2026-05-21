@@ -161,8 +161,16 @@ export type WeeklySectionDayGroups = {
   school: WeeklySectionDayEntry[];
 };
 
-function formatFreeDayAggregateValue(reason: string): string {
-  return `(${reason.trim() || 'Freier Tag'})`;
+export function isVacationFreeReason(reason: string): boolean {
+  return reason.trim().toLocaleLowerCase().includes('urlaub');
+}
+
+function formatFreeDayAggregateValue(
+  reason: string,
+  options: { isPartialDay?: boolean } = {},
+): string {
+  const label = reason.trim() || 'Freier Tag';
+  return `(${options.isPartialDay ? `${label} (halbtags)` : label})`;
 }
 
 function formatLessonDetails(lesson: SchoolLessonInput): string {
@@ -292,12 +300,31 @@ export function buildWeeklyAggregates(
           parsed.freeDayCategory === 'school' ? schoolTopics : workActivities;
         const targetSet =
           parsed.freeDayCategory === 'school' ? seenSchool : seenWork;
-        const value = formatFreeDayAggregateValue(parsed.freeReason);
+        const hasWorkContent =
+          parsed.activities.length > 0 || parsed.trainings.length > 0;
+        const value = formatFreeDayAggregateValue(parsed.freeReason, {
+          isPartialDay:
+            isVacationFreeReason(parsed.freeReason) && hasWorkContent,
+        });
 
         if (!targetSet.has(value)) {
           targetSet.add(value);
           targetItems.push(value);
         }
+
+        parsed.activities.forEach((activity) => {
+          if (!seenWork.has(activity)) {
+            seenWork.add(activity);
+            workActivities.push(activity);
+          }
+        });
+
+        parsed.trainings.forEach((training) => {
+          if (!seenTraining.has(training)) {
+            seenTraining.add(training);
+            trainings.push(training);
+          }
+        });
 
         return;
       }
@@ -378,20 +405,38 @@ export function buildWeeklySectionDayGroups(
           return;
         }
 
-        const value = formatFreeDayAggregateValue(parsed.freeReason);
+        const hasWorkContent =
+          parsed.activities.length > 0 || parsed.trainings.length > 0;
+        const value = formatFreeDayAggregateValue(parsed.freeReason, {
+          isPartialDay:
+            isVacationFreeReason(parsed.freeReason) && hasWorkContent,
+        });
 
         if (parsed.freeDayCategory === 'school') {
           school.push({
             date: dailyReport.date,
             items: [value],
           });
-          return;
+          if (parsed.activities.length) {
+            work.push({
+              date: dailyReport.date,
+              items: parsed.activities,
+            });
+          }
+        } else {
+          work.push({
+            date: dailyReport.date,
+            items: [value, ...parsed.activities],
+          });
         }
 
-        work.push({
-          date: dailyReport.date,
-          items: [value],
-        });
+        if (parsed.trainings.length) {
+          trainings.push({
+            date: dailyReport.date,
+            items: parsed.trainings,
+          });
+        }
+
         return;
       }
 
