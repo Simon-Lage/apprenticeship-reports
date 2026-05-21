@@ -1,4 +1,5 @@
 !include LogicLib.nsh
+!include MUI2.nsh
 !include nsDialogs.nsh
 
 Var StartMenuShortcutCheckbox
