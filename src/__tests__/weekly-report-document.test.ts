@@ -8,6 +8,7 @@ const translations: WeeklyDocumentTranslations = {
   title: 'Ausbildungsnachweis',
   pageLabel: 'Seite {{page}} von {{total}}',
   emptyValue: '-',
+  noDataToCopy: 'Keine Daten zum Kopieren vorhanden',
   labels: {
     name: 'Name:',
     apprenticeIdentifier: 'Azubi-Ident-Nummer:',

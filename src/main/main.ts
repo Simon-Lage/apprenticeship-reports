@@ -434,6 +434,9 @@ if (!hasSingleInstanceLock) {
       );
       await appKernel.boot();
       await createWindow();
+      appKernel.processPendingLaunchBackup().catch((error) => {
+        log.error('Launch backup processing failed', error);
+      });
 
       app.on('activate', async () => {
         if (mainWindow === null) {

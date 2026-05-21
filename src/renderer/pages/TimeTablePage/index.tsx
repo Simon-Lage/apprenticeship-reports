@@ -8,6 +8,7 @@ import CollectionAccordion from '@/renderer/components/app/CollectionAccordion';
 import EditableCollectionList from '@/renderer/components/app/EditableCollectionList';
 import { FormField } from '@/renderer/components/app/FormField';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
+import SuggestionInput from '@/renderer/components/app/SuggestionInput';
 import UnsavedChangesDialog from '@/renderer/components/app/UnsavedChangesDialog';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
@@ -766,40 +767,30 @@ export default function TimeTablePage() {
                           className="rounded-md border border-primary-tint/60 bg-white px-2 py-2"
                         >
                           <div className="grid gap-2">
-                            <Input
+                            <SuggestionInput
                               value={slot?.subject ?? ''}
                               placeholder={t(
                                 'timeTable.schedule.subjectPlaceholder',
                               )}
-                              list="subjects-list"
-                              onChange={(event) =>
-                                updateSlot(
-                                  day,
-                                  lesson,
-                                  'subject',
-                                  event.target.value,
-                                )
+                              suggestions={subjectOptions}
+                              onValueChange={(value) =>
+                                updateSlot(day, lesson, 'subject', value)
                               }
-                              onBlur={(event) =>
-                                requestCatalogAdd('subject', event.target.value)
+                              onBlurValue={(value) =>
+                                requestCatalogAdd('subject', value)
                               }
                             />
-                            <Input
+                            <SuggestionInput
                               value={slot?.teacher ?? ''}
                               placeholder={t(
                                 'timeTable.schedule.teacherPlaceholder',
                               )}
-                              list="teachers-list"
-                              onChange={(event) =>
-                                updateSlot(
-                                  day,
-                                  lesson,
-                                  'teacher',
-                                  event.target.value,
-                                )
+                              suggestions={teacherOptions}
+                              onValueChange={(value) =>
+                                updateSlot(day, lesson, 'teacher', value)
                               }
-                              onBlur={(event) =>
-                                requestCatalogAdd('teacher', event.target.value)
+                              onBlurValue={(value) =>
+                                requestCatalogAdd('teacher', value)
                               }
                             />
                           </div>
@@ -853,20 +844,6 @@ export default function TimeTablePage() {
           />
         </CollectionAccordion>
       </SectionCard>
-      <datalist id="teachers-list">
-        {teacherOptions.map((teacher) => (
-          <option key={teacher} value={teacher}>
-            {teacher}
-          </option>
-        ))}
-      </datalist>
-      <datalist id="subjects-list">
-        {subjectOptions.map((subject) => (
-          <option key={subject} value={subject}>
-            {subject}
-          </option>
-        ))}
-      </datalist>
       <div className="sticky bottom-0 z-20 rounded-xl border border-primary-tint/75 bg-white/95 p-3 shadow-sm backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">

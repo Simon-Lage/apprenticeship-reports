@@ -40,6 +40,8 @@ const appApi: AppApi = {
     ipcRenderer.invoke(AppIpcChannel.initializePasswordAuth, input),
   authenticateWithPassword: (input) =>
     ipcRenderer.invoke(AppIpcChannel.authenticateWithPassword, input),
+  verifyPassword: (input) =>
+    ipcRenderer.invoke(AppIpcChannel.verifyPassword, input),
   changePassword: (input) =>
     ipcRenderer.invoke(AppIpcChannel.changePassword, input),
   savePasswordSession: (input) =>
@@ -68,6 +70,8 @@ const appApi: AppApi = {
   listDriveBackups: () => ipcRenderer.invoke(AppIpcChannel.listDriveBackups),
   listDriveSettingsBackups: () =>
     ipcRenderer.invoke(AppIpcChannel.listDriveSettingsBackups),
+  getDriveBackupFolder: (input) =>
+    ipcRenderer.invoke(AppIpcChannel.getDriveBackupFolder, input),
   prepareDriveBackupImport: (input) =>
     ipcRenderer.invoke(AppIpcChannel.prepareDriveBackupImport, input),
   prepareDriveSettingsImport: (input) =>

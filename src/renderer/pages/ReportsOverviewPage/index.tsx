@@ -88,7 +88,7 @@ type DayTypeFilterOption = {
   Icon: IconType | null;
 };
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 14;
 
 const weekdayTranslationKeys = [
   'reportsOverview.table.weekdays.sunday',
@@ -140,6 +140,17 @@ function groupVisibleWeekRows<T extends { weekKey: string }>(
       weekRowSpan: weekRowCounts.get(row.weekKey) ?? 1,
     };
   });
+}
+
+function listPlainSchoolTopics(
+  values: ReturnType<typeof parseDailyReportValues>,
+): string[] {
+  return Array.from(
+    new Set([
+      ...values.schoolTopics,
+      ...values.lessons.flatMap((lesson) => lesson.topics),
+    ]),
+  );
 }
 
 export default function ReportsOverviewPage() {
@@ -333,6 +344,8 @@ export default function ReportsOverviewPage() {
         if (parsed) {
           if (parsed.dayType === 'free') {
             summary = parsed.freeReason || '-';
+          } else if (parsed.dayType === 'school') {
+            summary = listPlainSchoolTopics(parsed).join(', ') || '-';
           } else {
             summary =
               [
@@ -666,7 +679,7 @@ export default function ReportsOverviewPage() {
                         title={row.dailyTooltipText}
                         onClick={() => handleDailyCellClick(row)}
                       >
-                        {row.summary}
+                        <span className="line-clamp-3">{row.summary}</span>
                       </TableCell>
                       <TableCell
                         className={getDailyCellClassName()}

@@ -1,5 +1,6 @@
 import {
   PointerEvent as ReactPointerEvent,
+  ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -9,7 +10,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { GripVertical } from 'lucide-react';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
-import { Input } from '@/components/ui/input';
+import SuggestionInput from '@/renderer/components/app/SuggestionInput';
 import { Switch } from '@/components/ui/switch';
 import { SchoolLessonInput } from '@/renderer/lib/report-values';
 import { cn } from '@/renderer/lib/utils';
@@ -27,6 +28,7 @@ type LessonBlock = {
 };
 
 type SchoolSectionProps = {
+  action?: ReactNode;
   lessons: SchoolLessonInput[];
   expandedDoubleLessonPairs: number[];
   onSetLessonFreeState: (lessonNumber: number, isFreeLesson: boolean) => void;
@@ -70,6 +72,7 @@ function canUseDoubleLesson(
 }
 
 export default function SchoolSection({
+  action,
   lessons,
   expandedDoubleLessonPairs,
   onSetLessonFreeState,
@@ -263,6 +266,7 @@ export default function SchoolSection({
   return (
     <SectionCard
       title={t('dailyReport.school.title')}
+      action={action}
       preserveDescriptionSpace
       className="relative overflow-visible border-primary-tint bg-white"
     >
@@ -337,30 +341,10 @@ export default function SchoolSection({
                       ) : null}
                     </div>
                     <div className="flex flex-col gap-2 text-sm">
-                      {!block.isDoubleLesson ? (
-                        <div
-                          className={cn(
-                            'flex cursor-pointer items-center gap-2',
-                            block.isFreeLesson
-                              ? 'font-semibold text-primary'
-                              : '',
-                          )}
-                        >
-                          <Switch
-                            className="cursor-pointer"
-                            checked={block.isFreeLesson}
-                            aria-label={t('dailyReport.school.freeLesson')}
-                            onCheckedChange={(checked) =>
-                              onSetLessonFreeState(block.start, checked)
-                            }
-                          />
-                          <span>{t('dailyReport.school.freeLesson')}</span>
-                        </div>
-                      ) : null}
                       {block.canUseDoubleLesson ? (
                         <div className="flex cursor-pointer items-center gap-2">
                           <Switch
-                            className="cursor-pointer"
+                            className="cursor-pointer data-[state=checked]:bg-primary"
                             checked={block.isDoubleLesson}
                             aria-label={t('dailyReport.school.doubleLesson')}
                             onCheckedChange={(checked) =>
@@ -370,28 +354,46 @@ export default function SchoolSection({
                           <span>{t('dailyReport.school.doubleLesson')}</span>
                         </div>
                       ) : null}
+                      <div
+                        className={cn(
+                          'flex cursor-pointer items-center gap-2',
+                          block.isFreeLesson
+                            ? 'font-semibold text-primary'
+                            : '',
+                        )}
+                      >
+                        <Switch
+                          className="cursor-pointer data-[state=checked]:bg-amber-500"
+                          checked={block.isFreeLesson}
+                          aria-label={t('dailyReport.school.freeLesson')}
+                          onCheckedChange={(checked) =>
+                            onSetLessonFreeState(block.start, checked)
+                          }
+                        />
+                        <span>{t('dailyReport.school.freeLesson')}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex w-full flex-col gap-3 p-3">
                   <div className="grid gap-3 lg:grid-cols-2">
-                    <Input
+                    <SuggestionInput
                       disabled={block.isFreeLesson}
                       value={block.lesson.subject}
-                      list="daily-report-subject-suggestions"
                       placeholder={t('dailyReport.school.subjectPlaceholder')}
-                      onChange={(event) =>
-                        updateLessonField(block, 'subject', event.target.value)
+                      suggestions={subjectSuggestions}
+                      onValueChange={(value) =>
+                        updateLessonField(block, 'subject', value)
                       }
                     />
-                    <Input
+                    <SuggestionInput
                       disabled={block.isFreeLesson}
                       value={block.lesson.teacher}
-                      list="daily-report-teacher-suggestions"
                       placeholder={t('dailyReport.school.teacherPlaceholder')}
-                      onChange={(event) =>
-                        updateLessonField(block, 'teacher', event.target.value)
+                      suggestions={teacherSuggestions}
+                      onValueChange={(value) =>
+                        updateLessonField(block, 'teacher', value)
                       }
                     />
                   </div>
@@ -425,26 +427,12 @@ export default function SchoolSection({
           ? dropIndicator
           : null}
       </div>
-
-      <datalist id="daily-report-subject-suggestions">
-        {subjectSuggestions.map((subject) => (
-          <option key={subject} value={subject}>
-            {subject}
-          </option>
-        ))}
-      </datalist>
-      <datalist id="daily-report-teacher-suggestions">
-        {teacherSuggestions.map((teacher) => (
-          <option key={teacher} value={teacher}>
-            {teacher}
-          </option>
-        ))}
-      </datalist>
     </SectionCard>
   );
 }
 
 SchoolSection.defaultProps = {
+  action: undefined,
   editTopicSuggestionLabel: undefined,
   deleteTopicSuggestionLabel: undefined,
   onEditTopicSuggestion: undefined,

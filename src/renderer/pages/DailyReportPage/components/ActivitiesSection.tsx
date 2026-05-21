@@ -1,8 +1,11 @@
+import { ReactNode } from 'react';
+
 import { SectionCard } from '@/renderer/components/app/SectionCard';
 import EditableTextEntryList from './EditableTextEntryList';
 
 export interface ActivitiesSectionProps {
   title: string;
+  action?: ReactNode;
   items: string[];
   placeholder: string;
   suggestions: string[];
@@ -17,6 +20,7 @@ export interface ActivitiesSectionProps {
 
 export default function ActivitiesSection({
   title,
+  action,
   items,
   placeholder,
   suggestions,
@@ -31,6 +35,7 @@ export default function ActivitiesSection({
   return (
     <SectionCard
       title={title}
+      action={action}
       preserveDescriptionSpace
       className="relative overflow-visible border-primary-tint bg-white"
     >
@@ -51,6 +56,7 @@ export default function ActivitiesSection({
 }
 
 ActivitiesSection.defaultProps = {
+  action: undefined,
   editSuggestionLabel: undefined,
   deleteSuggestionLabel: undefined,
   onEditSuggestion: undefined,

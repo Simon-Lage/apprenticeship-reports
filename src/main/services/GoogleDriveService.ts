@@ -1,7 +1,10 @@
 import { DrivePermissionState } from '@/shared/drive/permissions';
 import {
   createDriveBackupFileName,
+  createDriveBackupFolderUrl,
   DriveBackupKind,
+  DriveBackupFolder,
+  DriveBackupFolderSchema,
   DriveBackupFile,
   DriveBackupFileSchema,
   getDriveBackupFolderName,
@@ -396,6 +399,31 @@ export class GoogleDriveService {
       files: (payload.files ?? []).map((file) =>
         DriveBackupFileSchema.parse(file),
       ),
+      accessToken: connection.accessToken,
+      grantedScopes: connection.grantedScopes,
+    };
+  }
+
+  async getBackupFolder(
+    permissionState: DrivePermissionState,
+    kind: DriveBackupKind = 'reports',
+  ): Promise<{
+    folder: DriveBackupFolder;
+    accessToken: string;
+    grantedScopes: string[];
+  }> {
+    const connection = await this.authorizeConnection(permissionState);
+    const folderId = await this.ensureBackupFolder(
+      connection.accessToken,
+      kind,
+    );
+
+    return {
+      folder: DriveBackupFolderSchema.parse({
+        id: folderId,
+        name: getDriveBackupFolderName(kind),
+        url: createDriveBackupFolderUrl(folderId),
+      }),
       accessToken: connection.accessToken,
       grantedScopes: connection.grantedScopes,
     };

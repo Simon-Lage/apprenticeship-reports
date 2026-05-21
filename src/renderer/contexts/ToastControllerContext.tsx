@@ -20,7 +20,7 @@ type ToastController = {
 };
 
 const ToastControllerContext = createContext<ToastController | null>(null);
-const appToastPosition = 'top-left';
+const appToastPosition = 'bottom-left';
 
 function ToastClickDismissController() {
   const { toasts } = useSonner();
@@ -121,8 +121,8 @@ export function ToastControllerProvider({ children }: PropsWithChildren) {
         closeButton={false}
         position={appToastPosition}
         expand
-        offset={{ top: '4.25rem', left: '1rem' }}
-        mobileOffset={{ top: '4.25rem', left: '0.75rem', right: '0.75rem' }}
+        offset={{ bottom: '1rem', left: '1rem' }}
+        mobileOffset={{ bottom: '1rem', left: '0.75rem', right: '0.75rem' }}
         visibleToasts={4}
         duration={4800}
         icons={{
@@ -134,7 +134,7 @@ export function ToastControllerProvider({ children }: PropsWithChildren) {
         toastOptions={{
           classNames: {
             toast:
-              'app-toast cursor-pointer border border-primary-tint/80 bg-white/95 text-text-color shadow-xl backdrop-blur-sm',
+              'app-toast cursor-pointer border border-primary-tint/80 bg-white/80 text-text-color shadow-xl backdrop-blur-sm',
             title: 'app-toast-title text-sm font-semibold tracking-tight',
             description: 'app-toast-description text-xs text-text-color/75',
             success: 'app-toast-success',

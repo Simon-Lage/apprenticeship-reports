@@ -18,6 +18,7 @@ import {
   ExportBackupArchiveInputSchema,
   ExportWeeklyReportPdfInputSchema,
   ExportSettingsInputSchema,
+  GetDriveBackupFolderInputSchema,
   GrantDriveScopesInputSchema,
   InitializePasswordAuthInputSchema,
   PrepareDriveBackupImportInputSchema,
@@ -31,6 +32,7 @@ import {
   SetDriveScopesInputSchema,
   UpsertDailyReportInputSchema,
   UpsertWeeklyReportInputSchema,
+  VerifyPasswordInputSchema,
 } from '@/shared/ipc/app-api';
 
 export default function registerAppHandlers(
@@ -99,6 +101,10 @@ export default function registerAppHandlers(
     ),
   );
 
+  ipcMain.handle(AppIpcChannel.verifyPassword, (_event, input) =>
+    appKernel.verifyPassword(VerifyPasswordInputSchema.parse(input)),
+  );
+
   ipcMain.handle(AppIpcChannel.changePassword, (_event, input) =>
     appKernel.changePassword(ChangePasswordInputSchema.parse(input)),
   );
@@ -159,6 +165,12 @@ export default function registerAppHandlers(
 
   ipcMain.handle(AppIpcChannel.listDriveSettingsBackups, () =>
     appKernel.listDriveSettingsBackups(),
+  );
+
+  ipcMain.handle(AppIpcChannel.getDriveBackupFolder, (_event, input) =>
+    appKernel.getDriveBackupFolder(
+      GetDriveBackupFolderInputSchema.parse(input).kind,
+    ),
   );
 
   ipcMain.handle(AppIpcChannel.prepareDriveBackupImport, (_event, input) =>

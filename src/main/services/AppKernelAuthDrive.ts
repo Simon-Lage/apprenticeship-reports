@@ -20,7 +20,11 @@ import {
   registerBackupSuccess,
   registerLaunchBackupCheck,
 } from '@/shared/backup/policy';
-import { DriveBackupFile } from '@/shared/drive/backups';
+import {
+  DriveBackupFile,
+  DriveBackupFolder,
+  DriveBackupKind,
+} from '@/shared/drive/backups';
 import {
   BackupImportDecryptionInput,
   AuthenticateWithGoogleInput,
@@ -32,6 +36,7 @@ import {
   SaveGoogleSessionInput,
   SavePasswordSessionInput,
   SetDriveScopesInput,
+  VerifyPasswordInput,
 } from '@/shared/ipc/app-api';
 import { parseBackupSettings } from '@/shared/backup/settings';
 import { AppKernelCore } from '@/main/services/AppKernelCore';
@@ -400,8 +405,13 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
     });
     this.launchBackupCheckPending = false;
     const absenceCheckedState = this.markAbsenceSyncPending(nextState);
-    const processedState =
-      await this.tryProcessPendingBackup(absenceCheckedState);
+
+    return this.buildBootstrapState(absenceCheckedState);
+  }
+
+  async processPendingLaunchBackup(): Promise<AppBootstrapState> {
+    const currentState = await this.repository.read();
+    const processedState = await this.tryProcessPendingBackup(currentState);
 
     return this.buildBootstrapState(processedState);
   }
@@ -476,7 +486,40 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
     });
   }
 
+  async verifyPassword(input: VerifyPasswordInput): Promise<boolean> {
+    this.accessGuard.assertPasswordConfigured();
+    const currentState = await this.repository.read();
+    this.accessGuard.assertAuthenticated(currentState);
+
+    return this.getPasswordAuthService().verify(input.password);
+  }
+
+  private isCurrentGoogleSession(currentState: AppMetadata): boolean {
+    return (
+      this.getCurrentSession(currentState)?.provider === 'google' &&
+      Boolean(currentState.drive.account)
+    );
+  }
+
   async changePassword(input: ChangePasswordInput): Promise<AppBootstrapState> {
+    const currentState = await this.repository.read();
+    this.accessGuard.assertAuthenticated(currentState);
+    const isGoogleAuthenticated = this.isCurrentGoogleSession(currentState);
+
+    if (!isGoogleAuthenticated) {
+      if (!input.currentPassword) {
+        throw new Error('Aktuelles Passwort erforderlich.');
+      }
+
+      const isCurrentPasswordValid = await this.getPasswordAuthService().verify(
+        input.currentPassword,
+      );
+
+      if (!isCurrentPasswordValid) {
+        throw new Error('Das aktuelle Passwort ist ungueltig.');
+      }
+    }
+
     await this.getPasswordAuthService().changePassword({
       nextPassword: input.nextPassword,
     });
@@ -623,6 +666,23 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
     });
 
     return result.files;
+  }
+
+  async getDriveBackupFolder(
+    kind: DriveBackupKind,
+  ): Promise<DriveBackupFolder> {
+    const currentState = await this.refreshDriveAccessState();
+    const result = await this.getGoogleDriveService().getBackupFolder(
+      currentState.drive,
+      kind,
+    );
+
+    await this.persistDriveAccessState({
+      accessToken: result.accessToken,
+      grantedScopes: result.grantedScopes,
+    });
+
+    return result.folder;
   }
 
   async prepareDriveBackupImport(

@@ -532,6 +532,8 @@ const deTranslation = {
       summary: 'Krankheit/Urlaub',
       startDate: 'Von',
       endDate: 'Bis',
+      copyStartDateToEndDate: 'Startdatum als Enddatum übernehmen',
+      copyEndDateToStartDate: 'Enddatum als Startdatum übernehmen',
       type: 'Typ',
       label: 'Bezeichnung',
       note: 'Notiz',
@@ -593,6 +595,16 @@ const deTranslation = {
       current: 'Aktuelles Passwort',
       next: 'Neues Passwort',
       submit: 'Passwort aktualisieren',
+    },
+    currentPassword: {
+      title: 'Aktuelles Passwort bestätigen',
+      googleDescription:
+        'Bitte bestätige dein aktuelles Passwort, bevor ein Google-Konto verbunden oder gewechselt wird.',
+      passwordDescription:
+        'Bitte bestätige dein aktuelles Passwort, bevor du ein neues Passwort speicherst.',
+      required: 'Aktuelles Passwort erforderlich.',
+      invalid: 'Das aktuelle Passwort ist nicht korrekt.',
+      confirm: 'Bestätigen',
     },
     google: {
       title: 'Google (optional)',
@@ -927,6 +939,8 @@ const deTranslation = {
       lessonLabel: '{{lesson}}. Stunde',
       freeLesson: 'Freistunde',
       doubleLesson: 'Doppelstunde',
+      showTopicList: 'Themenliste',
+      showLessons: 'Nach Stunden',
       subjectPlaceholder: 'Fach',
       teacherPlaceholder: 'Lehrer',
       topicPlaceholder: 'Thema',
@@ -1066,6 +1080,7 @@ const deTranslation = {
     title: 'Ausbildungsnachweis',
     pageLabel: 'Seite {{page}} von {{total}}',
     emptyValue: '-',
+    noDataToCopy: 'Keine Daten zum Kopieren vorhanden',
     labels: {
       name: 'Name:',
       apprenticeIdentifier: 'Azubi-Ident-Nummer:',
@@ -1301,6 +1316,7 @@ const deTranslation = {
       oauthUnavailable: 'Google OAuth ist nicht konfiguriert.',
       connectedAccount: 'Verknüpftes Konto: {{email}}',
       changeAccountLink: 'Google Drive-Kontowechsel',
+      openBackupFolder: 'Backup-Ordner öffnen',
       connect: 'Drive-Verbindung herstellen',
       export: 'Backup zu Drive',
       manualBackup: 'Manuelles Backup',

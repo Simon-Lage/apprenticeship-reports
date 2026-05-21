@@ -108,11 +108,12 @@ export function validateDailyReportPayload(
   if (
     payload.dayType === 'school' &&
     payload.lessons.length > 0 &&
+    !payload.schoolTopics.length &&
     !payload.lessons.some((lesson) => lesson.topics.length > 0)
   ) {
     return 'dailyReport.feedback.missingSchoolLessonTopics';
   }
-  if (payload.dayType === 'school') {
+  if (payload.dayType === 'school' && !payload.schoolTopics.length) {
     const expandedPairs = new Set(options.expandedDoubleLessonPairs ?? []);
     const lessonsByNumber = new Map(
       payload.lessons.map((lesson) => [lesson.lesson, lesson]),

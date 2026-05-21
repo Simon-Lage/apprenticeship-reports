@@ -10,7 +10,11 @@ import {
 } from '@/shared/app/backup-encryption';
 import { AppBootstrapState } from '@/shared/app/bootstrap';
 import { JsonObject, JsonObjectSchema } from '@/shared/common/json';
-import { DriveBackupFile } from '@/shared/drive/backups';
+import {
+  DriveBackupFile,
+  DriveBackupFolder,
+  DriveBackupKindSchema,
+} from '@/shared/drive/backups';
 import { SettingsBackupScopeSchema } from '@/shared/backup/settings';
 import {
   BackupConflictStrategy,
@@ -38,6 +42,7 @@ export const AppIpcChannel = {
   exportWeeklyReportPdf: 'app:export-weekly-report-pdf',
   initializePasswordAuth: 'app:initialize-password-auth',
   authenticateWithPassword: 'app:authenticate-with-password',
+  verifyPassword: 'app:verify-password',
   changePassword: 'app:change-password',
   savePasswordSession: 'app:save-password-session',
   saveGoogleSession: 'app:save-google-session',
@@ -53,6 +58,7 @@ export const AppIpcChannel = {
   uploadSettingsBackupToDrive: 'app:upload-settings-backup-to-drive',
   listDriveBackups: 'app:list-drive-backups',
   listDriveSettingsBackups: 'app:list-drive-settings-backups',
+  getDriveBackupFolder: 'app:get-drive-backup-folder',
   prepareDriveBackupImport: 'app:prepare-drive-backup-import',
   prepareDriveSettingsImport: 'app:prepare-drive-settings-import',
   syncAbsenceCatalog: 'app:sync-absence-catalog',
@@ -97,6 +103,11 @@ export const AuthenticateWithPasswordInputSchema = z.object({
 
 export const ChangePasswordInputSchema = z.object({
   nextPassword: PasswordSecretSchema,
+  currentPassword: PasswordLoginSchema.optional(),
+});
+
+export const VerifyPasswordInputSchema = z.object({
+  password: PasswordLoginSchema,
 });
 
 export const AuthenticateWithGoogleInputSchema = z.object({
@@ -185,6 +196,10 @@ export const PrepareDriveBackupImportInputSchema = z.object({
   decryption: BackupImportDecryptionInputSchema,
 });
 
+export const GetDriveBackupFolderInputSchema = z.object({
+  kind: DriveBackupKindSchema,
+});
+
 export const ExportSettingsInputSchema = z
   .object({
     scope: SettingsBackupScopeSchema.optional(),
@@ -255,6 +270,7 @@ export type AuthenticateWithPasswordInput = z.input<
   typeof AuthenticateWithPasswordInputSchema
 >;
 export type ChangePasswordInput = z.input<typeof ChangePasswordInputSchema>;
+export type VerifyPasswordInput = z.input<typeof VerifyPasswordInputSchema>;
 export type AuthenticateWithGoogleInput = z.input<
   typeof AuthenticateWithGoogleInputSchema
 >;
@@ -277,6 +293,9 @@ export type ApplyBackupImportInput = z.input<
 >;
 export type PrepareDriveBackupImportInput = z.infer<
   typeof PrepareDriveBackupImportInputSchema
+>;
+export type GetDriveBackupFolderInput = z.infer<
+  typeof GetDriveBackupFolderInputSchema
 >;
 export type BackupImportDecryptionInput = z.infer<
   typeof BackupImportDecryptionInputSchema
@@ -355,6 +374,7 @@ export type AppApi = {
   authenticateWithPassword: (
     input: AuthenticateWithPasswordInput,
   ) => Promise<AppBootstrapState>;
+  verifyPassword: (input: VerifyPasswordInput) => Promise<boolean>;
   changePassword: (input: ChangePasswordInput) => Promise<AppBootstrapState>;
   savePasswordSession: (
     input: SavePasswordSessionInput,
@@ -382,6 +402,9 @@ export type AppApi = {
   ) => Promise<DriveBackupFile>;
   listDriveBackups: () => Promise<DriveBackupFile[]>;
   listDriveSettingsBackups: () => Promise<DriveBackupFile[]>;
+  getDriveBackupFolder: (
+    input: GetDriveBackupFolderInput,
+  ) => Promise<DriveBackupFolder>;
   prepareDriveBackupImport: (
     input: PrepareDriveBackupImportInput,
   ) => Promise<DatabaseBackupImportPreview>;

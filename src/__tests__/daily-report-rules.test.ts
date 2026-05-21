@@ -56,6 +56,48 @@ describe('daily report rules', () => {
     });
   });
 
+  it('keeps vacation work entries and marks the vacation as half day', () => {
+    const dailyReports = [
+      {
+        id: 'day-vacation-work',
+        weeklyReportId: 'week-1',
+        date: '2026-03-09',
+        values: {
+          dayType: 'free',
+          freeReason: 'Urlaub',
+          freeDayCategory: 'work',
+          activities: ['Tickets bearbeitet'],
+          trainings: ['Datenschutzunterweisung'],
+          schoolTopics: [],
+          lessons: [],
+        },
+        createdAt: '2026-03-09T08:00:00.000Z',
+        updatedAt: '2026-03-09T08:00:00.000Z',
+      },
+    ];
+
+    expect(buildWeeklyAggregates(dailyReports)).toEqual({
+      workActivities: ['(Urlaub (halbtags))', 'Tickets bearbeitet'],
+      trainings: ['Datenschutzunterweisung'],
+      schoolTopics: [],
+    });
+    expect(buildWeeklySectionDayGroups(dailyReports)).toEqual({
+      work: [
+        {
+          date: '2026-03-09',
+          items: ['(Urlaub (halbtags))', 'Tickets bearbeitet'],
+        },
+      ],
+      trainings: [
+        {
+          date: '2026-03-09',
+          items: ['Datenschutzunterweisung'],
+        },
+      ],
+      school: [],
+    });
+  });
+
   it('omits free weekend days from weekly report sections unless content exists', () => {
     const dailyReports = [
       {
@@ -120,7 +162,7 @@ describe('daily report rules', () => {
     });
   });
 
-  it('formats school lessons with lesson, subject, and teacher in weekly sections', () => {
+  it('formats school lessons with subject and teacher in weekly sections', () => {
     const dailyReports = [
       {
         id: 'school-day',
@@ -146,12 +188,12 @@ describe('daily report rules', () => {
     ];
 
     expect(buildWeeklyAggregates(dailyReports).schoolTopics).toEqual([
-      '1. Stunde - Mathematik (Herr Alt): Lineare Funktionen',
+      'Mathematik (Herr Alt): Lineare Funktionen',
     ]);
     expect(buildWeeklySectionDayGroups(dailyReports).school).toEqual([
       {
         date: '2026-03-10',
-        items: ['1. Stunde - Mathematik (Herr Alt): Lineare Funktionen'],
+        items: ['Mathematik (Herr Alt): Lineare Funktionen'],
       },
     ]);
   });
