@@ -27,6 +27,7 @@ import { formatGermanDateTime } from '@/renderer/lib/date-format';
 import { parseOnboardingTrainingPeriod } from '@/renderer/lib/app-settings';
 import { appRoutes } from '@/renderer/lib/app-routes';
 import { buildHomeStatsSnapshot } from '@/renderer/lib/home-stats';
+import { listCompleteWeeksWithDailyReports } from '@/renderer/lib/report-values';
 import { cn } from '@/renderer/lib/utils';
 import { Button } from '@/components/ui/button';
 import { resolveReportStartDateFromSettings } from '@/shared/settings/report-start-date';
@@ -232,6 +233,7 @@ export default function HomePage() {
     () => parseOnboardingTrainingPeriod(settingsSnapshot.value?.values ?? {}),
     [settingsSnapshot.value?.values],
   );
+  const today = getTodayIsoDate();
   const reportStartDate = useMemo(
     () =>
       resolveReportStartDateFromSettings(settingsSnapshot.value?.values ?? {}),
@@ -243,18 +245,21 @@ export default function HomePage() {
         dailyReports: Object.values(reportsState.value?.dailyReports ?? {}),
         reportStartDate,
         reportEndDate: trainingPeriod.trainingEnd ?? null,
-        today: getTodayIsoDate(),
+        today,
       }),
     [
       reportsState.value?.dailyReports,
       reportStartDate,
+      today,
       trainingPeriod.trainingEnd,
     ],
   );
   const weeklyReportStats = useMemo(() => {
-    const weeklyReports = Object.values(
-      reportsState.value?.weeklyReports ?? {},
-    );
+    const weeklyReports = reportsState.value
+      ? listCompleteWeeksWithDailyReports(reportsState.value)
+          .filter((week) => week.weeklyReport.weekEnd <= today)
+          .map((week) => week.weeklyReport)
+      : [];
     const submittedCount = weeklyReports.filter((weeklyReport) =>
       isWeeklyReportSubmitted(weeklyReport),
     ).length;
@@ -264,7 +269,7 @@ export default function HomePage() {
       submittedCount,
       toSendCount: Math.max(weeklyReports.length - submittedCount, 0),
     };
-  }, [reportsState.value?.weeklyReports]);
+  }, [reportsState.value, today]);
   const backlogValueClassName = resolveBacklogValueClassName(
     homeStats.backlogDays,
   );
