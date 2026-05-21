@@ -44,7 +44,6 @@ export const defaultManualAbsenceFormState: ManualAbsenceFormState = {
 
 type EditableAbsenceCollectionProps<T> = {
   type: ManualAbsenceType;
-  title: ReactNode;
   titleLabel: string;
   items: T[];
   form: ManualAbsenceFormState;
@@ -64,7 +63,6 @@ type EditableAbsenceCollectionProps<T> = {
 
 export default function EditableAbsenceCollection<T>({
   type,
-  title,
   titleLabel,
   items,
   form,
@@ -279,15 +277,14 @@ export default function EditableAbsenceCollection<T>({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                disabled={Boolean(entryDisabledReason)}
-                disabledReason={entryDisabledReason ?? undefined}
                 aria-label={t('absences.manual.editEntry', {
                   type: titleLabel,
                 })}
                 title={t('absences.manual.editEntry', {
                   type: titleLabel,
                 })}
-                onClick={() => {
+                onClick={(event) => {
+                  event.stopPropagation();
                   onEdit(editableEntry);
                 }}
               >

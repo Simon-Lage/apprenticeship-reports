@@ -1,6 +1,9 @@
 # Offene Issues
-- [ ] Prüfen ob Konflikt Spalte in Übersicht nicht redundant ist.
+- [ ] Der Vor udn Zurück button zwischen den Tagesberichten in der Tagesbericht Seite funktioniert manchmal nicht.
+- [ ] Prüfen ob Konflikt Spalte in Übersicht nicht redundant ist, sie sit zumindest verwirrend.
 - [?] In die Readme einbauen, dass Google Services aktuell noch in der Closed-Test-Phase sind und deswegen es nicht möglich ist, diese ohne freigegebenen Google-Account zu nutzen.
+- [ ] Der Vor- und Zurück-Button zwischen den Tagesberichten in der Tagesbericht-Seite funktioniert manchmal nicht.
+- [ ] Prüfen, ob die Konflikt-Spalte in der Übersicht nicht redundant ist; sie ist zumindest verwirrend.
 - [ ] Bei der Übersicht sollten immer 14 Einträge pro Pagination-Page sichtbar sein.
 - [?] Bei Übersicht statt - bei Schultagen die Themen unformatiert anzeigen genau wie Arbeitstätigkeiten (ohne nach Stunden aufzuschlüsseln, egal was bei dem Tagesbericht gemacht wurde).
   - [?] Bei Übersicht sollten Tätigkeiten/Themen maximal 3 Zeilen bilden bei der Auflistung innerhalb eines Tages und sie sollen sonst mit ... beendet werden.

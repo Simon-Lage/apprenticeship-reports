@@ -826,7 +826,6 @@ export default function AbsencesPage() {
               >
                 <EditableAbsenceCollection
                   type={type}
-                  title={titleNode}
                   titleLabel={title}
                   items={entries}
                   form={form}
@@ -866,10 +865,6 @@ export default function AbsencesPage() {
         >
           <EditableAbsenceCollection
             type="public-holiday"
-            title={titleWithIcon(
-              <PartyPopper className="size-4 text-primary" />,
-              t('absences.catalog.publicTitle'),
-            )}
             titleLabel={t('absences.catalog.publicTitle')}
             items={publicHolidayItems}
             form={form}
@@ -890,10 +885,6 @@ export default function AbsencesPage() {
           />
           <EditableAbsenceCollection
             type="school-holiday"
-            title={titleWithIcon(
-              <CalendarDays className="size-4 text-primary" />,
-              t('absences.catalog.schoolTitle'),
-            )}
             titleLabel={t('absences.catalog.schoolTitle')}
             items={schoolHolidayItems}
             form={form}
