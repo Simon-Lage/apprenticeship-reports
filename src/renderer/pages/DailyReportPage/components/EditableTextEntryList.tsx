@@ -1,5 +1,5 @@
 import { KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -16,6 +16,10 @@ type EditableTextEntryListProps = {
   addLabel: string;
   removeLabel: string;
   onChange: (items: string[]) => void;
+  editSuggestionLabel?: string;
+  deleteSuggestionLabel?: string;
+  onEditSuggestion?: (value: string) => void;
+  onDeleteSuggestion?: (value: string) => void;
   className?: string;
 };
 
@@ -26,6 +30,10 @@ export default function EditableTextEntryList({
   addLabel,
   removeLabel,
   onChange,
+  editSuggestionLabel,
+  deleteSuggestionLabel,
+  onEditSuggestion,
+  onDeleteSuggestion,
   className,
 }: EditableTextEntryListProps) {
   const rowKeys = useRef<string[]>([]);
@@ -172,11 +180,55 @@ export default function EditableTextEntryList({
                     <button
                       key={suggestion}
                       type="button"
-                      className="flex w-full items-center rounded-sm px-2 py-1.5 text-left text-sm text-text-color hover:bg-primary-tint/30"
+                      className="group flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-text-color hover:bg-primary-tint/30"
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() => selectSuggestion(index, suggestion)}
                     >
-                      {suggestion}
+                      <span className="min-w-0 flex-1 truncate">
+                        {suggestion}
+                      </span>
+                      {onEditSuggestion ? (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          aria-label={editSuggestionLabel}
+                          className="inline-flex size-7 items-center justify-center rounded-sm opacity-0 hover:bg-background group-hover:opacity-100"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              onEditSuggestion(suggestion);
+                            }
+                          }}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onEditSuggestion(suggestion);
+                          }}
+                        >
+                          <Pencil className="size-4" />
+                        </span>
+                      ) : null}
+                      {onDeleteSuggestion ? (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          aria-label={deleteSuggestionLabel}
+                          className="inline-flex size-7 items-center justify-center rounded-sm text-destructive opacity-0 hover:bg-destructive/10 group-hover:opacity-100"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              onDeleteSuggestion(suggestion);
+                            }
+                          }}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onDeleteSuggestion(suggestion);
+                          }}
+                        >
+                          <Trash2 className="size-4" />
+                        </span>
+                      ) : null}
                     </button>
                   ))}
                 </PopoverContent>
@@ -220,4 +272,8 @@ export default function EditableTextEntryList({
 
 EditableTextEntryList.defaultProps = {
   className: undefined,
+  editSuggestionLabel: undefined,
+  deleteSuggestionLabel: undefined,
+  onEditSuggestion: undefined,
+  onDeleteSuggestion: undefined,
 };

@@ -25,11 +25,13 @@ import {
   formatGermanDateShort,
 } from '@/renderer/lib/date-format';
 import { appRoutes } from '@/renderer/lib/app-routes';
+import { notifyReportsStateChanged } from '@/renderer/lib/report-state-events';
 import {
   parseAbsenceSettings,
   resolveOnboardingSubdivisionCode,
 } from '@/shared/absence/settings';
 import {
+  isSchoolDayFromTimetable,
   parseOnboardingTrainingPeriod,
   parseUiSettings,
   parseOnboardingWorkplace,
@@ -162,6 +164,7 @@ export default function WeeklyReportPage() {
   const runtime = useAppRuntime();
   const toast = useToastController();
   const reportsState = useReportsState();
+  const refreshReportsState = reportsState.refresh;
   const settingsSnapshot = useSettingsSnapshot();
   const [form, setForm] = useState<WeeklyFormState>(defaultWeeklyFormState);
   const [isPending, setIsPending] = useState(false);
@@ -564,7 +567,7 @@ export default function WeeklyReportPage() {
             });
             const dayKey = resolveDayKey(date);
             const freeDayCategory =
-              dayKey && uiSettings.timetable[dayKey].length > 0
+              dayKey && isSchoolDayFromTimetable(uiSettings, dayKey)
                 ? 'school'
                 : 'work';
 
@@ -585,6 +588,8 @@ export default function WeeklyReportPage() {
             });
           }),
         );
+        await refreshReportsState();
+        notifyReportsStateChanged();
       } catch {
         toast.error(t('weeklyReport.notifications.autoFillFailed'));
       } finally {
@@ -599,6 +604,7 @@ export default function WeeklyReportPage() {
     form.weekStart,
     isAutoFillingWeek,
     reportedDateSet,
+    refreshReportsState,
     runtime.api,
     subdivisionCode,
     t,
@@ -625,6 +631,8 @@ export default function WeeklyReportPage() {
           supervisorEmailPrimary: form.supervisorEmail.trim() || null,
         },
       });
+      await refreshReportsState();
+      notifyReportsStateChanged();
 
       toast.success(t('weeklyReport.notifications.saved'));
     } catch {

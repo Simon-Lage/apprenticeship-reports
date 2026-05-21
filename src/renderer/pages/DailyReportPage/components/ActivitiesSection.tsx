@@ -9,6 +9,10 @@ export interface ActivitiesSectionProps {
   addLabel: string;
   removeLabel: string;
   onChange: (items: string[]) => void;
+  editSuggestionLabel?: string;
+  deleteSuggestionLabel?: string;
+  onEditSuggestion?: (value: string) => void;
+  onDeleteSuggestion?: (value: string) => void;
 }
 
 export default function ActivitiesSection({
@@ -19,6 +23,10 @@ export default function ActivitiesSection({
   addLabel,
   removeLabel,
   onChange,
+  editSuggestionLabel,
+  deleteSuggestionLabel,
+  onEditSuggestion,
+  onDeleteSuggestion,
 }: ActivitiesSectionProps) {
   return (
     <SectionCard
@@ -33,7 +41,18 @@ export default function ActivitiesSection({
         addLabel={addLabel}
         removeLabel={removeLabel}
         onChange={onChange}
+        editSuggestionLabel={editSuggestionLabel}
+        deleteSuggestionLabel={deleteSuggestionLabel}
+        onEditSuggestion={onEditSuggestion}
+        onDeleteSuggestion={onDeleteSuggestion}
       />
     </SectionCard>
   );
 }
+
+ActivitiesSection.defaultProps = {
+  editSuggestionLabel: undefined,
+  deleteSuggestionLabel: undefined,
+  onEditSuggestion: undefined,
+  onDeleteSuggestion: undefined,
+};

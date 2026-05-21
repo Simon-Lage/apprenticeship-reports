@@ -1,4 +1,7 @@
-import { UiSettingsValues } from '@/renderer/lib/app-settings';
+import {
+  isSchoolDayFromTimetable,
+  UiSettingsValues,
+} from '@/renderer/lib/app-settings';
 import {
   AbsenceCatalogEntry,
   AbsenceSettings,
@@ -94,7 +97,7 @@ function resolveBaseDayType(input: {
     return 'work';
   }
 
-  return input.uiSettings.timetable[dayKey].length > 0 ? 'school' : 'work';
+  return isSchoolDayFromTimetable(input.uiSettings, dayKey) ? 'school' : 'work';
 }
 
 export function resolveAutoDayTypeFromBase(input: {

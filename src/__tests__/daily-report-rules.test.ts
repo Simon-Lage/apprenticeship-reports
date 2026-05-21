@@ -120,6 +120,42 @@ describe('daily report rules', () => {
     });
   });
 
+  it('formats school lessons with lesson, subject, and teacher in weekly sections', () => {
+    const dailyReports = [
+      {
+        id: 'school-day',
+        weeklyReportId: 'week-1',
+        date: '2026-03-10',
+        values: {
+          dayType: 'school',
+          activities: [],
+          trainings: [],
+          schoolTopics: [],
+          lessons: [
+            {
+              lesson: 1,
+              subject: 'Mathematik',
+              teacher: 'Herr Alt',
+              topics: ['Lineare Funktionen'],
+            },
+          ],
+        },
+        createdAt: '2026-03-10T08:00:00.000Z',
+        updatedAt: '2026-03-10T08:00:00.000Z',
+      },
+    ];
+
+    expect(buildWeeklyAggregates(dailyReports).schoolTopics).toEqual([
+      '1. Stunde - Mathematik (Herr Alt): Lineare Funktionen',
+    ]);
+    expect(buildWeeklySectionDayGroups(dailyReports).school).toEqual([
+      {
+        date: '2026-03-10',
+        items: ['1. Stunde - Mathematik (Herr Alt): Lineare Funktionen'],
+      },
+    ]);
+  });
+
   it('treats weekends and school holidays as free days with a concrete reason', () => {
     const weekend = resolveAutoDayTypeFromBase({
       date: '2026-03-14',

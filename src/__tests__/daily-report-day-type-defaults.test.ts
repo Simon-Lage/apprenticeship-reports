@@ -15,6 +15,18 @@ function createUiSettings(): UiSettingsValues {
       thursday: [],
       friday: [],
     },
+    schoolDays: {
+      monday: false,
+      tuesday: false,
+      wednesday: true,
+      thursday: false,
+      friday: false,
+    },
+    textSuggestions: {
+      activities: { manual: [], ignored: [] },
+      trainings: { manual: [], ignored: [] },
+      schoolTopics: { manual: [], ignored: [] },
+    },
   };
 }
 
@@ -213,13 +225,25 @@ describe('daily report auto day type', () => {
 
   it('uses work as base when no rule matches', () => {
     const result = resolveAutoDayType({
-      date: '2026-02-04',
+      date: '2026-02-06',
       uiSettings: createUiSettings(),
       absenceSettings: createAbsenceSettings(),
       currentYear: 2026,
     });
 
     expect(result.dayType).toBe('work');
+    expect(result.reason.kind).toBe('base');
+  });
+
+  it('uses manually marked timetable days as school days', () => {
+    const result = resolveAutoDayType({
+      date: '2026-02-04',
+      uiSettings: createUiSettings(),
+      absenceSettings: createAbsenceSettings(),
+      currentYear: 2026,
+    });
+
+    expect(result.dayType).toBe('school');
     expect(result.reason.kind).toBe('base');
   });
 });

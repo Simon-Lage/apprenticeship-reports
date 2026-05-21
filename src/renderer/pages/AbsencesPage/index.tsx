@@ -28,8 +28,8 @@ import {
   formatGermanDateTime,
 } from '@/renderer/lib/date-format';
 import {
-  hasSeenFirstRunDialog,
-  markFirstRunDialogSeen,
+  hasDismissedIntroDialog,
+  markIntroDialogDismissed,
 } from '@/renderer/lib/first-run-dialogs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -375,7 +375,7 @@ export default function AbsencesPage() {
   }, [submittedReportEditDisabledReason, t, toast]);
 
   useEffect(() => {
-    if (!hasSeenFirstRunDialog('absences')) {
+    if (!hasDismissedIntroDialog('absences')) {
       setIsIntroOpen(true);
     }
   }, []);
@@ -400,21 +400,21 @@ export default function AbsencesPage() {
 
     autoSyncAttemptKeyRef.current = attemptKey;
     setIsCatalogSyncPending(true);
-    runtime.api
-      .syncAbsenceCatalog()
-      .then(async () => {
-        await runtime.refresh();
-        await settingsSnapshot.refresh();
-      })
-      .catch((error) => {
+    const syncMissingCatalogYears = async () => {
+      try {
+        await runtime.api!.syncAbsenceCatalog();
+        await Promise.all([runtime.refresh(), settingsSnapshot.refresh()]);
+      } catch (error) {
         toast.error(
           t('absences.feedback.syncError'),
           error instanceof Error ? error.message : t('common.errors.unknown'),
         );
-      })
-      .finally(() => {
+      } finally {
         setIsCatalogSyncPending(false);
-      });
+      }
+    };
+
+    syncMissingCatalogYears().catch(() => undefined);
   }, [
     absenceSettings.autoSyncHolidays,
     hasMissingCatalogYears,
@@ -642,7 +642,10 @@ export default function AbsencesPage() {
     unsavedChangesGuard.saveAndProceed().catch(() => undefined);
   }, [unsavedChangesGuard]);
   const closeIntroDialog = useCallback(() => {
-    markFirstRunDialogSeen('absences');
+    setIsIntroOpen(false);
+  }, []);
+  const dismissIntroDialogPermanently = useCallback(() => {
+    markIntroDialogDismissed('absences');
     setIsIntroOpen(false);
   }, []);
 
@@ -672,6 +675,13 @@ export default function AbsencesPage() {
             <p>{t('absences.intro.locked')}</p>
           </div>
           <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={dismissIntroDialogPermanently}
+            >
+              {t('common.doNotShowAgain')}
+            </Button>
             <Button
               type="button"
               className="bg-primary text-primary-contrast hover:bg-primary-shade"

@@ -14,6 +14,8 @@ import { useToastController } from '@/renderer/contexts/ToastControllerContext';
 import useUnsavedChangesGuard from '@/renderer/hooks/useUnsavedChangesGuard';
 import { useSettingsSnapshot } from '@/renderer/hooks/useKernelData';
 import {
+  hasCompleteTimetableSlots,
+  isSchoolDayFromTimetable,
   mergeUiSettings,
   parseUiSettings,
   renameUiCatalogEntry,
@@ -24,12 +26,19 @@ import {
   WeekDayKey,
 } from '@/renderer/lib/app-settings';
 import {
-  hasSeenFirstRunDialog,
-  markFirstRunDialogSeen,
+  hasDismissedIntroDialog,
+  markIntroDialogDismissed,
 } from '@/renderer/lib/first-run-dialogs';
 import handleEnterAction from '@/renderer/lib/keyboard';
+import { cn } from '@/renderer/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   Dialog,
   DialogContent,
@@ -284,6 +293,9 @@ export default function TimeTablePage() {
     useState<PendingCatalogEntry | null>(null);
   const [editingCatalogEntry, setEditingCatalogEntry] =
     useState<EditingCatalogEntry | null>(null);
+  const [pendingClearDay, setPendingClearDay] = useState<WeekDayKey | null>(
+    null,
+  );
   const [isIntroOpen, setIsIntroOpen] = useState(false);
 
   useEffect(() => {
@@ -295,7 +307,7 @@ export default function TimeTablePage() {
   }, [settingsSnapshot.value]);
 
   useEffect(() => {
-    if (!hasSeenFirstRunDialog('timetable')) {
+    if (!hasDismissedIntroDialog('timetable')) {
       setIsIntroOpen(true);
     }
   }, []);
@@ -401,6 +413,36 @@ export default function TimeTablePage() {
         },
       };
     });
+  }
+
+  function setSchoolDay(day: WeekDayKey, checked: boolean) {
+    setUiSettings((current) => {
+      if (!current || hasCompleteTimetableSlots(current.timetable[day])) {
+        return current;
+      }
+
+      return {
+        ...current,
+        schoolDays: {
+          ...current.schoolDays,
+          [day]: checked,
+        },
+      };
+    });
+  }
+
+  function confirmClearTimetableDay(day: WeekDayKey) {
+    setUiSettings((current) =>
+      current
+        ? {
+            ...current,
+            timetable: {
+              ...current.timetable,
+              [day]: [],
+            },
+          }
+        : current,
+    );
   }
 
   function startCatalogEdit(kind: UiCatalogEntryKind, value: string) {
@@ -561,7 +603,11 @@ export default function TimeTablePage() {
     onSave: async () => saveTimeTable(),
   });
   function closeIntroDialog() {
-    markFirstRunDialogSeen('timetable');
+    setIsIntroOpen(false);
+  }
+
+  function dismissIntroDialogPermanently() {
+    markIntroDialogDismissed('timetable');
     setIsIntroOpen(false);
   }
 
@@ -597,6 +643,13 @@ export default function TimeTablePage() {
           <DialogFooter>
             <Button
               type="button"
+              variant="outline"
+              onClick={dismissIntroDialogPermanently}
+            >
+              {t('common.doNotShowAgain')}
+            </Button>
+            <Button
+              type="button"
               className="bg-primary text-primary-contrast hover:bg-primary-shade"
               onClick={closeIntroDialog}
             >
@@ -613,14 +666,86 @@ export default function TimeTablePage() {
                 <th className="sticky top-0 z-20 rounded-md bg-primary px-2 py-2 text-left text-sm text-primary-contrast">
                   {t('timeTable.schedule.lesson')}
                 </th>
-                {weekDayKeys.map((day) => (
-                  <th
-                    key={day}
-                    className="sticky top-0 z-20 rounded-md bg-primary px-2 py-2 text-left text-sm text-primary-contrast"
-                  >
-                    {t(`timeTable.days.${day}`)}
-                  </th>
-                ))}
+                {weekDayKeys.map((day) => {
+                  const isForcedSchoolDay = hasCompleteTimetableSlots(
+                    uiSettings.timetable[day],
+                  );
+                  const isSchoolDay = isSchoolDayFromTimetable(uiSettings, day);
+                  const hasEntries = uiSettings.timetable[day].length > 0;
+
+                  return (
+                    <th
+                      key={day}
+                      className={cn(
+                        'group sticky top-0 z-20 rounded-md px-2 py-2 text-left text-sm text-primary-contrast',
+                        isSchoolDay
+                          ? 'bg-[color-mix(in_oklch,var(--primary)_88%,white)]'
+                          : 'bg-primary',
+                      )}
+                    >
+                      <div className="flex min-h-8 items-center justify-between gap-2">
+                        <span>{t(`timeTable.days.${day}`)}</span>
+                        <div className="flex items-center gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span
+                                className={cn(
+                                  'inline-flex transition-opacity group-hover:opacity-100 group-focus-within:opacity-100',
+                                  isSchoolDay ? 'opacity-50' : 'opacity-0',
+                                )}
+                              >
+                                <Checkbox
+                                  checked={isSchoolDay}
+                                  disabled={isForcedSchoolDay}
+                                  aria-label={t(
+                                    'timeTable.schedule.schoolDayLabel',
+                                    {
+                                      day: t(`timeTable.days.${day}`),
+                                    },
+                                  )}
+                                  className="cursor-pointer border-primary-contrast bg-white text-primary data-[state=checked]:border-primary-contrast data-[state=checked]:bg-white data-[state=checked]:text-primary disabled:opacity-100"
+                                  onCheckedChange={(checked) =>
+                                    setSchoolDay(day, checked === true)
+                                  }
+                                />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {isForcedSchoolDay
+                                ? t('timeTable.schedule.schoolDayForcedTooltip')
+                                : t('timeTable.schedule.schoolDayTooltip')}
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  disabled={!hasEntries}
+                                  aria-label={t(
+                                    'timeTable.schedule.clearDayLabel',
+                                    {
+                                      day: t(`timeTable.days.${day}`),
+                                    },
+                                  )}
+                                  className="size-7 text-primary-contrast hover:bg-primary-shade hover:text-primary-contrast disabled:text-primary-contrast/50"
+                                  onClick={() => setPendingClearDay(day)}
+                                >
+                                  <Trash2 className="size-4" />
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {t('timeTable.schedule.clearDayTooltip')}
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </div>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -842,6 +967,53 @@ export default function TimeTablePage() {
               {pendingCatalogEntry?.action === 'delete'
                 ? t('timeTable.confirmDelete.confirm')
                 : t('timeTable.confirmAdd.confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog
+        open={Boolean(pendingClearDay)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingClearDay(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingClearDay
+                ? t('timeTable.confirmClearDay.title', {
+                    day: t(`timeTable.days.${pendingClearDay}`),
+                  })
+                : ''}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingClearDay
+                ? t('timeTable.confirmClearDay.description', {
+                    day: t(`timeTable.days.${pendingClearDay}`),
+                  })
+                : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {t('timeTable.confirmClearDay.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-primary text-primary-contrast hover:bg-primary-shade"
+              onClick={(event) => {
+                event.preventDefault();
+
+                if (!pendingClearDay) {
+                  return;
+                }
+
+                confirmClearTimetableDay(pendingClearDay);
+                setPendingClearDay(null);
+              }}
+            >
+              {t('timeTable.confirmClearDay.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

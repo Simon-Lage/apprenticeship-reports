@@ -1,9 +1,19 @@
 import {
+  ignoreTextSuggestion,
   mergeUiCatalogWithLessonValues,
   parseUiSettings,
+  renameTextSuggestion,
   renameUiCatalogEntry,
+  resolveTextSuggestions,
   resolveWorkplaceSettingsValues,
+  unignoreTextSuggestions,
 } from '@/renderer/lib/app-settings';
+
+const textSuggestions = {
+  activities: { manual: [], ignored: [] },
+  trainings: { manual: [], ignored: [] },
+  schoolTopics: { manual: [], ignored: [] },
+};
 
 describe('app settings', () => {
   it('prefers onboarding workplace values for settings fields', () => {
@@ -72,6 +82,14 @@ describe('app settings', () => {
             },
           ],
         },
+        schoolDays: {
+          monday: false,
+          tuesday: false,
+          wednesday: false,
+          thursday: false,
+          friday: false,
+        },
+        textSuggestions,
       },
     });
 
@@ -103,6 +121,14 @@ describe('app settings', () => {
           thursday: [],
           friday: [],
         },
+        schoolDays: {
+          monday: false,
+          tuesday: false,
+          wednesday: false,
+          thursday: false,
+          friday: false,
+        },
+        textSuggestions,
       },
     });
 
@@ -127,6 +153,11 @@ describe('app settings', () => {
           ],
           tuesday: [{ lesson: 0, subject: 'Invalid', teacher: 'Invalid' }],
         },
+        schoolDays: {
+          monday: true,
+          tuesday: 'yes',
+          wednesday: false,
+        },
       },
     });
 
@@ -140,6 +171,13 @@ describe('app settings', () => {
       { lesson: 11, subject: 'Valid 11', teacher: 'Teacher 11' },
     ]);
     expect(parsed.timetable.tuesday).toEqual([]);
+    expect(parsed.schoolDays).toEqual({
+      monday: true,
+      tuesday: false,
+      wednesday: false,
+      thursday: false,
+      friday: false,
+    });
   });
 
   it('merges subject and teacher presets from lesson values without duplicates', () => {
@@ -156,6 +194,14 @@ describe('app settings', () => {
           thursday: [],
           friday: [],
         },
+        schoolDays: {
+          monday: false,
+          tuesday: false,
+          wednesday: false,
+          thursday: false,
+          friday: false,
+        },
+        textSuggestions,
       },
       lessons: [
         { subject: 'Math', teacher: 'Ms Existing' },
@@ -166,5 +212,57 @@ describe('app settings', () => {
 
     expect(merged.subjects).toEqual(['Math', 'Physics']);
     expect(merged.teachers).toEqual(['Mr New', 'Ms Existing']);
+  });
+
+  it('filters, renames and restores ignored text suggestions', () => {
+    const uiSettings = parseUiSettings({
+      appUi: {
+        textSuggestions: {
+          activities: {
+            manual: ['Neue Aufgabe'],
+            ignored: ['Alte Aufgabe'],
+          },
+        },
+      },
+    });
+
+    expect(
+      resolveTextSuggestions({
+        uiSettings,
+        kind: 'activities',
+        values: ['Alte Aufgabe', 'Code Review'],
+      }),
+    ).toEqual(['Code Review', 'Neue Aufgabe']);
+
+    const renamed = renameTextSuggestion({
+      uiSettings,
+      kind: 'activities',
+      currentValue: 'Code Review',
+      nextValue: 'Review im Team',
+    });
+
+    expect(renamed.textSuggestions.activities.manual).toContain(
+      'Review im Team',
+    );
+    expect(renamed.textSuggestions.activities.ignored).toContain('Code Review');
+
+    const ignored = ignoreTextSuggestion(
+      renamed,
+      'activities',
+      'Review im Team',
+    );
+    expect(ignored.textSuggestions.activities.manual).not.toContain(
+      'Review im Team',
+    );
+    expect(ignored.textSuggestions.activities.ignored).toContain(
+      'Review im Team',
+    );
+
+    const restored = unignoreTextSuggestions(ignored, {
+      activities: ['Review im Team'],
+    });
+    expect(restored.textSuggestions.activities.ignored).not.toContain(
+      'Review im Team',
+    );
   });
 });

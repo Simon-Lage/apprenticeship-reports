@@ -1,10 +1,9 @@
-const firstRunDialogStoragePrefix =
-  'apprenticeship-reports.first-run-dialog';
+const firstRunDialogStoragePrefix = 'apprenticeship-reports.intro-dialog';
 
-export function hasSeenFirstRunDialog(id: string): boolean {
+export function hasDismissedIntroDialog(id: string): boolean {
   try {
     return (
-      window.localStorage.getItem(`${firstRunDialogStoragePrefix}.${id}.v1`) ===
+      window.localStorage.getItem(`${firstRunDialogStoragePrefix}.${id}.v2`) ===
       'true'
     );
   } catch {
@@ -12,10 +11,10 @@ export function hasSeenFirstRunDialog(id: string): boolean {
   }
 }
 
-export function markFirstRunDialogSeen(id: string): void {
+export function markIntroDialogDismissed(id: string): void {
   try {
     window.localStorage.setItem(
-      `${firstRunDialogStoragePrefix}.${id}.v1`,
+      `${firstRunDialogStoragePrefix}.${id}.v2`,
       'true',
     );
   } catch (error) {

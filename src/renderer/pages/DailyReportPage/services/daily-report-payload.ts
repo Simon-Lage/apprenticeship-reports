@@ -1,5 +1,8 @@
 import { normalizeLessons } from '@/renderer/lib/report-values';
-import { UiSettingsValues } from '@/renderer/lib/app-settings';
+import {
+  isSchoolDayFromTimetable,
+  UiSettingsValues,
+} from '@/renderer/lib/app-settings';
 import { resolveDayKey } from '../utils/calendar-date-utils';
 import normalizeEntryList from '../utils/entry-list';
 import { DailyReportFormState } from '../utils/form-model';
@@ -59,7 +62,7 @@ export function buildDailyReportPayload(
       ? (currentDailyValues.freeDayCategory ??
         (() => {
           const dayKey = resolveDayKey(sourceForm.date);
-          if (dayKey && uiSettings.timetable[dayKey].length > 0)
+          if (dayKey && isSchoolDayFromTimetable(uiSettings, dayKey))
             return 'school';
           return 'work';
         })())
@@ -95,7 +98,18 @@ export function validateDailyReportPayload(
   ) {
     return 'dailyReport.feedback.missingWorkEntries';
   }
-  if (payload.dayType === 'school' && !payload.lessons.length) {
+  if (
+    payload.dayType === 'school' &&
+    !payload.lessons.length &&
+    !payload.schoolTopics.length
+  ) {
+    return 'dailyReport.feedback.missingSchoolTopics';
+  }
+  if (
+    payload.dayType === 'school' &&
+    payload.lessons.length > 0 &&
+    !payload.lessons.some((lesson) => lesson.topics.length > 0)
+  ) {
     return 'dailyReport.feedback.missingSchoolLessonTopics';
   }
   if (payload.dayType === 'school') {

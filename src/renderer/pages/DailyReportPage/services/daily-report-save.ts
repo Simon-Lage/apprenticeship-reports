@@ -11,8 +11,10 @@ import {
   mergeUiCatalogWithLessonValues,
   mergeUiSettings,
   UiSettingsValues,
+  unignoreTextSuggestions,
 } from '@/renderer/lib/app-settings';
 import { appRoutes } from '@/renderer/lib/app-routes';
+import { notifyReportsStateChanged } from '@/renderer/lib/report-state-events';
 import { DailyReportFormState } from '../utils/form-model';
 import {
   buildDailyReportPayload,
@@ -86,9 +88,28 @@ export function useDailyReportSave() {
         });
 
         if (values.dayType === 'school' && settingsSnapshot.value) {
-          const nextUiSettings = mergeUiCatalogWithLessonValues({
+          let nextUiSettings = mergeUiCatalogWithLessonValues({
             uiSettings,
             lessons: values.lessons,
+          });
+          nextUiSettings = unignoreTextSuggestions(nextUiSettings, {
+            activities: values.activities,
+            trainings: values.trainings,
+            schoolTopics: [
+              ...values.schoolTopics,
+              ...values.lessons.flatMap((lesson) => lesson.topics),
+            ],
+          });
+          if (nextUiSettings !== uiSettings) {
+            await runtime.api.setSettingsValues(
+              mergeUiSettings(settingsSnapshot.value.values, nextUiSettings),
+            );
+            settingsUpdated = true;
+          }
+        } else if (settingsSnapshot.value) {
+          const nextUiSettings = unignoreTextSuggestions(uiSettings, {
+            activities: values.activities,
+            trainings: values.trainings,
           });
           if (nextUiSettings !== uiSettings) {
             await runtime.api.setSettingsValues(
@@ -100,6 +121,7 @@ export function useDailyReportSave() {
 
         await runtime.refresh();
         await reportsState.refresh();
+        notifyReportsStateChanged();
         if (settingsUpdated) await settingsSnapshot.refresh();
         toast.success(t('dailyReport.feedback.saved'));
         return {
@@ -139,6 +161,7 @@ export function useDailyReportSave() {
         });
         await runtime.refresh();
         await reportsState.refresh();
+        notifyReportsStateChanged();
         toast.info(t('dailyReport.feedback.deleted'));
         navigate(appRoutes.dailyReport);
         return true;

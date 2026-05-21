@@ -20,6 +20,18 @@ const uiSettings: UiSettingsValues = {
     thursday: [],
     friday: [],
   },
+  schoolDays: {
+    monday: false,
+    tuesday: true,
+    wednesday: false,
+    thursday: false,
+    friday: false,
+  },
+  textSuggestions: {
+    activities: { manual: [], ignored: [] },
+    trainings: { manual: [], ignored: [] },
+    schoolTopics: { manual: [], ignored: [] },
+  },
 };
 
 function createSchoolForm(
@@ -132,5 +144,36 @@ describe('daily report payload', () => {
         expandedDoubleLessonPairs: form.expandedDoubleLessonPairs,
       }),
     ).toBe('dailyReport.feedback.missingSchoolLessonTopics');
+  });
+
+  it('allows school days without lessons when school topics exist', () => {
+    const payload = buildDailyReportPayload(
+      createSchoolForm({
+        date: '2026-05-12',
+        schoolTopics: ['Projektplanung im Unterricht'],
+        lessons: [],
+      }),
+      {},
+      uiSettings,
+    );
+
+    expect(payload.lessons).toEqual([]);
+    expect(payload.schoolTopics).toEqual(['Projektplanung im Unterricht']);
+    expect(validateDailyReportPayload(payload)).toBeNull();
+  });
+
+  it('requires school topics for school days without lessons', () => {
+    const payload = buildDailyReportPayload(
+      createSchoolForm({
+        date: '2026-05-12',
+        lessons: [],
+      }),
+      {},
+      uiSettings,
+    );
+
+    expect(validateDailyReportPayload(payload)).toBe(
+      'dailyReport.feedback.missingSchoolTopics',
+    );
   });
 });

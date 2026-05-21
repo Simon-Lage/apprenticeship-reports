@@ -480,6 +480,8 @@ export default function SettingsPage() {
         teachers: formValues.teachers,
         subjects: formValues.subjects,
         timetable: formValues.timetable,
+        schoolDays: formValues.schoolDays,
+        textSuggestions: formValues.textSuggestions,
       };
       const withUiSettings = mergeUiSettings(
         settingsSnapshot.value.values,

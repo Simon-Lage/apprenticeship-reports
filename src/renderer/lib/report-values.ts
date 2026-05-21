@@ -165,6 +165,54 @@ function formatFreeDayAggregateValue(reason: string): string {
   return `(${reason.trim() || 'Freier Tag'})`;
 }
 
+function formatLessonRange(
+  lesson: SchoolLessonInput,
+  lessonsByNumber: Map<number, SchoolLessonInput>,
+): string {
+  const nextLesson = lessonsByNumber.get(lesson.lesson + 1);
+  const isCollapsedDoubleLesson =
+    lesson.lesson % 2 === 1 &&
+    nextLesson &&
+    !nextLesson.topics.length &&
+    lesson.subject.trim().length > 0 &&
+    lesson.teacher.trim().length > 0 &&
+    lesson.subject === nextLesson.subject &&
+    lesson.teacher === nextLesson.teacher;
+
+  return isCollapsedDoubleLesson
+    ? `${lesson.lesson}./${lesson.lesson + 1}. Stunde`
+    : `${lesson.lesson}. Stunde`;
+}
+
+function formatLessonTopic(
+  lesson: SchoolLessonInput,
+  topic: string,
+  lessonsByNumber: Map<number, SchoolLessonInput>,
+): string {
+  const lessonRange = formatLessonRange(lesson, lessonsByNumber);
+  const subject = lesson.subject.trim();
+  const teacher = lesson.teacher.trim();
+  const details = [subject, teacher ? `(${teacher})` : '']
+    .filter(Boolean)
+    .join(' ');
+
+  return details
+    ? `${lessonRange} - ${details}: ${topic}`
+    : `${lessonRange}: ${topic}`;
+}
+
+function listSchoolLessonItems(lessons: SchoolLessonInput[]): string[] {
+  const lessonsByNumber = new Map(
+    lessons.map((lesson) => [lesson.lesson, lesson]),
+  );
+
+  return lessons.flatMap((lesson) =>
+    lesson.topics.map((topic) =>
+      formatLessonTopic(lesson, topic, lessonsByNumber),
+    ),
+  );
+}
+
 function hasWeeklyReportContent(values: DailyReportValues): boolean {
   return (
     values.activities.length > 0 ||
@@ -276,14 +324,11 @@ export function buildWeeklyAggregates(
         }
       });
 
-      parsed.lessons.forEach((lesson) => {
-        lesson.topics.forEach((topic) => {
-          const value = `${lesson.subject}: ${topic}`;
-          if (!seenSchool.has(value)) {
-            seenSchool.add(value);
-            schoolTopics.push(value);
-          }
-        });
+      listSchoolLessonItems(parsed.lessons).forEach((value) => {
+        if (!seenSchool.has(value)) {
+          seenSchool.add(value);
+          schoolTopics.push(value);
+        }
       });
     });
 
@@ -353,13 +398,7 @@ export function buildWeeklySectionDayGroups(
 
       const schoolItems = uniqValues([
         ...parsed.schoolTopics,
-        ...parsed.lessons.flatMap((lesson) =>
-          lesson.topics.map((topic) =>
-            lesson.subject.trim().length
-              ? `${lesson.subject}: ${topic}`
-              : topic,
-          ),
-        ),
+        ...listSchoolLessonItems(parsed.lessons),
       ]);
 
       if (parsed.activities.length) {
