@@ -99,6 +99,8 @@ if (process.env.NODE_ENV === 'development') {
   app.setPath('userData', path.join(process.cwd(), '.dev-data', 'user-data'));
 }
 
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+
 if (isDebug) {
   require('electron-debug').default();
 }
@@ -323,58 +325,80 @@ async function createWindow(): Promise<void> {
   appUpdater = new AppUpdater(mainWindow);
 }
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
-
-app.on('before-quit', async (event) => {
-  if (!appKernel || isQuittingAfterBackupRegistration) {
+function focusMainWindow(): void {
+  if (!mainWindow) {
     return;
   }
 
-  event.preventDefault();
-  isQuittingAfterBackupRegistration = true;
-
-  try {
-    await appKernel.handleAppClose();
-  } catch (error) {
-    log.error('App close backup registration failed', error);
-  } finally {
-    app.quit();
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
   }
-});
 
-app
-  .whenReady()
-  .then(async () => {
-    appKernel = createAppKernel();
-    const desktopFileDialogService = new DesktopFileDialogService(
-      () => mainWindow,
-    );
-    registerAppHandlers(
-      appKernel,
-      desktopFileDialogService,
-      () => mainWindow,
-      (isDirty) => {
-        isAppDirty = isDirty;
-      },
-      getAppBuildInfo,
-      checkForUpdates,
-      handleRendererError,
-    );
-    await appKernel.boot();
-    await createWindow();
+  if (!mainWindow.isVisible()) {
+    mainWindow.show();
+  }
 
-    app.on('activate', async () => {
-      if (mainWindow === null) {
-        await createWindow();
-      }
-    });
+  mainWindow.focus();
+}
 
-    return undefined;
-  })
-  .catch((error: unknown) => {
-    log.error('App startup failed', error);
+if (!hasSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', focusMainWindow);
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      app.quit();
+    }
   });
+
+  app.on('before-quit', async (event) => {
+    if (!appKernel || isQuittingAfterBackupRegistration) {
+      return;
+    }
+
+    event.preventDefault();
+    isQuittingAfterBackupRegistration = true;
+
+    try {
+      await appKernel.handleAppClose();
+    } catch (error) {
+      log.error('App close backup registration failed', error);
+    } finally {
+      app.quit();
+    }
+  });
+
+  app
+    .whenReady()
+    .then(async () => {
+      appKernel = createAppKernel();
+      const desktopFileDialogService = new DesktopFileDialogService(
+        () => mainWindow,
+      );
+      registerAppHandlers(
+        appKernel,
+        desktopFileDialogService,
+        () => mainWindow,
+        (isDirty) => {
+          isAppDirty = isDirty;
+        },
+        getAppBuildInfo,
+        checkForUpdates,
+        handleRendererError,
+      );
+      await appKernel.boot();
+      await createWindow();
+
+      app.on('activate', async () => {
+        if (mainWindow === null) {
+          await createWindow();
+        }
+      });
+
+      return undefined;
+    })
+    .catch((error: unknown) => {
+      log.error('App startup failed', error);
+    });
+}
