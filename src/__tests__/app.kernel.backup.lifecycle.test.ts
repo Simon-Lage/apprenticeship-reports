@@ -98,7 +98,7 @@ describe('app kernel backup lifecycle', () => {
     expect(persistedState.backup.pendingReasons).toContain('app-close');
   });
 
-  it('uploads a pending backup on app start when the persisted session and drive access are ready', async () => {
+  it('keeps app start non-blocking and processes launch backup afterwards', async () => {
     const driveService = createDriveServiceMock('drive-file-1', '128');
     const { kernel, repository } = createBackupLifecycleKernel({
       googleDriveService: driveService,
@@ -125,12 +125,18 @@ describe('app kernel backup lifecycle', () => {
         googleDriveService: driveService,
       });
     const bootstrap = await restartedKernel.boot();
+
+    expect(driveService.uploadBackup).toHaveBeenCalledTimes(0);
+    expect(bootstrap.backup.pendingReasons).toContain('app-start-dirty');
+
+    const processedBootstrap =
+      await restartedKernel.processPendingLaunchBackup();
     const persistedState = await restartedRepository.read();
 
     expect(driveService.uploadBackup).toHaveBeenCalledTimes(1);
-    expect(bootstrap.backup.hasUnsavedChanges).toBe(false);
-    expect(bootstrap.backup.pendingReasons).toEqual([]);
-    expect(bootstrap.backup.lastSuccessfulBackupAt).toBe(
+    expect(processedBootstrap.backup.hasUnsavedChanges).toBe(false);
+    expect(processedBootstrap.backup.pendingReasons).toEqual([]);
+    expect(processedBootstrap.backup.lastSuccessfulBackupAt).toBe(
       '2026-03-13T10:30:00.000Z',
     );
     expect(persistedState.backup.lastSuccessfulBackupAt).toBe(

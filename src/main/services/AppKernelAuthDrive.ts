@@ -400,8 +400,13 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
     });
     this.launchBackupCheckPending = false;
     const absenceCheckedState = this.markAbsenceSyncPending(nextState);
-    const processedState =
-      await this.tryProcessPendingBackup(absenceCheckedState);
+
+    return this.buildBootstrapState(absenceCheckedState);
+  }
+
+  async processPendingLaunchBackup(): Promise<AppBootstrapState> {
+    const currentState = await this.repository.read();
+    const processedState = await this.tryProcessPendingBackup(currentState);
 
     return this.buildBootstrapState(processedState);
   }
