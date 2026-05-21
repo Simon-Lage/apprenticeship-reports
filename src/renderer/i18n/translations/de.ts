@@ -1297,6 +1297,7 @@ const deTranslation = {
       oauthUnavailable: 'Google OAuth ist nicht konfiguriert.',
       connectedAccount: 'Verknüpftes Konto: {{email}}',
       changeAccountLink: 'Google Drive-Kontowechsel',
+      openBackupFolder: 'Backup-Ordner öffnen',
       connect: 'Drive-Verbindung herstellen',
       export: 'Backup zu Drive',
       manualBackup: 'Manuelles Backup',

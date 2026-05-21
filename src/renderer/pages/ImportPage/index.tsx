@@ -12,6 +12,7 @@ import DriveStatusBlock from '@/renderer/components/drive/DriveStatusBlock';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
 import useDriveActionErrorHandler from '@/renderer/hooks/useDriveActionErrorHandler';
+import useDriveBackupFolder from '@/renderer/hooks/useDriveBackupFolder';
 import {
   formatGermanDate,
   formatGermanDateTime,
@@ -459,12 +460,13 @@ export default function ImportPage() {
     }
   }
 
-  function renderDriveStatus() {
+  function renderDriveStatus(backupFolderUrl: string | null) {
     return (
       <DriveStatusBlock
         driveReady={driveReady}
         isGoogleOauthConfigured={isGoogleOauthConfigured}
         connectedAccountEmail={runtime.state.drive.connectedAccountEmail}
+        backupFolderUrl={backupFolderUrl}
         isPending={isDrivePending}
         onConnect={() => {
           connectDrive();
@@ -505,6 +507,8 @@ export default function ImportPage() {
     (pendingEncryptedEnvelope
       ? Boolean(pendingEncryptedEnvelope.googleRecipient)
       : true);
+  const reportsDriveFolder = useDriveBackupFolder('reports', driveReady);
+  const settingsDriveFolder = useDriveBackupFolder('settings', driveReady);
 
   return (
     <>
@@ -515,7 +519,7 @@ export default function ImportPage() {
             className="h-fit border-primary-tint bg-white"
           >
             <div className="flex flex-col gap-4">
-              {renderDriveStatus()}
+              {renderDriveStatus(reportsDriveFolder?.url ?? null)}
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
@@ -573,7 +577,7 @@ export default function ImportPage() {
             className="h-fit border-primary-tint bg-white"
           >
             <div className="flex flex-col gap-4">
-              {renderDriveStatus()}
+              {renderDriveStatus(settingsDriveFolder?.url ?? null)}
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"

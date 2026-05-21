@@ -10,7 +10,11 @@ import {
 } from '@/shared/app/backup-encryption';
 import { AppBootstrapState } from '@/shared/app/bootstrap';
 import { JsonObject, JsonObjectSchema } from '@/shared/common/json';
-import { DriveBackupFile } from '@/shared/drive/backups';
+import {
+  DriveBackupFile,
+  DriveBackupFolder,
+  DriveBackupKindSchema,
+} from '@/shared/drive/backups';
 import { SettingsBackupScopeSchema } from '@/shared/backup/settings';
 import {
   BackupConflictStrategy,
@@ -52,6 +56,7 @@ export const AppIpcChannel = {
   uploadSettingsBackupToDrive: 'app:upload-settings-backup-to-drive',
   listDriveBackups: 'app:list-drive-backups',
   listDriveSettingsBackups: 'app:list-drive-settings-backups',
+  getDriveBackupFolder: 'app:get-drive-backup-folder',
   prepareDriveBackupImport: 'app:prepare-drive-backup-import',
   prepareDriveSettingsImport: 'app:prepare-drive-settings-import',
   syncAbsenceCatalog: 'app:sync-absence-catalog',
@@ -184,6 +189,10 @@ export const PrepareDriveBackupImportInputSchema = z.object({
   decryption: BackupImportDecryptionInputSchema,
 });
 
+export const GetDriveBackupFolderInputSchema = z.object({
+  kind: DriveBackupKindSchema,
+});
+
 export const ExportSettingsInputSchema = z
   .object({
     scope: SettingsBackupScopeSchema.optional(),
@@ -276,6 +285,9 @@ export type ApplyBackupImportInput = z.input<
 >;
 export type PrepareDriveBackupImportInput = z.infer<
   typeof PrepareDriveBackupImportInputSchema
+>;
+export type GetDriveBackupFolderInput = z.infer<
+  typeof GetDriveBackupFolderInputSchema
 >;
 export type BackupImportDecryptionInput = z.infer<
   typeof BackupImportDecryptionInputSchema
@@ -371,6 +383,9 @@ export type AppApi = {
   ) => Promise<DriveBackupFile>;
   listDriveBackups: () => Promise<DriveBackupFile[]>;
   listDriveSettingsBackups: () => Promise<DriveBackupFile[]>;
+  getDriveBackupFolder: (
+    input: GetDriveBackupFolderInput,
+  ) => Promise<DriveBackupFolder>;
   prepareDriveBackupImport: (
     input: PrepareDriveBackupImportInput,
   ) => Promise<DatabaseBackupImportPreview>;

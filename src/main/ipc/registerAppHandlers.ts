@@ -18,6 +18,7 @@ import {
   ExportBackupArchiveInputSchema,
   ExportWeeklyReportPdfInputSchema,
   ExportSettingsInputSchema,
+  GetDriveBackupFolderInputSchema,
   GrantDriveScopesInputSchema,
   InitializePasswordAuthInputSchema,
   PrepareDriveBackupImportInputSchema,
@@ -159,6 +160,12 @@ export default function registerAppHandlers(
 
   ipcMain.handle(AppIpcChannel.listDriveSettingsBackups, () =>
     appKernel.listDriveSettingsBackups(),
+  );
+
+  ipcMain.handle(AppIpcChannel.getDriveBackupFolder, (_event, input) =>
+    appKernel.getDriveBackupFolder(
+      GetDriveBackupFolderInputSchema.parse(input).kind,
+    ),
   );
 
   ipcMain.handle(AppIpcChannel.prepareDriveBackupImport, (_event, input) =>

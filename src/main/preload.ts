@@ -51,6 +51,8 @@ const appApi: AppApi = {
   listDriveBackups: () => ipcRenderer.invoke(AppIpcChannel.listDriveBackups),
   listDriveSettingsBackups: () =>
     ipcRenderer.invoke(AppIpcChannel.listDriveSettingsBackups),
+  getDriveBackupFolder: (input) =>
+    ipcRenderer.invoke(AppIpcChannel.getDriveBackupFolder, input),
   prepareDriveBackupImport: (input) =>
     ipcRenderer.invoke(AppIpcChannel.prepareDriveBackupImport, input),
   prepareDriveSettingsImport: (input) =>

@@ -12,6 +12,7 @@ import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
 import { useSettingsSnapshot } from '@/renderer/hooks/useKernelData';
 import useDriveActionErrorHandler from '@/renderer/hooks/useDriveActionErrorHandler';
+import useDriveBackupFolder from '@/renderer/hooks/useDriveBackupFolder';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -58,6 +59,8 @@ export default function ExportPage() {
         : null,
     [settingsSnapshot.value],
   );
+  const reportsDriveFolder = useDriveBackupFolder('reports', driveReady);
+  const settingsDriveFolder = useDriveBackupFolder('settings', driveReady);
   const connectDrive = useCallback(async () => {
     if (!runtime.api) {
       return;
@@ -265,12 +268,13 @@ export default function ExportPage() {
     }
   }
 
-  function renderDriveStatus() {
+  function renderDriveStatus(backupFolderUrl: string | null) {
     return (
       <DriveStatusBlock
         driveReady={driveReady}
         isGoogleOauthConfigured={isGoogleOauthConfigured}
         connectedAccountEmail={runtime.state.drive.connectedAccountEmail}
+        backupFolderUrl={backupFolderUrl}
         isPending={isDrivePending}
         onConnect={() => {
           connectDrive();
@@ -287,7 +291,7 @@ export default function ExportPage() {
           className="border-primary-tint bg-white"
         >
           <div className="flex flex-col gap-4">
-            {renderDriveStatus()}
+            {renderDriveStatus(reportsDriveFolder?.url ?? null)}
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
@@ -331,7 +335,7 @@ export default function ExportPage() {
           className="border-primary-tint bg-white"
         >
           <div className="flex flex-col gap-4">
-            {renderDriveStatus()}
+            {renderDriveStatus(settingsDriveFolder?.url ?? null)}
             <SettingsBackupScopeSwitches
               value={manualSettingsScope}
               disabled={isSettingsLocalPending || isSettingsDrivePending}

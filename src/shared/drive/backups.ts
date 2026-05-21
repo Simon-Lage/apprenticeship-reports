@@ -7,7 +7,17 @@ export const GOOGLE_DRIVE_RECOVERY_FOLDER_NAME = 'Recovery';
 export const GOOGLE_DRIVE_BACKUP_RECOVERY_KEY_FILE_NAME =
   'apprep-backup-recovery-key.json';
 
-export type DriveBackupKind = 'reports' | 'settings';
+export const DriveBackupKindSchema = z.enum(['reports', 'settings']);
+
+export type DriveBackupKind = z.infer<typeof DriveBackupKindSchema>;
+
+export const DriveBackupFolderSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  url: z.string().url(),
+});
+
+export type DriveBackupFolder = z.infer<typeof DriveBackupFolderSchema>;
 
 export function getDriveBackupFolderName(kind: DriveBackupKind): string {
   return kind === 'settings' ? 'Settings' : 'Entries';
@@ -18,6 +28,10 @@ export function createDriveBackupPath(
   kind: DriveBackupKind = 'reports',
 ): string {
   return `/${GOOGLE_DRIVE_APP_FOLDER_NAME}/${getDriveBackupFolderName(kind)}/${fileName}`;
+}
+
+export function createDriveBackupFolderUrl(folderId: string): string {
+  return `https://drive.google.com/drive/folders/${encodeURIComponent(folderId)}`;
 }
 
 export function createDriveBackupRecoveryKeyPath(): string {

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { FaGoogleDrive } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import { ExternalLink } from 'lucide-react';
 
 import { appRoutes } from '@/renderer/lib/app-routes';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -11,6 +12,7 @@ type DriveStatusBlockProps = {
   driveReady: boolean;
   isGoogleOauthConfigured: boolean;
   connectedAccountEmail: string | null;
+  backupFolderUrl?: string | null;
   isPending: boolean;
   onConnect: () => void;
 };
@@ -19,6 +21,7 @@ export default function DriveStatusBlock({
   driveReady,
   isGoogleOauthConfigured,
   connectedAccountEmail,
+  backupFolderUrl,
   isPending,
   onConnect,
 }: DriveStatusBlockProps) {
@@ -55,6 +58,17 @@ export default function DriveStatusBlock({
           >
             {t('export.drive.changeAccountLink')}
           </Link>
+          {backupFolderUrl ? (
+            <a
+              href={backupFolderUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex w-fit items-center gap-1 text-xs text-primary underline-offset-2 hover:underline"
+            >
+              {t('export.drive.openBackupFolder')}
+              <ExternalLink className="size-3" />
+            </a>
+          ) : null}
         </div>
       ) : (
         <Button

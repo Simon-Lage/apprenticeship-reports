@@ -20,7 +20,11 @@ import {
   registerBackupSuccess,
   registerLaunchBackupCheck,
 } from '@/shared/backup/policy';
-import { DriveBackupFile } from '@/shared/drive/backups';
+import {
+  DriveBackupFile,
+  DriveBackupFolder,
+  DriveBackupKind,
+} from '@/shared/drive/backups';
 import {
   BackupImportDecryptionInput,
   AuthenticateWithGoogleInput,
@@ -628,6 +632,23 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
     });
 
     return result.files;
+  }
+
+  async getDriveBackupFolder(
+    kind: DriveBackupKind,
+  ): Promise<DriveBackupFolder> {
+    const currentState = await this.refreshDriveAccessState();
+    const result = await this.getGoogleDriveService().getBackupFolder(
+      currentState.drive,
+      kind,
+    );
+
+    await this.persistDriveAccessState({
+      accessToken: result.accessToken,
+      grantedScopes: result.grantedScopes,
+    });
+
+    return result.folder;
   }
 
   async prepareDriveBackupImport(
