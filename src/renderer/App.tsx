@@ -38,6 +38,7 @@ import WeeklyReportPDFPage from '@/renderer/pages/WeeklyReportPDFPage';
 import SendWeeklyReportPage from '@/renderer/pages/SendWeeklyReportPage';
 import { hasSeenOnboardingWelcome } from '@/renderer/lib/onboarding-welcome';
 import { Button } from '@/components/ui/button';
+import TimeTableUpdatePrompt from '@/renderer/components/app/TimeTableUpdatePrompt';
 import '@/renderer/i18n';
 import './globals.css';
 import './App.css';
@@ -257,6 +258,7 @@ function RuntimeRouter() {
       <AppStateView
         title={t('appState.loadingTitle')}
         description={t('appState.loadingDescription')}
+        isLoading
       />
     );
   }
@@ -409,6 +411,7 @@ function RuntimeRouter() {
   return (
     <DefaultLayout>
       <AppTopbar />
+      <TimeTableUpdatePrompt />
       <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
         <AuthenticatedAppRoutes />
       </main>

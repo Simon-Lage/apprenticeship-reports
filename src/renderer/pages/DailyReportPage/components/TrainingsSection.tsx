@@ -6,12 +6,20 @@ export interface TrainingsSectionProps {
   items: string[];
   suggestions: string[];
   onChange: (items: string[]) => void;
+  editSuggestionLabel?: string;
+  deleteSuggestionLabel?: string;
+  onEditSuggestion?: (value: string) => void;
+  onDeleteSuggestion?: (value: string) => void;
 }
 
 export default function TrainingsSection({
   items,
   suggestions,
   onChange,
+  editSuggestionLabel,
+  deleteSuggestionLabel,
+  onEditSuggestion,
+  onDeleteSuggestion,
 }: TrainingsSectionProps) {
   const { t } = useTranslation();
 
@@ -28,7 +36,18 @@ export default function TrainingsSection({
         addLabel={t('dailyReport.list.addEntry')}
         removeLabel={t('dailyReport.list.removeEntry')}
         onChange={onChange}
+        editSuggestionLabel={editSuggestionLabel}
+        deleteSuggestionLabel={deleteSuggestionLabel}
+        onEditSuggestion={onEditSuggestion}
+        onDeleteSuggestion={onDeleteSuggestion}
       />
     </SectionCard>
   );
 }
+
+TrainingsSection.defaultProps = {
+  editSuggestionLabel: undefined,
+  deleteSuggestionLabel: undefined,
+  onEditSuggestion: undefined,
+  onDeleteSuggestion: undefined,
+};

@@ -9,6 +9,7 @@ import {
 import {
   parseOnboardingTrainingPeriod,
   parseUiSettings,
+  resolveTextSuggestions,
 } from '@/renderer/lib/app-settings';
 import { resolveReportStartDateFromSettings } from '@/shared/settings/report-start-date';
 import { parseAbsenceSettings } from '@/shared/absence/settings';
@@ -107,20 +108,36 @@ export default function useDailyReportData(date: string) {
 
   const activitySuggestions = useMemo(
     () =>
-      reportsState.value ? collectActivitySuggestions(reportsState.value) : [],
-    [reportsState.value],
+      reportsState.value
+        ? resolveTextSuggestions({
+            uiSettings,
+            kind: 'activities',
+            values: collectActivitySuggestions(reportsState.value),
+          })
+        : [],
+    [reportsState.value, uiSettings],
   );
   const trainingSuggestions = useMemo(
     () =>
-      reportsState.value ? collectTrainingSuggestions(reportsState.value) : [],
-    [reportsState.value],
+      reportsState.value
+        ? resolveTextSuggestions({
+            uiSettings,
+            kind: 'trainings',
+            values: collectTrainingSuggestions(reportsState.value),
+          })
+        : [],
+    [reportsState.value, uiSettings],
   );
   const lessonTopicSuggestions = useMemo(
     () =>
       reportsState.value
-        ? collectSchoolTopicSuggestions(reportsState.value)
+        ? resolveTextSuggestions({
+            uiSettings,
+            kind: 'schoolTopics',
+            values: collectSchoolTopicSuggestions(reportsState.value),
+          })
         : [],
-    [reportsState.value],
+    [reportsState.value, uiSettings],
   );
 
   const currentWeeklyReport = useMemo(() => {

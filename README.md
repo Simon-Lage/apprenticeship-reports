@@ -1,6 +1,6 @@
-# Apprenticeship Reports
+# AppRep
 
-Desktop-App zum Erfassen, Verwalten, Sichern und Exportieren von Ausbildungsnachweisen.
+AppRep ist eine Desktop-App für Auszubildende in Deutschland, die ihre Ausbildungsberichte für die IHK schreiben.
 
 [![Tests](https://github.com/Simon-Lage/apprenticeship-reports/actions/workflows/test.yml/badge.svg)](https://github.com/Simon-Lage/apprenticeship-reports/actions/workflows/test.yml)
 [![Release](https://img.shields.io/github/v/release/Simon-Lage/apprenticeship-reports?label=latest%20release)](https://github.com/Simon-Lage/apprenticeship-reports/releases/latest)

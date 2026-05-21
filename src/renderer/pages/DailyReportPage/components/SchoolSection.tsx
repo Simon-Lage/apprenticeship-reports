@@ -45,6 +45,10 @@ type SchoolSectionProps = {
   subjectSuggestions: string[];
   teacherSuggestions: string[];
   topicSuggestions: string[];
+  editTopicSuggestionLabel?: string;
+  deleteTopicSuggestionLabel?: string;
+  onEditTopicSuggestion?: (value: string) => void;
+  onDeleteTopicSuggestion?: (value: string) => void;
 };
 
 function mergeTopics(...topicLists: string[][]): string[] {
@@ -76,6 +80,10 @@ export default function SchoolSection({
   subjectSuggestions,
   teacherSuggestions,
   topicSuggestions,
+  editTopicSuggestionLabel,
+  deleteTopicSuggestionLabel,
+  onEditTopicSuggestion,
+  onDeleteTopicSuggestion,
 }: SchoolSectionProps) {
   const { t } = useTranslation();
   const blockRefs = useRef(new Map<number, HTMLDivElement>());
@@ -400,6 +408,10 @@ export default function SchoolSection({
                     onChange={(nextTopics) =>
                       updateLessonTopics(block, nextTopics)
                     }
+                    editSuggestionLabel={editTopicSuggestionLabel}
+                    deleteSuggestionLabel={deleteTopicSuggestionLabel}
+                    onEditSuggestion={onEditTopicSuggestion}
+                    onDeleteSuggestion={onDeleteTopicSuggestion}
                   />
                 </div>
               </div>
@@ -431,3 +443,10 @@ export default function SchoolSection({
     </SectionCard>
   );
 }
+
+SchoolSection.defaultProps = {
+  editTopicSuggestionLabel: undefined,
+  deleteTopicSuggestionLabel: undefined,
+  onEditTopicSuggestion: undefined,
+  onDeleteTopicSuggestion: undefined,
+};

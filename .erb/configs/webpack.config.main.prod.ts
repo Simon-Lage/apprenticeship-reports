@@ -4,6 +4,7 @@
 
 import path from 'path';
 import webpack from 'webpack';
+import dotenv from 'dotenv';
 import { merge } from 'webpack-merge';
 import TerserPlugin from 'terser-webpack-plugin';
 import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
@@ -14,6 +15,9 @@ import deleteSourceMaps from '../scripts/delete-source-maps';
 
 checkNodeEnv('production');
 deleteSourceMaps();
+dotenv.config({
+  path: path.join(webpackPaths.rootPath, '.env.local'),
+});
 
 const configuration: webpack.Configuration = {
   devtool: 'source-map',
@@ -62,6 +66,9 @@ const configuration: webpack.Configuration = {
       NODE_ENV: 'production',
       DEBUG_PROD: false,
       START_MINIMIZED: false,
+      GOOGLE_OAUTH_CLIENT_ID: null,
+      GOOGLE_OAUTH_CLIENT_SECRET: null,
+      GOOGLE_DRIVE_REQUIRED_SCOPES: null,
     }),
 
     new webpack.DefinePlugin({

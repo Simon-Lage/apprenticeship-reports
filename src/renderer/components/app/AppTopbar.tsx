@@ -137,19 +137,8 @@ export default function AppTopbar() {
       className="sticky top-0 z-40 w-full border-b border-primary-tint/60 bg-white/92 shadow-sm backdrop-blur-md"
     >
       <div className="flex w-full items-center gap-3 px-4 py-2.5 lg:px-6">
-        <div className="flex shrink-0 items-center gap-2.5 select-none">
-          <img
-            src={logoSmall}
-            alt=""
-            className="size-6 shrink-0 object-contain"
-            draggable={false}
-          />
-          <span className="text-lg font-bold text-primary">
-            {t('navigation.brand')}
-          </span>
-        </div>
         <div className="app-no-scrollbar min-w-0 flex-1 overflow-x-auto">
-          <ul className="flex min-w-max items-center justify-center gap-1">
+          <ul className="flex min-w-max items-center gap-1">
             {navItems.map((item) => {
               const isActive = isActivePath(item.path);
               const Icon = item.icon;

@@ -4,7 +4,7 @@ const deTranslation = {
     bridgeMissingDescription:
       'Die Anwendung kann ohne Renderer-Bridge keine Daten laden.',
     loadingTitle: 'Anwendung wird geladen',
-    loadingDescription: 'Bootstrap-Status wird geprüft.',
+    loadingDescription: 'Daten und Einstellungen werden vorbereitet.',
     errorTitle: 'Bootstrap-Fehler',
     retry: 'Erneut laden',
     drivePermissionsTitle: 'Google-Drive-Berechtigung erforderlich',
@@ -39,6 +39,8 @@ const deTranslation = {
     export: 'Exportieren',
     yes: 'Ja',
     no: 'Nein',
+    understood: 'Verstanden',
+    doNotShowAgain: 'Nicht mehr anzeigen',
     unsavedChanges: {
       title: 'Ungespeicherte Änderungen',
       description:
@@ -326,11 +328,11 @@ const deTranslation = {
           'Bundesland für Feiertage und Ferien sowie automatische Synchronisierung auswählen.',
         subdivisionCode: 'Bundesland',
         placeholder: 'Bundesland auswählen',
-        openHolidaysNoticeBefore:
-          'Die automatische Synchronisierung von Feiertagen und Ferien wird empfohlen, damit freie Tage korrekt erkannt werden. Dafür wird eine Verbindung zur Drittanbieter-API ',
+        autoSyncHolidays: 'Feiertage und Ferien automatisch synchronisieren',
+        openHolidaysNoticeBefore: 'Optionaler Abruf über die ',
         openHolidaysLink: 'OpenHolidays API',
         openHolidaysNoticeAfter:
-          ' hergestellt und der passende Jahreskatalog anhand des Bundeslands geladen.',
+          '. Der Abruf startet erst nach dieser Auswahl.',
         validationSubdivision: 'Gültiges Bundesland erforderlich.',
         options: {
           'DE-BB': 'Brandenburg',
@@ -469,6 +471,16 @@ const deTranslation = {
     title: 'Abwesenheiten',
     description:
       'Manuelle Abwesenheiten und automatisch importierte Feiertage/Ferien verwalten.',
+    intro: {
+      title: 'Abwesenheiten verwalten',
+      description:
+        'Hier werden Krankheit, Urlaub, Feiertage und Ferien für die Berichtserstellung gepflegt.',
+      sync: 'Feiertage und Ferien können automatisch über das Bundesland synchronisiert werden. Fehlende Jahre werden bei aktivierter Automatik nachgeladen.',
+      manual:
+        'Krankheit, Urlaub und eigene Feiertage oder Ferien können manuell erfasst und später bearbeitet werden.',
+      locked:
+        'Bereits gesendete Wochenberichte schützen ältere Zeiträume vor nachträglichen Änderungen.',
+    },
     confirmDelete: {
       title: '{{type}} löschen?',
       description: '"{{value}}" wird dauerhaft entfernt.',
@@ -737,6 +749,25 @@ const deTranslation = {
     description: 'Preset-Stundenplan inklusive Lehrer- und Fächerlisten.',
     save: 'Speichern',
     reset: 'Zurücksetzen',
+    intro: {
+      title: 'Stundenplan einrichten',
+      description:
+        'Der Stundenplan hilft der App, Schultage und Berichtsvorschläge zuverlässiger vorzubereiten.',
+      schedule:
+        'Pro Wochentag und Stunde können Fach und Lehrer eingetragen werden, wenn diese Struktur genutzt werden soll.',
+      catalogs:
+        'Unten auf der Seite können Lehrer und Fächer eingetragen und in den Listen gepflegt werden.',
+      optional:
+        'Wenn der Stundenplan nicht benötigt wird, kann er leer bleiben und die Tage können weiter manuell gesetzt werden.',
+    },
+    updateReminder: {
+      title: 'Stundenplan prüfen?',
+      description:
+        'Der Wochenbericht bis zum letzten Sonntag im Juli ({{date}}) ist vollständig eingetragen. Soll der Stundenplan für das neue Schuljahr angepasst werden?',
+      dismiss: 'Dieses Jahr nicht mehr',
+      later: 'Später erinnern',
+      open: 'Stundenplan öffnen',
+    },
     days: {
       monday: 'Montag',
       tuesday: 'Dienstag',
@@ -750,6 +781,13 @@ const deTranslation = {
       lesson: 'Stunde',
       subjectPlaceholder: 'Fach',
       teacherPlaceholder: 'Lehrer',
+      schoolDayLabel: '{{day}} als Schultag markieren',
+      schoolDayTooltip:
+        'Markiert diesen Wochentag als Schultag, auch ohne eingetragene Stunden.',
+      schoolDayForcedTooltip:
+        'Dieser Tag ist wegen vollständiger Stunden automatisch ein Schultag.',
+      clearDayLabel: 'Einträge für {{day}} löschen',
+      clearDayTooltip: 'Alle Stunden dieses Wochentags löschen.',
     },
     config: {
       title: 'Konfiguration',
@@ -780,6 +818,13 @@ const deTranslation = {
         '"{{value}}" wird aus der Liste und aus allen Stundenplanfeldern entfernt.',
       cancel: 'Abbrechen',
       confirm: 'Löschen',
+    },
+    confirmClearDay: {
+      title: 'Einträge für {{day}} löschen?',
+      description:
+        'Alle Stundenplan-Einträge für {{day}} werden entfernt. Diese Änderung wird erst mit dem Stundenplan gespeichert.',
+      cancel: 'Abbrechen',
+      confirm: 'Einträge löschen',
     },
     feedback: {
       saved: 'Stundenplan gespeichert.',
@@ -852,6 +897,25 @@ const deTranslation = {
       addEntry: 'Eintrag hinzufügen',
       removeEntry: 'Eintrag entfernen',
     },
+    suggestions: {
+      edit: 'Vorschlag bearbeiten',
+      delete: 'Vorschlag entfernen',
+      editTitle: 'Vorschlag bearbeiten',
+      editDescription:
+        'Der Vorschlag wird nur für die Vorschlagsliste geändert.',
+      editDescriptionWithReports:
+        'Der Vorschlag wird für die Vorschlagsliste geändert. Er kommt außerdem in nicht gesendeten Tagesberichten vor: {{dates}}.',
+      updateReports:
+        'Diesen Wert auch in den genannten nicht gesendeten Tagesberichten ersetzen.',
+      deleteTitle: 'Vorschlag entfernen?',
+      deleteDescription:
+        '"{{value}}" wird aus der Vorschlagsliste ausgeblendet. Wenn der Wert später wieder in einem Tagesbericht gespeichert wird, erscheint er erneut.',
+      deleteConfirm: 'Vorschlag entfernen',
+      saved: 'Vorschlag gespeichert.',
+      deleted: 'Vorschlag entfernt.',
+      saveError: 'Vorschlag konnte nicht gespeichert werden.',
+      valueRequired: 'Vorschlag darf nicht leer sein.',
+    },
     school: {
       title: 'Schultätigkeiten',
       addLesson: 'Stunde hinzufügen',
@@ -898,6 +962,8 @@ const deTranslation = {
         'Bei Arbeitstagen muss mindestens eine Arbeitstätigkeit oder eine Schulung eingetragen werden.',
       missingSchoolLessonTopics:
         'Bei Schultagen muss für jede Schulstunde mindestens ein Thema eingetragen sein.',
+      missingSchoolTopics:
+        'Bei Schultagen ohne Schulstunden muss mindestens eine Schultätigkeit eingetragen werden.',
       duplicateActivityForDate:
         'Diese Tätigkeit ist für den {{date}} schon eingetragen.',
       saved: 'Tagesbericht gespeichert.',
@@ -1110,6 +1176,13 @@ const deTranslation = {
       calendarWeekValue: 'KW{{week}}',
       openDailyTooltip: 'Tagesbericht vom {{date}} öffnen',
       openWeeklyTooltip: 'Wochenbericht {{start}} bis {{end}} öffnen',
+      noResults: 'Keine Einträge gefunden.',
+    },
+    pagination: {
+      summary: '{{start}}-{{end}} von {{total}} Einträgen',
+      page: 'Seite {{page}} / {{total}}',
+      previous: 'Zurück',
+      next: 'Weiter',
     },
   },
   import: {

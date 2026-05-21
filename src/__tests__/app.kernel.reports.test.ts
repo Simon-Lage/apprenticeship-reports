@@ -390,7 +390,7 @@ describe('app kernel report mutations', () => {
     });
     expect(
       buildWeeklyAggregates([dayAfterSettingsChange!]).schoolTopics,
-    ).toEqual(['Mathematik: Lineare Funktionen']);
+    ).toEqual(['1. Stunde - Mathematik (Herr Alt): Lineare Funktionen']);
   });
 
   it('keeps sent weekly reports unchanged when absences are added later', async () => {

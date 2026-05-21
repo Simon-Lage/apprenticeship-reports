@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { FiKey } from 'react-icons/fi';
@@ -41,6 +41,9 @@ export default function OnboardingPage() {
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [stepValues, setStepValues] = useState<Record<string, string>>({});
+  const [stepDrafts, setStepDrafts] = useState<
+    Partial<Record<OnboardingStepId, Record<string, string>>>
+  >({});
   const [isPending, setIsPending] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const hasPassword = runtime.state.auth.passwordConfigured;
@@ -131,6 +134,13 @@ export default function OnboardingPage() {
       return;
     }
 
+    const draft = stepDrafts[currentStepId];
+
+    if (draft) {
+      setStepValues(draft);
+      return;
+    }
+
     const onboardingValues =
       typeof stepSettings.value.values.onboarding === 'object' &&
       stepSettings.value.values.onboarding
@@ -146,7 +156,12 @@ export default function OnboardingPage() {
         authProvider: runtime.state.auth.provider,
       }),
     );
-  }, [currentStepId, runtime.state.auth.provider, stepSettings.value]);
+  }, [
+    currentStepId,
+    runtime.state.auth.provider,
+    stepDrafts,
+    stepSettings.value,
+  ]);
 
   useEffect(() => {
     setValidationError(null);
@@ -200,6 +215,24 @@ export default function OnboardingPage() {
     setIsPending(false);
   }
 
+  function updateStepValues(nextValues: SetStateAction<Record<string, string>>) {
+    setStepValues((currentValues) => {
+      const resolvedValues =
+        typeof nextValues === 'function'
+          ? nextValues(currentValues)
+          : nextValues;
+
+      if (currentStepId) {
+        setStepDrafts((currentDrafts) => ({
+          ...currentDrafts,
+          [currentStepId]: resolvedValues,
+        }));
+      }
+
+      return resolvedValues;
+    });
+  }
+
   async function handleContinue() {
     if (!runtime.api || !currentStepId) {
       return;
@@ -220,6 +253,12 @@ export default function OnboardingPage() {
       await runtime.api.saveOnboardingDraft({
         stepId: currentStepId,
         values: parsed,
+      });
+      setStepDrafts((currentDrafts) => {
+        const nextDrafts = { ...currentDrafts };
+
+        delete nextDrafts[currentStepId];
+        return nextDrafts;
       });
 
       await runtime.api.completeOnboardingStep(currentStepId);
@@ -443,7 +482,6 @@ export default function OnboardingPage() {
       <div className="mx-auto w-full max-w-3xl">
         <SectionCard
           title={t(`onboarding.steps.${currentStepId}.title`)}
-          description={t(`onboarding.steps.${currentStepId}.description`)}
           className="border-primary-tint bg-white"
           titleClassName="text-xl md:text-2xl"
         >
@@ -457,7 +495,7 @@ export default function OnboardingPage() {
             <OnboardingStepFields
               stepId={currentStepId}
               stepValues={stepValues}
-              setStepValues={setStepValues}
+              setStepValues={updateStepValues}
               isPending={isPending}
               isGoogleOauthConfigured={runtime.state.auth.googleAuthConfigured}
               googleAuthorizationUrl={googleAuthorizationUrl}

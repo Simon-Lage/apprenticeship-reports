@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +7,8 @@ import {
   FiAlertTriangle,
   FiCheck,
   FiCheckCircle,
+  FiChevronLeft,
+  FiChevronRight,
   FiChevronDown,
   FiXCircle,
 } from 'react-icons/fi';
@@ -66,8 +68,10 @@ import { parseAbsenceSettings } from '@/shared/absence/settings';
 import { WeeklyReportRecord } from '@/shared/reports/models';
 import {
   filterWeekRangesThroughCurrentWeek,
+  listReportWeekRanges,
   listCoveredWeekRanges,
 } from '@/renderer/pages/ReportsOverviewPage/week-ranges';
+import { resolveReportStartDateFromSettings } from '@/shared/settings/report-start-date';
 
 type WeeklyNavigationRow = {
   canOpenWeeklyReport: boolean;
@@ -83,6 +87,8 @@ type DayTypeFilterOption = {
   label: string;
   Icon: IconType | null;
 };
+
+const PAGE_SIZE = 25;
 
 const weekdayTranslationKeys = [
   'reportsOverview.table.weekdays.sunday',
@@ -104,6 +110,38 @@ function formatWeekdayShort(t: TFunction, dateValue: string): string {
   return t(weekdayTranslationKeys[parsed.getUTCDay()]);
 }
 
+function groupVisibleWeekRows<T extends { weekKey: string }>(
+  rows: T[],
+): Array<
+  T & {
+    isWeekStart: boolean;
+    isWeekFirstRow: boolean;
+    weekRowSpan: number;
+  }
+> {
+  const weekRowCounts = rows.reduce<Map<string, number>>(
+    (result, row) =>
+      result.set(row.weekKey, (result.get(row.weekKey) ?? 0) + 1),
+    new Map(),
+  );
+  const seenWeekKeys = new Set<string>();
+
+  return rows.map((row, index) => {
+    const isWeekFirstRow = !seenWeekKeys.has(row.weekKey);
+
+    if (isWeekFirstRow) {
+      seenWeekKeys.add(row.weekKey);
+    }
+
+    return {
+      ...row,
+      isWeekStart: isWeekFirstRow && index > 0,
+      isWeekFirstRow,
+      weekRowSpan: weekRowCounts.get(row.weekKey) ?? 1,
+    };
+  });
+}
+
 export default function ReportsOverviewPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -113,6 +151,7 @@ export default function ReportsOverviewPage() {
   const deferredSearch = useDeferredValue(search);
   const [isDayTypeFilterOpen, setIsDayTypeFilterOpen] = useState(false);
   const [dayTypeFilter, setDayTypeFilter] = useState<DayTypeFilterValue>('all');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const absenceSettings = useMemo(
     () => parseAbsenceSettings(settingsSnapshot.value?.values ?? {}),
@@ -121,6 +160,13 @@ export default function ReportsOverviewPage() {
   const uiSettings = useMemo(
     () => parseUiSettings(settingsSnapshot.value?.values ?? {}),
     [settingsSnapshot.value?.values],
+  );
+  const reportStartDate = useMemo(
+    () =>
+      settingsSnapshot.value
+        ? resolveReportStartDateFromSettings(settingsSnapshot.value.values)
+        : null,
+    [settingsSnapshot.value],
   );
   const dayTypeFilterOptions = useMemo<DayTypeFilterOption[]>(
     () => [
@@ -172,6 +218,9 @@ export default function ReportsOverviewPage() {
       ]),
     );
     const derivedRanges = [
+      ...listReportWeekRanges({
+        startDate: reportStartDate,
+      }),
       ...absenceSettings.manualAbsences.flatMap((entry) =>
         listCoveredWeekRanges({
           startDate: entry.startDate,
@@ -209,6 +258,29 @@ export default function ReportsOverviewPage() {
         };
       })
       .filter((range) => range.weekStart && range.weekEnd)
+      .map((range) => {
+        if (!reportStartDate || range.weekEnd < reportStartDate) {
+          return reportStartDate ? null : range;
+        }
+
+        return range.weekStart < reportStartDate
+          ? {
+              weekStart: reportStartDate,
+              weekEnd: range.weekEnd,
+            }
+          : range;
+      })
+      .filter((range): range is { weekStart: string; weekEnd: string } =>
+        Boolean(range),
+      )
+      .filter(
+        (range, index, ranges) =>
+          ranges.findIndex(
+            (candidate) =>
+              candidate.weekStart === range.weekStart &&
+              candidate.weekEnd === range.weekEnd,
+          ) === index,
+      )
       .sort((left, right) => right.weekStart.localeCompare(left.weekStart));
     const sortedWeekRanges = filterWeekRangesThroughCurrentWeek(weekRanges);
     const dailyReportsByDate = new Map(
@@ -319,7 +391,7 @@ export default function ReportsOverviewPage() {
         };
       });
     });
-  }, [absenceSettings, reportsState.value, t, uiSettings]);
+  }, [absenceSettings, reportStartDate, reportsState.value, t, uiSettings]);
 
   const normalizedSearch = useMemo(
     () => deferredSearch.trim().toLowerCase(),
@@ -336,28 +408,32 @@ export default function ReportsOverviewPage() {
       }
       return true;
     });
-    const weekRowCounts = nextRows.reduce<Map<string, number>>(
-      (result, row) =>
-        result.set(row.weekKey, (result.get(row.weekKey) ?? 0) + 1),
-      new Map(),
-    );
-    const seenWeekKeys = new Set<string>();
-
-    return nextRows.map((row, index) => {
-      const isWeekFirstRow = !seenWeekKeys.has(row.weekKey);
-
-      if (isWeekFirstRow) {
-        seenWeekKeys.add(row.weekKey);
-      }
-
-      return {
-        ...row,
-        isWeekStart: isWeekFirstRow && index > 0,
-        isWeekFirstRow,
-        weekRowSpan: weekRowCounts.get(row.weekKey) ?? 1,
-      };
-    });
+    return groupVisibleWeekRows(nextRows);
   }, [dayTypeFilter, rows, normalizedSearch]);
+  const pageCount = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, pageCount);
+  const paginatedRows = useMemo(() => {
+    const startIndex = (safeCurrentPage - 1) * PAGE_SIZE;
+
+    return groupVisibleWeekRows(
+      filteredRows.slice(startIndex, startIndex + PAGE_SIZE),
+    );
+  }, [filteredRows, safeCurrentPage]);
+  const pageStart = filteredRows.length
+    ? (safeCurrentPage - 1) * PAGE_SIZE + 1
+    : 0;
+  const pageEnd = Math.min(safeCurrentPage * PAGE_SIZE, filteredRows.length);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [dayTypeFilter, normalizedSearch]);
+
+  useEffect(() => {
+    if (currentPage > pageCount) {
+      setCurrentPage(pageCount);
+    }
+  }, [currentPage, pageCount]);
+
   const getDailyCellClassName = (className = ''): string => {
     return [
       className,
@@ -532,183 +608,233 @@ export default function ReportsOverviewPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRows.map((row) => {
-                const weeklyCellTitle = row.canOpenWeeklyReport
-                  ? row.weeklyTooltipText
-                  : '';
-                const weeklyCellRole = row.canOpenWeeklyReport
-                  ? 'button'
-                  : undefined;
-                const weeklyCellTabIndex = row.canOpenWeeklyReport
-                  ? 0
-                  : undefined;
+              {paginatedRows.length ? (
+                paginatedRows.map((row) => {
+                  const weeklyCellTitle = row.canOpenWeeklyReport
+                    ? row.weeklyTooltipText
+                    : '';
+                  const weeklyCellRole = row.canOpenWeeklyReport
+                    ? 'button'
+                    : undefined;
+                  const weeklyCellTabIndex = row.canOpenWeeklyReport
+                    ? 0
+                    : undefined;
 
-                return (
-                  <TableRow
-                    key={`${row.date}-${row.id ?? 'empty'}`}
-                    className={
-                      row.isWeekStart
-                        ? 'border-t-4 border-primary transition-none hover:bg-transparent [&:has(.reports-overview-day-cell:hover)_.reports-overview-day-cell]:bg-primary-tint/15 [&:has(.reports-overview-week-cell:hover)_.reports-overview-week-cell]:bg-primary-tint/15'
-                        : 'transition-none hover:bg-transparent [&:has(.reports-overview-day-cell:hover)_.reports-overview-day-cell]:bg-primary-tint/15 [&:has(.reports-overview-week-cell:hover)_.reports-overview-week-cell]:bg-primary-tint/15'
-                    }
-                  >
-                    <TableCell
-                      className={getDailyCellClassName()}
-                      title={row.dailyTooltipText}
-                      onClick={() => handleDailyCellClick(row)}
+                  return (
+                    <TableRow
+                      key={`${row.date}-${row.id ?? 'empty'}`}
+                      className={
+                        row.isWeekStart
+                          ? 'border-t-4 border-primary transition-none hover:bg-transparent [&:has(.reports-overview-day-cell:hover)_.reports-overview-day-cell]:bg-primary-tint/15 [&:has(.reports-overview-week-cell:hover)_.reports-overview-week-cell]:bg-primary-tint/15'
+                          : 'transition-none hover:bg-transparent [&:has(.reports-overview-day-cell:hover)_.reports-overview-day-cell]:bg-primary-tint/15 [&:has(.reports-overview-week-cell:hover)_.reports-overview-week-cell]:bg-primary-tint/15'
+                      }
                     >
-                      <span className="inline-flex items-center gap-3">
-                        <span className="min-w-8 text-left font-medium text-text-color/70">
-                          {row.weekdayShort}
+                      <TableCell
+                        className={getDailyCellClassName()}
+                        title={row.dailyTooltipText}
+                        onClick={() => handleDailyCellClick(row)}
+                      >
+                        <span className="inline-flex items-center gap-3">
+                          <span className="min-w-8 text-left font-medium text-text-color/70">
+                            {row.weekdayShort}
+                          </span>
+                          <span>{row.formattedDate}</span>
                         </span>
-                        <span>{row.formattedDate}</span>
-                      </span>
-                    </TableCell>
-                    <TableCell
-                      className={getDailyCellClassName()}
-                      title={row.dailyTooltipText}
-                      onClick={() => handleDailyCellClick(row)}
-                    >
-                      {row.dayType ? (
-                        <DayTypeBadge
-                          dayType={row.dayType}
-                          freeReason={row.freeReason}
-                          showFreeReason={false}
-                          className="rounded-full border border-primary-tint/70 bg-primary-tint/15 px-2.5 py-1 text-xs text-text-color"
-                          iconClassName="text-primary"
-                          labelClassName="font-medium"
-                        />
-                      ) : (
-                        '-'
-                      )}
-                    </TableCell>
-                    <TableCell
-                      className={getDailyCellClassName(
-                        'max-w-[420px] whitespace-normal',
-                      )}
-                      title={row.dailyTooltipText}
-                      onClick={() => handleDailyCellClick(row)}
-                    >
-                      {row.summary}
-                    </TableCell>
-                    <TableCell
-                      className={getDailyCellClassName()}
-                      title={row.dailyTooltipText}
-                      onClick={() => handleDailyCellClick(row)}
-                    >
-                      {row.conflict ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-flex items-center gap-2 text-amber-700">
-                              <FiAlertTriangle className="size-4" />
-                              {t('reportConflicts.badge')}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" sideOffset={8}>
-                            <p>
-                              {t('reportConflicts.storedState', {
-                                value: formatConflictDayTypeLabel(t, {
-                                  dayType: row.conflict.storedDayType,
-                                  freeReason: row.conflict.storedFreeReason,
-                                }),
-                              })}
-                            </p>
-                            <p>
-                              {t('reportConflicts.expectedState', {
-                                value: formatConflictDayTypeLabel(t, {
-                                  dayType: row.conflict.expectedDayType,
-                                  freeReason: row.conflict.expectedFreeReason,
-                                }),
-                              })}
-                            </p>
-                            <p>
-                              {t('reportConflicts.reason', {
-                                value: formatConflictReasonLabel(
-                                  t,
-                                  row.conflict.reason,
-                                ),
-                              })}
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        '-'
-                      )}
-                    </TableCell>
-                    {row.isWeekFirstRow ? (
-                      <>
-                        <TableCell
-                          rowSpan={row.weekRowSpan}
-                          className={getWeeklyCellClassName(row)}
-                          title={weeklyCellTitle}
-                          role={weeklyCellRole}
-                          tabIndex={weeklyCellTabIndex}
-                          aria-label={weeklyCellTitle || undefined}
-                          onClick={() => handleWeeklyCellClick(row)}
-                          onKeyDown={(event) =>
-                            handleWeeklyCellKeyDown(event, row)
-                          }
-                        >
-                          <div className="flex w-full justify-center">
-                            {row.submitted ? (
-                              <FiCheckCircle className="size-5 text-emerald-600" />
-                            ) : (
-                              <FiXCircle className="size-5 text-rose-500" />
+                      </TableCell>
+                      <TableCell
+                        className={getDailyCellClassName()}
+                        title={row.dailyTooltipText}
+                        onClick={() => handleDailyCellClick(row)}
+                      >
+                        {row.dayType ? (
+                          <DayTypeBadge
+                            dayType={row.dayType}
+                            freeReason={row.freeReason}
+                            showFreeReason={false}
+                            className="rounded-full border border-primary-tint/70 bg-primary-tint/15 px-2.5 py-1 text-xs text-text-color"
+                            iconClassName="text-primary"
+                            labelClassName="font-medium"
+                          />
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
+                      <TableCell
+                        className={getDailyCellClassName(
+                          'max-w-[420px] whitespace-normal',
+                        )}
+                        title={row.dailyTooltipText}
+                        onClick={() => handleDailyCellClick(row)}
+                      >
+                        {row.summary}
+                      </TableCell>
+                      <TableCell
+                        className={getDailyCellClassName()}
+                        title={row.dailyTooltipText}
+                        onClick={() => handleDailyCellClick(row)}
+                      >
+                        {row.conflict ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex items-center gap-2 text-amber-700">
+                                <FiAlertTriangle className="size-4" />
+                                {t('reportConflicts.badge')}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" sideOffset={8}>
+                              <p>
+                                {t('reportConflicts.storedState', {
+                                  value: formatConflictDayTypeLabel(t, {
+                                    dayType: row.conflict.storedDayType,
+                                    freeReason: row.conflict.storedFreeReason,
+                                  }),
+                                })}
+                              </p>
+                              <p>
+                                {t('reportConflicts.expectedState', {
+                                  value: formatConflictDayTypeLabel(t, {
+                                    dayType: row.conflict.expectedDayType,
+                                    freeReason: row.conflict.expectedFreeReason,
+                                  }),
+                                })}
+                              </p>
+                              <p>
+                                {t('reportConflicts.reason', {
+                                  value: formatConflictReasonLabel(
+                                    t,
+                                    row.conflict.reason,
+                                  ),
+                                })}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
+                      {row.isWeekFirstRow ? (
+                        <>
+                          <TableCell
+                            rowSpan={row.weekRowSpan}
+                            className={getWeeklyCellClassName(row)}
+                            title={weeklyCellTitle}
+                            role={weeklyCellRole}
+                            tabIndex={weeklyCellTabIndex}
+                            aria-label={weeklyCellTitle || undefined}
+                            onClick={() => handleWeeklyCellClick(row)}
+                            onKeyDown={(event) =>
+                              handleWeeklyCellKeyDown(event, row)
+                            }
+                          >
+                            <div className="flex w-full justify-center">
+                              {row.submitted ? (
+                                <FiCheckCircle className="size-5 text-emerald-600" />
+                              ) : (
+                                <FiXCircle className="size-5 text-rose-500" />
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell
+                            rowSpan={row.weekRowSpan}
+                            className={getWeeklyCellClassName(row)}
+                            title={weeklyCellTitle}
+                            role={weeklyCellRole}
+                            tabIndex={weeklyCellTabIndex}
+                            aria-label={weeklyCellTitle || undefined}
+                            onClick={() => handleWeeklyCellClick(row)}
+                            onKeyDown={(event) =>
+                              handleWeeklyCellKeyDown(event, row)
+                            }
+                          >
+                            <span>{row.submittedToEmail}</span>
+                          </TableCell>
+                          <TableCell
+                            rowSpan={row.weekRowSpan}
+                            className={getWeeklyCellClassName(row)}
+                            title={weeklyCellTitle}
+                            role={weeklyCellRole}
+                            tabIndex={weeklyCellTabIndex}
+                            aria-label={weeklyCellTitle || undefined}
+                            onClick={() => handleWeeklyCellClick(row)}
+                            onKeyDown={(event) =>
+                              handleWeeklyCellKeyDown(event, row)
+                            }
+                          >
+                            <span>{row.area}</span>
+                          </TableCell>
+                          <TableCell
+                            rowSpan={row.weekRowSpan}
+                            className={getWeeklyCellClassName(
+                              row,
+                              'w-px whitespace-nowrap text-center font-medium',
                             )}
-                          </div>
-                        </TableCell>
-                        <TableCell
-                          rowSpan={row.weekRowSpan}
-                          className={getWeeklyCellClassName(row)}
-                          title={weeklyCellTitle}
-                          role={weeklyCellRole}
-                          tabIndex={weeklyCellTabIndex}
-                          aria-label={weeklyCellTitle || undefined}
-                          onClick={() => handleWeeklyCellClick(row)}
-                          onKeyDown={(event) =>
-                            handleWeeklyCellKeyDown(event, row)
-                          }
-                        >
-                          <span>{row.submittedToEmail}</span>
-                        </TableCell>
-                        <TableCell
-                          rowSpan={row.weekRowSpan}
-                          className={getWeeklyCellClassName(row)}
-                          title={weeklyCellTitle}
-                          role={weeklyCellRole}
-                          tabIndex={weeklyCellTabIndex}
-                          aria-label={weeklyCellTitle || undefined}
-                          onClick={() => handleWeeklyCellClick(row)}
-                          onKeyDown={(event) =>
-                            handleWeeklyCellKeyDown(event, row)
-                          }
-                        >
-                          <span>{row.area}</span>
-                        </TableCell>
-                        <TableCell
-                          rowSpan={row.weekRowSpan}
-                          className={getWeeklyCellClassName(
-                            row,
-                            'w-px whitespace-nowrap text-center font-medium',
-                          )}
-                          title={weeklyCellTitle}
-                          role={weeklyCellRole}
-                          tabIndex={weeklyCellTabIndex}
-                          aria-label={weeklyCellTitle || undefined}
-                          onClick={() => handleWeeklyCellClick(row)}
-                          onKeyDown={(event) =>
-                            handleWeeklyCellKeyDown(event, row)
-                          }
-                        >
-                          {row.calendarWeekText}
-                        </TableCell>
-                      </>
-                    ) : null}
-                  </TableRow>
-                );
-              })}
+                            title={weeklyCellTitle}
+                            role={weeklyCellRole}
+                            tabIndex={weeklyCellTabIndex}
+                            aria-label={weeklyCellTitle || undefined}
+                            onClick={() => handleWeeklyCellClick(row)}
+                            onKeyDown={(event) =>
+                              handleWeeklyCellKeyDown(event, row)
+                            }
+                          >
+                            {row.calendarWeekText}
+                          </TableCell>
+                        </>
+                      ) : null}
+                    </TableRow>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={8}
+                    className="h-24 text-center text-text-color/70"
+                  >
+                    {t('reportsOverview.table.noResults')}
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
+        </div>
+        <div className="flex flex-col gap-3 border-t border-primary-tint/60 pt-4 text-sm text-text-color/70 sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            {t('reportsOverview.pagination.summary', {
+              start: pageStart,
+              end: pageEnd,
+              total: filteredRows.length,
+            })}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={safeCurrentPage <= 1}
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+            >
+              <FiChevronLeft className="size-4" />
+              {t('reportsOverview.pagination.previous')}
+            </Button>
+            <span className="min-w-24 text-center">
+              {t('reportsOverview.pagination.page', {
+                page: safeCurrentPage,
+                total: pageCount,
+              })}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={safeCurrentPage >= pageCount}
+              onClick={() =>
+                setCurrentPage((page) => Math.min(pageCount, page + 1))
+              }
+            >
+              {t('reportsOverview.pagination.next')}
+              <FiChevronRight className="size-4" />
+            </Button>
+          </div>
         </div>
       </SectionCard>
     </div>

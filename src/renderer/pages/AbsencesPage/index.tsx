@@ -1,4 +1,11 @@
-import { ReactNode, useCallback, useMemo, useState } from 'react';
+import {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import CollectionAccordion from '@/renderer/components/app/CollectionAccordion';
@@ -20,9 +27,21 @@ import {
   formatGermanDate,
   formatGermanDateTime,
 } from '@/renderer/lib/date-format';
+import {
+  hasDismissedIntroDialog,
+  markIntroDialogDismissed,
+} from '@/renderer/lib/first-run-dialogs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { CalendarDays, PartyPopper, Plane, Thermometer } from 'lucide-react';
 import {
   createCatalogYearKey,
@@ -137,9 +156,12 @@ export default function AbsencesPage() {
   const settingsSnapshot = useSettingsSnapshot();
   const reportsState = useReportsState();
   const [isPending, setIsPending] = useState(false);
+  const [isCatalogSyncPending, setIsCatalogSyncPending] = useState(false);
+  const autoSyncAttemptKeyRef = useRef<string | null>(null);
   const [form, setForm] = useState<ManualAbsenceFormState>(
     defaultManualAbsenceFormState,
   );
+  const [isIntroOpen, setIsIntroOpen] = useState(false);
 
   const absenceSettings = useMemo(
     () => parseAbsenceSettings(settingsSnapshot.value?.values ?? {}),
@@ -172,6 +194,7 @@ export default function AbsencesPage() {
     [absenceSettings, requiredCatalogYears, subdivisionCode],
   );
   const hasMissingCatalogYears = missingCatalogYears.length > 0;
+  const missingCatalogYearsKey = missingCatalogYears.join(',');
   const catalogYears = useMemo(
     () => listAbsenceCatalogYears(absenceSettings),
     [absenceSettings],
@@ -350,6 +373,59 @@ export default function AbsencesPage() {
       submittedReportEditDisabledReason ?? undefined,
     );
   }, [submittedReportEditDisabledReason, t, toast]);
+
+  useEffect(() => {
+    if (!hasDismissedIntroDialog('absences')) {
+      setIsIntroOpen(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (
+      !runtime.api ||
+      !settingsSnapshot.value ||
+      !absenceSettings.autoSyncHolidays ||
+      !subdivisionCode ||
+      !hasMissingCatalogYears ||
+      isCatalogSyncPending
+    ) {
+      return;
+    }
+
+    const attemptKey = `${subdivisionCode}:${missingCatalogYearsKey}`;
+
+    if (autoSyncAttemptKeyRef.current === attemptKey) {
+      return;
+    }
+
+    autoSyncAttemptKeyRef.current = attemptKey;
+    setIsCatalogSyncPending(true);
+    const syncMissingCatalogYears = async () => {
+      try {
+        await runtime.api!.syncAbsenceCatalog();
+        await Promise.all([runtime.refresh(), settingsSnapshot.refresh()]);
+      } catch (error) {
+        toast.error(
+          t('absences.feedback.syncError'),
+          error instanceof Error ? error.message : t('common.errors.unknown'),
+        );
+      } finally {
+        setIsCatalogSyncPending(false);
+      }
+    };
+
+    syncMissingCatalogYears().catch(() => undefined);
+  }, [
+    absenceSettings.autoSyncHolidays,
+    hasMissingCatalogYears,
+    isCatalogSyncPending,
+    missingCatalogYearsKey,
+    runtime,
+    settingsSnapshot,
+    subdivisionCode,
+    t,
+    toast,
+  ]);
 
   const persistManualAbsences = useCallback(
     async (nextManualAbsences: ManualAbsence[]) => {
@@ -565,9 +641,57 @@ export default function AbsencesPage() {
   const handleSaveAndProceed = useCallback(() => {
     unsavedChangesGuard.saveAndProceed().catch(() => undefined);
   }, [unsavedChangesGuard]);
+  const closeIntroDialog = useCallback(() => {
+    setIsIntroOpen(false);
+  }, []);
+  const dismissIntroDialogPermanently = useCallback(() => {
+    markIntroDialogDismissed('absences');
+    setIsIntroOpen(false);
+  }, []);
 
   return (
     <div className="space-y-4">
+      <Dialog
+        open={isIntroOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            setIsIntroOpen(true);
+            return;
+          }
+
+          closeIntroDialog();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('absences.intro.title')}</DialogTitle>
+            <DialogDescription>
+              {t('absences.intro.description')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 text-sm text-text-color/80">
+            <p>{t('absences.intro.sync')}</p>
+            <p>{t('absences.intro.manual')}</p>
+            <p>{t('absences.intro.locked')}</p>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={dismissIntroDialogPermanently}
+            >
+              {t('common.doNotShowAgain')}
+            </Button>
+            <Button
+              type="button"
+              className="bg-primary text-primary-contrast hover:bg-primary-shade"
+              onClick={closeIntroDialog}
+            >
+              {t('common.understood')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {hasMissingCatalogYears ? (
         <Alert className="border-amber-200 bg-amber-50">
           <div className="flex items-center gap-2">
@@ -610,16 +734,18 @@ export default function AbsencesPage() {
           <div className="flex flex-col items-end gap-1">
             <Button
               type="button"
-              disabled={isPending || !subdivisionCode}
+              disabled={isPending || isCatalogSyncPending || !subdivisionCode}
               disabledReason={
-                isPending
+                isPending || isCatalogSyncPending
                   ? t('common.disabledReasons.pending')
                   : t('common.disabledReasons.missingSubdivision')
               }
               className="bg-primary text-primary-contrast hover:bg-primary-shade h-9"
               onClick={handleOpenSyncConfirmation}
             >
-              {t('absences.sync.trigger')}
+              {isCatalogSyncPending
+                ? t('common.loading')
+                : t('absences.sync.trigger')}
             </Button>
             {absenceSettings.lastSyncedAt && (
               <span className="text-xs text-text-color/70 font-medium whitespace-nowrap">
@@ -662,10 +788,7 @@ export default function AbsencesPage() {
         ) : null}
       </SectionCard>
       <SectionCard
-        title={titleWithIcon(
-          <Thermometer className="size-4 text-primary" />,
-          t('absences.manual.title'),
-        )}
+        title={titleWithIcon(t('absences.manual.title'))}
         className="border-primary-tint bg-white"
       >
         <div className="flex flex-row w-full gap-4">

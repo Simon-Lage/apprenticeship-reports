@@ -25,6 +25,14 @@ const timetableSlotSchema = z.object({
 
 const timetableDaySchema = z.array(timetableSlotSchema);
 
+const timetableSchoolDaysSchema = z.object({
+  monday: z.boolean().default(false),
+  tuesday: z.boolean().default(false),
+  wednesday: z.boolean().default(false),
+  thursday: z.boolean().default(false),
+  friday: z.boolean().default(false),
+});
+
 const timetableSchema = z.object({
   monday: timetableDaySchema.default([]),
   tuesday: timetableDaySchema.default([]),
@@ -33,17 +41,44 @@ const timetableSchema = z.object({
   friday: timetableDaySchema.default([]),
 });
 
+const textSuggestionListSchema = z.object({
+  manual: z.array(z.string().trim().min(1).max(240)).default([]),
+  ignored: z.array(z.string().trim().min(1).max(240)).default([]),
+});
+
+const textSuggestionsSchema = z.object({
+  activities: textSuggestionListSchema.default({ manual: [], ignored: [] }),
+  trainings: textSuggestionListSchema.default({ manual: [], ignored: [] }),
+  schoolTopics: textSuggestionListSchema.default({ manual: [], ignored: [] }),
+});
+
+const defaultTimetable = {
+  monday: [],
+  tuesday: [],
+  wednesday: [],
+  thursday: [],
+  friday: [],
+};
+
+const defaultSchoolDays = {
+  monday: false,
+  tuesday: false,
+  wednesday: false,
+  thursday: false,
+  friday: false,
+};
+
 const uiSettingsSchema = z.object({
   defaultDepartment: z.string().trim().max(120).default(''),
   supervisorEmailPrimary: z.string().trim().max(320).default(''),
   teachers: z.array(z.string().trim().min(1).max(120)).default([]),
   subjects: z.array(z.string().trim().min(1).max(120)).default([]),
-  timetable: timetableSchema.default({
-    monday: [],
-    tuesday: [],
-    wednesday: [],
-    thursday: [],
-    friday: [],
+  timetable: timetableSchema.default(defaultTimetable),
+  schoolDays: timetableSchoolDaysSchema.default(defaultSchoolDays),
+  textSuggestions: textSuggestionsSchema.default({
+    activities: { manual: [], ignored: [] },
+    trainings: { manual: [], ignored: [] },
+    schoolTopics: { manual: [], ignored: [] },
   }),
 });
 
@@ -68,10 +103,12 @@ const onboardingWorkplaceSchema = z.object({
 
 const onboardingRegionSchema = z.object({
   subdivisionCode: z.string().trim().min(1).max(16).nullable(),
+  autoSyncHolidays: z.boolean(),
 });
 
 export type TimetableSlot = z.infer<typeof timetableSlotSchema>;
 export type UiSettingsValues = z.infer<typeof uiSettingsSchema>;
+export type TextSuggestionKind = keyof UiSettingsValues['textSuggestions'];
 export type OnboardingTrainingPeriodValues = z.infer<
   typeof onboardingTrainingPeriodSchema
 >;
@@ -195,6 +232,67 @@ function normalizeTimetableDay(value: unknown): TimetableSlot[] {
   );
 }
 
+function normalizeTimetableSchoolDays(
+  value: unknown,
+): UiSettingsValues['schoolDays'] {
+  const source = ensureJsonObject(value ?? {});
+
+  return timetableSchoolDaysSchema.parse(
+    Object.fromEntries(weekDayKeys.map((day) => [day, source[day] === true])),
+  );
+}
+
+function normalizeTextSuggestions(
+  value: unknown,
+): UiSettingsValues['textSuggestions'] {
+  const source = ensureJsonObject(value ?? {});
+  const parsed = textSuggestionsSchema.parse({
+    activities: source.activities,
+    trainings: source.trainings,
+    schoolTopics: source.schoolTopics,
+  });
+
+  return {
+    activities: {
+      manual: uniqStrings(parsed.activities.manual),
+      ignored: uniqStrings(parsed.activities.ignored),
+    },
+    trainings: {
+      manual: uniqStrings(parsed.trainings.manual),
+      ignored: uniqStrings(parsed.trainings.ignored),
+    },
+    schoolTopics: {
+      manual: uniqStrings(parsed.schoolTopics.manual),
+      ignored: uniqStrings(parsed.schoolTopics.ignored),
+    },
+  };
+}
+
+export function isCompleteTimetableSlot(slot: TimetableSlot): boolean {
+  return slot.subject.trim().length > 0 && slot.teacher.trim().length > 0;
+}
+
+export function hasCompleteTimetableSlots(slots: TimetableSlot[]): boolean {
+  return slots.some(isCompleteTimetableSlot);
+}
+
+export function isSchoolDayFromTimetable(
+  uiSettings: UiSettingsValues,
+  day: WeekDayKey,
+): boolean {
+  return (
+    uiSettings.schoolDays[day] ||
+    hasCompleteTimetableSlots(uiSettings.timetable[day])
+  );
+}
+
+export function listCompleteTimetableSlots(
+  uiSettings: UiSettingsValues,
+  day: WeekDayKey,
+): TimetableSlot[] {
+  return uiSettings.timetable[day].filter(isCompleteTimetableSlot);
+}
+
 export function parseUiSettings(values: JsonObject): UiSettingsValues {
   const appUi = ensureJsonObject(values.appUi ?? {});
   const timetable = ensureJsonObject(appUi.timetable ?? {});
@@ -211,6 +309,8 @@ export function parseUiSettings(values: JsonObject): UiSettingsValues {
       thursday: normalizeTimetableDay(timetable.thursday),
       friday: normalizeTimetableDay(timetable.friday),
     },
+    schoolDays: normalizeTimetableSchoolDays(appUi.schoolDays),
+    textSuggestions: normalizeTextSuggestions(appUi.textSuggestions),
   });
 
   return {
@@ -224,6 +324,8 @@ export function parseUiSettings(values: JsonObject): UiSettingsValues {
       thursday: parsed.timetable.thursday,
       friday: parsed.timetable.friday,
     },
+    schoolDays: parsed.schoolDays,
+    textSuggestions: parsed.textSuggestions,
   };
 }
 
@@ -294,6 +396,10 @@ export function parseOnboardingRegion(
 
   return onboardingRegionSchema.parse({
     subdivisionCode: normalizeSubdivisionOrNull(region.subdivisionCode),
+    autoSyncHolidays:
+      typeof region.autoSyncHolidays === 'boolean'
+        ? region.autoSyncHolidays
+        : true,
   });
 }
 
@@ -317,8 +423,116 @@ export function mergeUiSettings(
       ...uiSettings,
       teachers: uniqStrings(uiSettings.teachers),
       subjects: uniqStrings(uiSettings.subjects),
+      textSuggestions: normalizeTextSuggestions(uiSettings.textSuggestions),
     },
   };
+}
+
+export function resolveTextSuggestions(input: {
+  uiSettings: UiSettingsValues;
+  kind: TextSuggestionKind;
+  values: string[];
+}): string[] {
+  const settings = input.uiSettings.textSuggestions[input.kind];
+  const ignored = new Set(settings.ignored);
+
+  return uniqStrings([...input.values, ...settings.manual]).filter(
+    (value) => !ignored.has(value),
+  );
+}
+
+export function ignoreTextSuggestion(
+  uiSettings: UiSettingsValues,
+  kind: TextSuggestionKind,
+  value: string,
+): UiSettingsValues {
+  const normalized = value.trim();
+
+  if (!normalized) {
+    return uiSettings;
+  }
+
+  const current = uiSettings.textSuggestions[kind];
+
+  return {
+    ...uiSettings,
+    textSuggestions: {
+      ...uiSettings.textSuggestions,
+      [kind]: {
+        manual: current.manual.filter((entry) => entry !== normalized),
+        ignored: uniqStrings([...current.ignored, normalized]),
+      },
+    },
+  };
+}
+
+export function renameTextSuggestion(input: {
+  uiSettings: UiSettingsValues;
+  kind: TextSuggestionKind;
+  currentValue: string;
+  nextValue: string;
+}): UiSettingsValues {
+  const currentValue = input.currentValue.trim();
+  const nextValue = input.nextValue.trim();
+
+  if (!currentValue || !nextValue || currentValue === nextValue) {
+    return input.uiSettings;
+  }
+
+  const current = input.uiSettings.textSuggestions[input.kind];
+
+  return {
+    ...input.uiSettings,
+    textSuggestions: {
+      ...input.uiSettings.textSuggestions,
+      [input.kind]: {
+        manual: uniqStrings([
+          ...current.manual.filter((entry) => entry !== currentValue),
+          nextValue,
+        ]),
+        ignored: uniqStrings([
+          ...current.ignored.filter((entry) => entry !== nextValue),
+          currentValue,
+        ]),
+      },
+    },
+  };
+}
+
+export function unignoreTextSuggestions(
+  uiSettings: UiSettingsValues,
+  values: Partial<Record<TextSuggestionKind, string[]>>,
+): UiSettingsValues {
+  const nextTextSuggestions = { ...uiSettings.textSuggestions };
+  let changed = false;
+
+  (Object.keys(nextTextSuggestions) as TextSuggestionKind[]).forEach((kind) => {
+    const restoredValues = new Set(values[kind]?.map((value) => value.trim()));
+
+    if (!restoredValues.size) {
+      return;
+    }
+
+    const current = nextTextSuggestions[kind];
+    const nextIgnored = current.ignored.filter(
+      (value) => !restoredValues.has(value),
+    );
+
+    if (nextIgnored.length !== current.ignored.length) {
+      changed = true;
+      nextTextSuggestions[kind] = {
+        ...current,
+        ignored: nextIgnored,
+      };
+    }
+  });
+
+  return changed
+    ? {
+        ...uiSettings,
+        textSuggestions: nextTextSuggestions,
+      }
+    : uiSettings;
 }
 
 export function renameUiCatalogEntry(input: {
@@ -448,8 +662,11 @@ export function mergeOnboardingSettings(input: {
     },
     region: {
       subdivisionCode: input.region.subdivisionCode,
+      autoSyncHolidays: input.region.autoSyncHolidays,
     },
   };
+
+  const absence = ensureJsonObject(input.values.absence ?? {});
 
   if (input.companyLogo) {
     nextOnboarding['company-logo'] = {
@@ -459,6 +676,10 @@ export function mergeOnboardingSettings(input: {
 
   return {
     ...input.values,
+    absence: {
+      ...absence,
+      autoSyncHolidays: input.region.autoSyncHolidays,
+    },
     onboarding: nextOnboarding,
   };
 }

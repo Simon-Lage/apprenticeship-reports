@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
 import { formatGermanDate } from '@/renderer/lib/date-format';
 import { normalizeIsoDate, toLocalIsoDate } from '@/renderer/lib/iso-date';
+import { listCompleteTimetableSlots } from '@/renderer/lib/app-settings';
 import { parseDailyReportValues } from '@/renderer/lib/report-values';
 import {
   DailyReportFormState,
@@ -137,12 +138,14 @@ export default function useDailyReportForm() {
       return;
     const dayKey = resolveDayKey(form.date);
     if (!dayKey) return;
-    const preset = data.uiSettings.timetable[dayKey].map((slot) => ({
-      ...slot,
-      topics: [],
-    }));
+    const preset = listCompleteTimetableSlots(data.uiSettings, dayKey).map(
+      (slot) => ({
+        ...slot,
+        topics: [],
+      }),
+    );
     setForm((current) => ({ ...current, lessons: preset }));
-  }, [form.date, form.dayType, form.lessons.length, data.uiSettings.timetable]);
+  }, [form.date, form.dayType, form.lessons.length, data.uiSettings]);
 
   // Handlers
   const selectDate = useCallback((dateValue: string) => {
@@ -486,10 +489,12 @@ export default function useDailyReportForm() {
         ? (() => {
             const dayKey = resolveDayKey(form.date);
             if (!dayKey) return [];
-            return data.uiSettings.timetable[dayKey].map((slot) => ({
-              ...slot,
-              topics: [],
-            }));
+            return listCompleteTimetableSlots(data.uiSettings, dayKey).map(
+              (slot) => ({
+                ...slot,
+                topics: [],
+              }),
+            );
           })()
         : [];
     setForm((current) => ({
@@ -506,12 +511,7 @@ export default function useDailyReportForm() {
       schoolTopicDraft: '',
     }));
     setLessonTopicDrafts({});
-  }, [
-    data.currentDailyReport,
-    autoDayType,
-    form.date,
-    data.uiSettings.timetable,
-  ]);
+  }, [data.currentDailyReport, autoDayType, form.date, data.uiSettings]);
 
   // Dirty check
   const baselineFormSnapshot = useMemo(() => {
@@ -541,10 +541,12 @@ export default function useDailyReportForm() {
         ? (() => {
             const dayKey = resolveDayKey(form.date);
             if (!dayKey) return [];
-            return data.uiSettings.timetable[dayKey].map((slot) => ({
-              ...slot,
-              topics: [],
-            }));
+            return listCompleteTimetableSlots(data.uiSettings, dayKey).map(
+              (slot) => ({
+                ...slot,
+                topics: [],
+              }),
+            );
           })()
         : [];
     return serializeDailyFormState({
@@ -556,12 +558,7 @@ export default function useDailyReportForm() {
       lessons: lessonDefaults,
       expandedDoubleLessonPairs: [],
     });
-  }, [
-    form.date,
-    data.currentDailyReport,
-    data.autoDayType,
-    data.uiSettings.timetable,
-  ]);
+  }, [form.date, data.currentDailyReport, data.autoDayType, data.uiSettings]);
 
   const currentFormSnapshot = useMemo(
     () => serializeDailyFormState(form),

@@ -360,6 +360,12 @@ export class AppKernelCore {
   }
 
   protected markAbsenceSyncPending(currentState: AppMetadata): AppMetadata {
+    const onboardingState = this.onboardingResolver.derive(currentState);
+
+    if (onboardingState.isConfigured && !onboardingState.isComplete) {
+      return currentState;
+    }
+
     const parsedAbsenceSettings = parseAbsenceSettings(
       currentState.settings.current.values,
     );
