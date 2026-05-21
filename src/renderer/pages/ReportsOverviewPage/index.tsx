@@ -88,7 +88,7 @@ type DayTypeFilterOption = {
   Icon: IconType | null;
 };
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 14;
 
 const weekdayTranslationKeys = [
   'reportsOverview.table.weekdays.sunday',

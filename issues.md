@@ -1,7 +1,7 @@
 # Offene Issues (von easy zu schwer)
 
 - [?] In die Readme einbauen, dass Google Services aktuell noch in der Closed-Test-Phase sind und deswegen es nicht möglich ist, diese ohne freigegebenen Google-Account zu nutzen.
-- [ ] Bei der Übersicht sollten immer 14 Einträge pro Pagination-Page sichtbar sein.
+- [?] Bei der Übersicht sollten immer 14 Einträge pro Pagination-Page sichtbar sein.
 - [ ] Bei Übersicht statt - bei Schultagen die Themen unformatiert anzeigen genau wie arbeitstätigkeiten (Ohne nach stunden aufzuschlüsseln, egal was bei dem tagesberticht gemacht wurde).
   - [ ] Bei Übersicht sollten Tätigkeiten/Themen maximal 3 Zeilen Bilden bei der Auflistung innerhalb eines Tages und sie sollen sonst mit ... beendet werden.
 - [ ] Toasts sollten unten links stehen und einen halbtransparenten Hintergrund haben.
