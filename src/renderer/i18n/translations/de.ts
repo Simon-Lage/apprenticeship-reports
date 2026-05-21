@@ -459,10 +459,14 @@ const deTranslation = {
       unknownDate: 'unbekannt',
       feedback: {
         loadError: 'Build-Informationen konnten nicht geladen werden.',
-        updateCheckStarted: 'Update-Prüfung gestartet.',
+        updateFound: 'Update gefunden.',
+        updatePreparing: 'Update wird vorbereitet.',
+        updateCheckNotAvailable: 'Kein Update verfügbar.',
         updateCheckUnavailable: 'Update-Dienst ist aktuell nicht bereit.',
         updateCheckUnavailableInDev:
           'Update-Prüfung ist im Entwicklungs-/Testmodus nicht verfügbar.',
+        updateCheckRetryLater:
+          'Update-Prüfung fehlgeschlagen. Bitte später erneut versuchen.',
         updateCheckError: 'Update-Prüfung fehlgeschlagen.',
       },
     },

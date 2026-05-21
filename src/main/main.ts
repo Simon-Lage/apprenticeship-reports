@@ -20,8 +20,10 @@ import deTranslation from '@/renderer/i18n/translations/de';
 import type {
   AppBuildInfo,
   AppUpdateCheckResult,
+  AppUpdateCheckStatus,
   RendererErrorInput,
 } from '@/shared/ipc/app-api';
+import { AppIpcChannel } from '@/shared/ipc/app-api';
 import defaultOnboardingSteps from '@/shared/onboarding/default-steps';
 
 class AppUpdater {
@@ -34,6 +36,7 @@ class AppUpdater {
     this.updateChecksEnabled = app.isPackaged;
 
     autoUpdater.on('update-downloaded', async () => {
+      this.sendUpdateStatus('update-downloaded');
       const dialogTranslations = deTranslation.mainDialogs.updateReady;
       const result = await dialog.showMessageBox(this.mainWindow, {
         type: 'question',
@@ -47,7 +50,7 @@ class AppUpdater {
       });
 
       if (result.response === 0) {
-        autoUpdater.quitAndInstall();
+        autoUpdater.quitAndInstall(true, true);
       }
     });
 
@@ -66,10 +69,52 @@ class AppUpdater {
       };
     }
 
-    await autoUpdater.checkForUpdates();
+    const status = await new Promise<AppUpdateCheckStatus>((resolve) => {
+      const cleanup = () => {
+        autoUpdater.off('update-available', handleUpdateAvailable);
+        autoUpdater.off('update-not-available', handleUpdateNotAvailable);
+        autoUpdater.off('update-downloaded', handleUpdateDownloaded);
+        autoUpdater.off('error', handleError);
+      };
+      const settle = (nextStatus: AppUpdateCheckStatus) => {
+        cleanup();
+        resolve(nextStatus);
+      };
+      const handleUpdateAvailable = () => {
+        this.sendUpdateStatus('update-available');
+      };
+      const handleUpdateNotAvailable = () => {
+        settle('update-not-available');
+      };
+      const handleUpdateDownloaded = () => {
+        settle('update-downloaded');
+      };
+      const handleError = (error: Error) => {
+        log.error('Update check failed', error);
+        settle('error');
+      };
+
+      autoUpdater.once('update-available', handleUpdateAvailable);
+      autoUpdater.once('update-not-available', handleUpdateNotAvailable);
+      autoUpdater.once('update-downloaded', handleUpdateDownloaded);
+      autoUpdater.once('error', handleError);
+
+      autoUpdater.checkForUpdates().catch(handleError);
+    });
+
     return {
       started: true,
+      status,
     };
+  }
+
+  private sendUpdateStatus(status: AppUpdateCheckStatus): void {
+    if (!this.mainWindow.isDestroyed()) {
+      this.mainWindow.webContents.send(
+        AppIpcChannel.onUpdateCheckStatus,
+        status,
+      );
+    }
   }
 }
 

@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Trans, useTranslation } from 'react-i18next';
 import {
@@ -6,11 +6,9 @@ import {
   FiClock,
   FiEdit3,
   FiFileText,
-  FiGithub,
   FiGrid,
   FiLayers,
   FiList,
-  FiRefreshCw,
   FiSettings,
   FiSlash,
 } from 'react-icons/fi';
@@ -18,12 +16,10 @@ import { IconType } from 'react-icons';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
-import { useToastController } from '@/renderer/contexts/ToastControllerContext';
 import {
   useReportsState,
   useSettingsSnapshot,
 } from '@/renderer/hooks/useKernelData';
-import { formatGermanDateTime } from '@/renderer/lib/date-format';
 import { parseOnboardingTrainingPeriod } from '@/renderer/lib/app-settings';
 import { appRoutes } from '@/renderer/lib/app-routes';
 import { buildHomeStatsSnapshot } from '@/renderer/lib/home-stats';
@@ -37,11 +33,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { AppBuildInfo } from '@/shared/ipc/app-api';
 import { isWeeklyReportSubmitted } from '@/shared/reports/edit-locks';
-
-const githubRepositoryUrl =
-  'https://github.com/Simon-Lage/apprenticeship-reports';
 
 type AreaCard = {
   to: string;
@@ -221,11 +213,8 @@ export default function HomePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const runtime = useAppRuntime();
-  const toast = useToastController();
   const reportsState = useReportsState();
   const settingsSnapshot = useSettingsSnapshot();
-  const [buildInfo, setBuildInfo] = useState<AppBuildInfo | null>(null);
-  const [isCheckingForUpdates, setIsCheckingForUpdates] = useState(false);
 
   const dailyCount = runtime.state.reports.dailyReportCount;
   const trainingPeriod = useMemo(
@@ -336,57 +325,6 @@ export default function HomePage() {
       valueClassName: weeklySendValueClassName,
     },
   ];
-  const buildVersion = buildInfo?.version ?? '-';
-  const updatedAtLabel =
-    formatGermanDateTime(buildInfo?.updatedAt) || t('home.footer.unknownDate');
-
-  const loadBuildInfo = useCallback(async () => {
-    if (!runtime.api) {
-      return;
-    }
-
-    try {
-      const info = await runtime.api.getAppBuildInfo();
-      setBuildInfo(info);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : t('common.errors.unknown');
-      toast.error(t('home.footer.feedback.loadError'), message);
-    }
-  }, [runtime.api, t, toast]);
-
-  const handleCheckForUpdates = useCallback(async () => {
-    if (!runtime.api || isCheckingForUpdates) {
-      return;
-    }
-
-    setIsCheckingForUpdates(true);
-
-    try {
-      const result = await runtime.api.checkForUpdates();
-      if (!result.started) {
-        const feedbackKey =
-          result.unavailableReason === 'not-packaged'
-            ? 'home.footer.feedback.updateCheckUnavailableInDev'
-            : 'home.footer.feedback.updateCheckUnavailable';
-        toast.info(t(feedbackKey));
-        return;
-      }
-
-      toast.success(t('home.footer.feedback.updateCheckStarted'));
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : t('common.errors.unknown');
-      toast.error(t('home.footer.feedback.updateCheckError'), message);
-    } finally {
-      setIsCheckingForUpdates(false);
-    }
-  }, [isCheckingForUpdates, runtime.api, t, toast]);
-
-  useEffect(() => {
-    loadBuildInfo().catch(() => undefined);
-  }, [loadBuildInfo]);
-
   return (
     <motion.div
       className="flex flex-col gap-6"
@@ -476,40 +414,6 @@ export default function HomePage() {
           );
         })}
       </section>
-
-      <footer className="border-t border-primary-tint/60 pt-2">
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] text-text-color/60">
-          <span>{t('home.footer.version', { version: buildVersion })}</span>
-          <a
-            href={githubRepositoryUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-text-color/75"
-          >
-            <FiGithub className="size-3.5" />
-            <span>{t('home.footer.github')}</span>
-          </a>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleCheckForUpdates}
-            disabled={!runtime.api || isCheckingForUpdates}
-            disabledReason={
-              isCheckingForUpdates
-                ? t('common.disabledReasons.pending')
-                : t('common.disabledReasons.runtimeUnavailable')
-            }
-            className="h-6 cursor-pointer px-2 text-[11px] text-text-color/60 hover:bg-primary/5 hover:text-text-color/75"
-          >
-            <FiRefreshCw
-              className={`size-3 ${isCheckingForUpdates ? 'animate-spin' : ''}`}
-            />
-            {t('home.footer.checkUpdates')}
-          </Button>
-          <span>{t('home.footer.lastUpdated', { date: updatedAtLabel })}</span>
-        </div>
-      </footer>
     </motion.div>
   );
 }

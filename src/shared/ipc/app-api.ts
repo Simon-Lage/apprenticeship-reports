@@ -30,6 +30,7 @@ export const AppIpcChannel = {
   getReportsState: 'app:get-reports-state',
   getAppBuildInfo: 'app:get-app-build-info',
   checkForUpdates: 'app:check-for-updates',
+  onUpdateCheckStatus: 'app:on-update-check-status',
   getWindowFullscreen: 'app:get-window-fullscreen',
   toggleWindowFullscreen: 'app:toggle-window-fullscreen',
   openJsonFileDialog: 'app:open-json-file-dialog',
@@ -314,9 +315,16 @@ export type AppBuildInfo = {
 
 export type AppUpdateUnavailableReason = 'not-packaged' | 'updater-not-ready';
 
+export type AppUpdateCheckStatus =
+  | 'update-available'
+  | 'update-not-available'
+  | 'update-downloaded'
+  | 'error';
+
 export type AppUpdateCheckResult =
   | {
       started: true;
+      status: AppUpdateCheckStatus;
     }
   | {
       started: false;
@@ -329,6 +337,9 @@ export type AppApi = {
   getReportsState: () => Promise<ReportsState>;
   getAppBuildInfo: () => Promise<AppBuildInfo>;
   checkForUpdates: () => Promise<AppUpdateCheckResult>;
+  onUpdateCheckStatus: (
+    listener: (status: AppUpdateCheckStatus) => void,
+  ) => () => void;
   getWindowFullscreen: () => Promise<boolean>;
   toggleWindowFullscreen: () => Promise<boolean>;
   openJsonFileDialog: () => Promise<string | null>;

@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-import { AppApi, AppIpcChannel } from '@/shared/ipc/app-api';
+import { AppIpcChannel } from '@/shared/ipc/app-api';
+import type { AppApi, AppUpdateCheckStatus } from '@/shared/ipc/app-api';
 
 const appApi: AppApi = {
   getBootstrapState: () => ipcRenderer.invoke(AppIpcChannel.getBootstrapState),
@@ -9,6 +10,22 @@ const appApi: AppApi = {
   getReportsState: () => ipcRenderer.invoke(AppIpcChannel.getReportsState),
   getAppBuildInfo: () => ipcRenderer.invoke(AppIpcChannel.getAppBuildInfo),
   checkForUpdates: () => ipcRenderer.invoke(AppIpcChannel.checkForUpdates),
+  onUpdateCheckStatus: (listener) => {
+    const subscription = (
+      _event: Electron.IpcRendererEvent,
+      status: unknown,
+    ) => {
+      listener(status as AppUpdateCheckStatus);
+    };
+
+    ipcRenderer.on(AppIpcChannel.onUpdateCheckStatus, subscription);
+    return () => {
+      ipcRenderer.removeListener(
+        AppIpcChannel.onUpdateCheckStatus,
+        subscription,
+      );
+    };
+  },
   getWindowFullscreen: () =>
     ipcRenderer.invoke(AppIpcChannel.getWindowFullscreen),
   toggleWindowFullscreen: () =>
