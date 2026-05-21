@@ -1,9 +1,9 @@
-# Offene Issues (von easy zu schwer)
+# Offene Issues
 
 - [?] In die Readme einbauen, dass Google Services aktuell noch in der Closed-Test-Phase sind und deswegen es nicht möglich ist, diese ohne freigegebenen Google-Account zu nutzen.
 - [?] Bei der Übersicht sollten immer 14 Einträge pro Pagination-Page sichtbar sein.
-- [ ] Bei Übersicht statt - bei Schultagen die Themen unformatiert anzeigen genau wie arbeitstätigkeiten (Ohne nach stunden aufzuschlüsseln, egal was bei dem tagesberticht gemacht wurde).
-  - [ ] Bei Übersicht sollten Tätigkeiten/Themen maximal 3 Zeilen Bilden bei der Auflistung innerhalb eines Tages und sie sollen sonst mit ... beendet werden.
+- [?] Bei Übersicht statt - bei Schultagen die Themen unformatiert anzeigen genau wie arbeitstätigkeiten (Ohne nach stunden aufzuschlüsseln, egal was bei dem tagesberticht gemacht wurde).
+  - [?] Bei Übersicht sollten Tätigkeiten/Themen maximal 3 Zeilen Bilden bei der Auflistung innerhalb eines Tages und sie sollen sonst mit ... beendet werden.
 - [ ] Toasts sollten unten links stehen und einen halbtransparenten Hintergrund haben.
 - [ ] Bei Import/Export muss es jeweils an einer passenden Stelle einen Link zu dem Backup-Drive-Ordner geben, falls Google connected ist.
 - [ ] Bei Urlaub und bei Krankheit sollten die Einträge sortiert sein nach neuestem Enddatum zu ältestem. Wenn in der Liste dort Delete- oder Edit-Buttons gehovert werden, steht dort object object bearbeiten. Außerdem muss, sobald das Start- oder Enddatum eingetragen ist und bei dem jeweils anderen nichts, dort ein Button dazwischen erscheinen, der vom ausgefüllten zum nicht ausgefüllten zeigt und beim Drücken übernimmt das leere Feld das vom gefüllten. Dabei soll der Button nicht beschriftet sein, nur ein kleiner Pfeil als Iconbutton und mit einem Tooltip.

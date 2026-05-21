@@ -142,6 +142,17 @@ function groupVisibleWeekRows<T extends { weekKey: string }>(
   });
 }
 
+function listPlainSchoolTopics(
+  values: ReturnType<typeof parseDailyReportValues>,
+): string[] {
+  return Array.from(
+    new Set([
+      ...values.schoolTopics,
+      ...values.lessons.flatMap((lesson) => lesson.topics),
+    ]),
+  );
+}
+
 export default function ReportsOverviewPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -333,6 +344,8 @@ export default function ReportsOverviewPage() {
         if (parsed) {
           if (parsed.dayType === 'free') {
             summary = parsed.freeReason || '-';
+          } else if (parsed.dayType === 'school') {
+            summary = listPlainSchoolTopics(parsed).join(', ') || '-';
           } else {
             summary =
               [
@@ -666,7 +679,7 @@ export default function ReportsOverviewPage() {
                         title={row.dailyTooltipText}
                         onClick={() => handleDailyCellClick(row)}
                       >
-                        {row.summary}
+                        <span className="line-clamp-3">{row.summary}</span>
                       </TableCell>
                       <TableCell
                         className={getDailyCellClassName()}
