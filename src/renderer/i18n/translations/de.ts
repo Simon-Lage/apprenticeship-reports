@@ -939,8 +939,12 @@ const deTranslation = {
       lessonLabel: '{{lesson}}. Stunde',
       freeLesson: 'Freistunde',
       doubleLesson: 'Doppelstunde',
-      showTopicList: 'Themenliste',
+      showTopics: 'Nach Themen',
       showLessons: 'Nach Stunden',
+      showTopicsTooltip:
+        'Hier können die Themen unabhängig von Lehrer und Fach für den Tag eingetragen werden.',
+      showLessonsTooltip:
+        'Hier können die Themen für die einzelnen Stunden mit Fach und Lehrer eingetragen werden.',
       subjectPlaceholder: 'Fach',
       teacherPlaceholder: 'Lehrer',
       topicPlaceholder: 'Thema',

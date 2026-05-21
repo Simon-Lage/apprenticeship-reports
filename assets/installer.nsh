@@ -13,6 +13,10 @@ Var ShouldCreateDesktopShortcut
 !macroend
 
 Function ShortcutOptionsPageCreate
+  ${If} ${isUpdated}
+    Abort
+  ${EndIf}
+
   !insertmacro MUI_HEADER_TEXT "Verknüpfungen" "Wähle aus, welche Verknüpfungen erstellt werden sollen."
 
   nsDialogs::Create 1018

@@ -1,10 +1,13 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
 import { formatGermanDate } from '@/renderer/lib/date-format';
 import { normalizeIsoDate, toLocalIsoDate } from '@/renderer/lib/iso-date';
 import { listCompleteTimetableSlots } from '@/renderer/lib/app-settings';
-import { parseDailyReportValues } from '@/renderer/lib/report-values';
+import {
+  parseDailyReportValues,
+  SchoolLessonInput,
+} from '@/renderer/lib/report-values';
 import {
   DailyReportFormState,
   defaultDailyReportFormState,
@@ -40,6 +43,7 @@ export default function useDailyReportForm() {
   const [lessonInsertSelection, setLessonInsertSelection] = useState<
     Record<number, number>
   >({});
+  const freeLessonCacheRef = useRef<Record<number, SchoolLessonInput>>({});
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeletePending, setIsDeletePending] = useState(false);
 
@@ -90,6 +94,7 @@ export default function useDailyReportForm() {
 
     setLessonTopicDrafts({});
     setLessonInsertSelection({});
+    freeLessonCacheRef.current = {};
     setForm({
       ...defaultDailyReportFormState,
       date: requestedDate,
@@ -111,6 +116,7 @@ export default function useDailyReportForm() {
   useEffect(() => {
     if (!data.currentDailyReport) return;
     const values = parseDailyReportValues(data.currentDailyReport.values);
+    freeLessonCacheRef.current = {};
     setForm((current) => ({
       ...current,
       dayType: values.dayType,
@@ -152,6 +158,7 @@ export default function useDailyReportForm() {
     setIsDatePickerOpen(false);
     setLessonTopicDrafts({});
     setLessonInsertSelection({});
+    freeLessonCacheRef.current = {};
     setForm({
       ...defaultDailyReportFormState,
       date: dateValue,
@@ -280,11 +287,18 @@ export default function useDailyReportForm() {
   const setLessonFreeState = useCallback(
     (lessonNumber: number, isFreeLesson: boolean) => {
       setForm((current) => {
-        const hasLesson = current.lessons.some(
+        const currentLesson = current.lessons.find(
           (lesson) => lesson.lesson === lessonNumber,
         );
 
         if (isFreeLesson) {
+          if (currentLesson) {
+            freeLessonCacheRef.current = {
+              ...freeLessonCacheRef.current,
+              [lessonNumber]: currentLesson,
+            };
+          }
+
           return {
             ...current,
             lessons: current.lessons.filter(
@@ -297,29 +311,21 @@ export default function useDailyReportForm() {
           };
         }
 
-        if (hasLesson) return current;
+        if (currentLesson) return current;
 
         return {
           ...current,
           lessons: [
             ...current.lessons,
-            {
+            freeLessonCacheRef.current[lessonNumber] ?? {
               lesson: lessonNumber,
               subject: '',
               teacher: '',
               topics: [],
             },
-          ],
+          ].sort((left, right) => left.lesson - right.lesson),
         };
       });
-
-      if (isFreeLesson) {
-        setLessonTopicDrafts((current) => {
-          const next = { ...current };
-          delete next[lessonNumber];
-          return next;
-        });
-      }
     },
     [],
   );
@@ -464,6 +470,8 @@ export default function useDailyReportForm() {
   );
 
   const resetToBaseline = useCallback(() => {
+    freeLessonCacheRef.current = {};
+
     if (data.currentDailyReport) {
       const values = parseDailyReportValues(data.currentDailyReport.values);
       setForm((current) => ({

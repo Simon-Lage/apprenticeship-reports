@@ -259,6 +259,13 @@ export default function SchoolSection({
     }
   }
 
+  function setBlockFreeState(block: LessonBlock, isFreeLesson: boolean) {
+    onSetLessonFreeState(block.start, isFreeLesson);
+    if (block.isDoubleLesson) {
+      onSetLessonFreeState(block.start + 1, isFreeLesson);
+    }
+  }
+
   const dropIndicator = dragState ? (
     <div className="h-1 rounded-full bg-primary shadow-sm" />
   ) : null;
@@ -367,7 +374,7 @@ export default function SchoolSection({
                           checked={block.isFreeLesson}
                           aria-label={t('dailyReport.school.freeLesson')}
                           onCheckedChange={(checked) =>
-                            onSetLessonFreeState(block.start, checked)
+                            setBlockFreeState(block, checked)
                           }
                         />
                         <span>{t('dailyReport.school.freeLesson')}</span>

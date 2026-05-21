@@ -54,6 +54,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import useDailyReportForm from './hooks/useDailyReportForm';
 import { useDailyReportSave } from './services/daily-report-save';
 import DatePickerField from './components/DatePickerField';
@@ -279,35 +284,46 @@ export default function DailyReportPage() {
       return;
     }
 
-    setSchoolEntryMode(
-      currentDailyValues?.lessons.length ? 'lessons' : 'topics',
-    );
-  }, [currentDailyValues?.lessons.length, form.date, form.dayType]);
+    setSchoolEntryMode(form.lessons.length ? 'lessons' : 'topics');
+  }, [form.date, form.dayType, form.lessons.length]);
 
+  const schoolModeToggleTarget =
+    schoolEntryMode === 'lessons' ? 'topics' : 'lessons';
   const schoolModeToggle = (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      className="border-primary-tint"
-      onClick={() => {
-        setSchoolEntryMode((current) =>
-          current === 'lessons' ? 'topics' : 'lessons',
-        );
-      }}
-    >
-      {schoolEntryMode === 'lessons' ? (
-        <>
-          <ListChecks className="size-4" />
-          {t('dailyReport.school.showTopicList')}
-        </>
-      ) : (
-        <>
-          <Rows3 className="size-4" />
-          {t('dailyReport.school.showLessons')}
-        </>
-      )}
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="border-primary-tint"
+          onClick={() => {
+            setSchoolEntryMode(schoolModeToggleTarget);
+          }}
+        >
+          {schoolModeToggleTarget === 'topics' ? (
+            <>
+              <ListChecks className="size-4" />
+              {t('dailyReport.school.showTopics')}
+            </>
+          ) : (
+            <>
+              <Rows3 className="size-4" />
+              {t('dailyReport.school.showLessons')}
+            </>
+          )}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="top" sideOffset={8}>
+        <p>
+          {t(
+            schoolModeToggleTarget === 'topics'
+              ? 'dailyReport.school.showTopicsTooltip'
+              : 'dailyReport.school.showLessonsTooltip',
+          )}
+        </p>
+      </TooltipContent>
+    </Tooltip>
   );
 
   const persistUiSettings = async (
