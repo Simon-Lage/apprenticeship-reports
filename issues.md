@@ -1,5 +1,5 @@
 # Offene Issues
-- [ ] Der Vor udn Zurück button zwischen den Tagesberichten in der Tagesbericht Seite funktioniert manchmal nicht.
+- [ ] Nach Updates öffnet sich die Anwendung nicht autoamtisch neu.
 - [ ] Prüfen ob Konflikt Spalte in Übersicht nicht redundant ist, sie sit zumindest verwirrend.
 - [?] In die Readme einbauen, dass Google Services aktuell noch in der Closed-Test-Phase sind und deswegen es nicht möglich ist, diese ohne freigegebenen Google-Account zu nutzen.
 - [ ] Der Vor- und Zurück-Button zwischen den Tagesberichten in der Tagesbericht-Seite funktioniert manchmal nicht.
