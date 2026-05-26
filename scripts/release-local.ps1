@@ -3,6 +3,7 @@ param(
   [switch]$SkipInstall,
   [switch]$SkipCodeSigningValidation,
   [switch]$AllowDirty,
+  [switch]$UseCurrentVersion,
   [string]$Branch = "main"
 )
 
@@ -71,6 +72,29 @@ function Resolve-GitHubRepository {
   }
 }
 
+function Get-DirtyPaths {
+  $status = & git status --porcelain
+  if (-not $status) {
+    return @()
+  }
+
+  return @(
+    $status | ForEach-Object {
+      $line = $_
+      if ($line.Length -lt 4) {
+        return
+      }
+
+      $path = $line.Substring(3).Trim()
+      if ($path.Contains(" -> ")) {
+        $path = $path.Split(" -> ", 2)[1]
+      }
+
+      $path.Replace("\", "/")
+    }
+  )
+}
+
 function Replace-ReadmeValue {
   param(
     [Parameter(Mandatory = $true)][string]$Text,
@@ -117,6 +141,29 @@ Direct download: $DownloadUrl
   return $body.Trim()
 }
 
+function Resolve-NextPatchVersion {
+  $currentVersion = (node -p "require('./package.json').version").Trim()
+  $parts = $currentVersion.Split(".")
+
+  if ($parts.Count -ne 3) {
+    throw "Cannot bump non-standard version: $currentVersion"
+  }
+
+  $major = 0
+  $minor = 0
+  $patch = 0
+
+  if (
+    -not [int]::TryParse($parts[0], [ref]$major) -or
+    -not [int]::TryParse($parts[1], [ref]$minor) -or
+    -not [int]::TryParse($parts[2], [ref]$patch)
+  ) {
+    throw "Cannot bump non-numeric version: $currentVersion"
+  }
+
+  return "$major.$minor.$($patch + 1)"
+}
+
 $repoRoot = (& git rev-parse --show-toplevel).Trim()
 if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($repoRoot)) {
   throw "This script must be run inside a git repository."
@@ -128,31 +175,44 @@ if ($currentBranch -ne $Branch) {
   throw "Release must run on '$Branch'. Current branch: '$currentBranch'."
 }
 
-if (-not $AllowDirty) {
-  $dirty = (& git status --porcelain)
-  if ($dirty) {
-    throw "Working tree is not clean. Commit or stash changes first, or pass -AllowDirty."
-  }
-}
-
 Import-DotEnvLocal
 if ([string]::IsNullOrWhiteSpace($env:GOOGLE_DRIVE_REQUIRED_SCOPES)) {
   $env:GOOGLE_DRIVE_REQUIRED_SCOPES = "https://www.googleapis.com/auth/drive.file"
-}
-
-Invoke-Step "Bump version (patch) locally only" {
-  git config user.name "github-actions[bot]"
-  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-  Invoke-Native npm version patch --no-git-tag-version
-  $script:Version = (node -p "require('./package.json').version").Trim()
-  $script:Tag = "v$script:Version"
-  Write-Host $script:Tag
 }
 
 if (-not $SkipInstall) {
   Invoke-Step "Install deps" {
     Invoke-Native npm ci
   }
+}
+
+if (-not $AllowDirty) {
+  $dirtyPaths = Get-DirtyPaths
+  $allowedResumePaths = @("package.json", "package-lock.json", "README.md")
+  $unexpectedDirtyPaths =
+    if ($UseCurrentVersion) {
+      @($dirtyPaths | Where-Object { $allowedResumePaths -notcontains $_ })
+    } else {
+      $dirtyPaths
+    }
+
+  if ($unexpectedDirtyPaths.Count -gt 0) {
+    throw "Working tree is not clean. Commit or stash changes first, or pass -AllowDirty. Dirty paths: $($unexpectedDirtyPaths -join ', ')"
+  }
+}
+
+Invoke-Step "Resolve release version" {
+  git config user.name "github-actions[bot]"
+  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+  $script:Version =
+    if ($UseCurrentVersion) {
+      (node -p "require('./package.json').version").Trim()
+    } else {
+      Resolve-NextPatchVersion
+    }
+  $script:Tag = "v$script:Version"
+  Write-Host $script:Tag
 }
 
 Invoke-Step "Validate Google OAuth config" {
@@ -185,6 +245,12 @@ Invoke-Step "Package installer" {
   $env:CSC_LINK = $env:CSC_LINK
   $env:CSC_KEY_PASSWORD = $env:CSC_KEY_PASSWORD
   Invoke-Native npx electron-builder --win nsis --publish never "--config.extraMetadata.version=$script:Version"
+}
+
+if (-not $UseCurrentVersion) {
+  Invoke-Step "Apply release version to package files" {
+    Invoke-Native npm version $script:Version --no-git-tag-version
+  }
 }
 
 $repository = Resolve-GitHubRepository
