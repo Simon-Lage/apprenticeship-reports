@@ -537,7 +537,7 @@ export default function SendWeeklyReportPage() {
         </Alert>
       )}
 
-      <div className="pointer-events-none fixed bottom-6 left-6 right-6 z-50 flex items-center justify-between">
+      <div className="pointer-events-none fixed bottom-14 left-6 right-6 z-50 flex items-center justify-between">
         <Button
           type="button"
           variant="outline"
