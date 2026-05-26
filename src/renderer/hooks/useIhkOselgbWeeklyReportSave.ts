@@ -9,6 +9,14 @@ import {
   SaveIhkOselgbWeeklyReportInput,
 } from '@/shared/ihk/ihk-oselgb';
 
+export type IhkOselgbWeeklyReportSaveOutcome =
+  | { status: 'saved' }
+  | {
+      status: 'skipped';
+      skippedReason: IhkOselgbSaveResult['skippedReason'];
+    }
+  | { status: 'failed'; message: string };
+
 function formatWeekRange(input: SaveIhkOselgbWeeklyReportInput): {
   start: string;
   end: string;
@@ -22,17 +30,21 @@ function formatWeekRange(input: SaveIhkOselgbWeeklyReportInput): {
 export default function useIhkOselgbWeeklyReportSave(): {
   saveWeeklyReportAtIhk: (
     input: SaveIhkOselgbWeeklyReportInput,
-  ) => Promise<boolean>;
+  ) => Promise<IhkOselgbWeeklyReportSaveOutcome>;
 } {
   const { t } = useTranslation();
   const runtime = useAppRuntime();
   const toast = useToastController();
 
   const saveWeeklyReportAtIhk = useCallback(
-    async (input: SaveIhkOselgbWeeklyReportInput): Promise<boolean> => {
+    async (
+      input: SaveIhkOselgbWeeklyReportInput,
+    ): Promise<IhkOselgbWeeklyReportSaveOutcome> => {
       if (!runtime.api) {
-        toast.error(t('ihkOselgb.feedback.saveErrorTitle'));
-        return false;
+        return {
+          status: 'failed',
+          message: t('common.disabledReasons.runtimeUnavailable'),
+        };
       }
 
       const range = formatWeekRange(input);
@@ -46,25 +58,21 @@ export default function useIhkOselgbWeeklyReportSave(): {
             t('ihkOselgb.feedback.savedTitle'),
             t('ihkOselgb.feedback.savedDescription', range),
           );
-          return true;
+          return { status: 'saved' };
         }
 
         toast.info(
           t('ihkOselgb.feedback.skippedTitle'),
           t(`ihkOselgb.feedback.skipped.${result.skippedReason ?? 'unknown'}`),
         );
-        return false;
+        return {
+          status: 'skipped',
+          skippedReason: result.skippedReason,
+        };
       } catch (error) {
         const message =
           error instanceof Error ? error.message : t('common.errors.unknown');
-        toast.error(
-          t('ihkOselgb.feedback.saveErrorTitle'),
-          t('ihkOselgb.feedback.saveErrorDescription', {
-            ...range,
-            message,
-          }),
-        );
-        return false;
+        return { status: 'failed', message };
       }
     },
     [runtime.api, t, toast],

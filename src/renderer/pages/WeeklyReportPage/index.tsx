@@ -674,6 +674,14 @@ export default function WeeklyReportPage() {
     );
   };
 
+  const openIhkLink = () => {
+    if (!onboardingWorkplace.ihkLink) {
+      return;
+    }
+
+    window.open(onboardingWorkplace.ihkLink, '_blank', 'noopener,noreferrer');
+  };
+
   const handleSendClick = () => {
     if (!form.weekStart || !form.weekEnd) {
       return;
@@ -688,6 +696,7 @@ export default function WeeklyReportPage() {
       return;
     }
 
+    openIhkLink();
     navigate(createSendWeeklyReportRoute(form.weekStart, form.weekEnd));
   };
 

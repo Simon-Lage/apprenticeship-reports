@@ -1193,6 +1193,13 @@ const deTranslation = {
         unknown: 'Die IHK-Speicherung ist nicht aktiv.',
       },
     },
+    fallbackDialog: {
+      title: 'IHK-Speicherung fehlgeschlagen',
+      description:
+        'Der IHK-Request für {{range}} ist fehlgeschlagen: {{message}} Soll der Wochenbericht trotzdem als gesendet markiert werden?',
+      no: 'Nein',
+      submitAndOpen: 'Ja, IHK Seite öffnen',
+    },
   },
   weeklyPdf: {
     title: 'Wochenbericht PDF',
@@ -1258,6 +1265,8 @@ const deTranslation = {
       cancel: 'Abbrechen',
       ihkInactiveReason:
         'IHK-Speicherung ist nur mit OSELGB-Link und hinterlegtem IHK-Passwort aktiv.',
+      ihkUnsupportedLinkReason:
+        'Der hinterlegte IHK-Link wird für die automatische Speicherung nicht unterstützt.',
     },
     pagination: {
       summary: '{{start}}-{{end}} von {{total}} Einträgen',

@@ -1,4 +1,6 @@
-import { DailyReportRecord } from '@/shared/reports/models';
+import { DailyReportRecord, WeeklyReportRecord } from '@/shared/reports/models';
+import { isWeeklyReportSubmitted } from '@/shared/reports/edit-locks';
+import { addIsoDays, resolveWeekRangeForDate } from '@/renderer/lib/iso-date';
 
 export type DailyReportEntryMode = 'manual' | 'automatic';
 
@@ -9,6 +11,12 @@ export type HomeStatsSnapshot = {
   manualCount: number;
   automaticCount: number;
   entryDayCount: number;
+};
+
+export type HomeWeeklyReportStatsSnapshot = {
+  totalCount: number;
+  submittedCount: number;
+  toSendCount: number;
 };
 
 function toLocalIsoDate(value: string): string | null {
@@ -65,6 +73,79 @@ function listDateRange(startDate: string, endDate: string): string[] {
   }
 
   return result;
+}
+
+function isWeekendDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const [year, month, day] = value.split('-').map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+
+  if (parsed.toISOString().slice(0, 10) !== value) {
+    return false;
+  }
+
+  const weekday = parsed.getUTCDay();
+  return weekday === 0 || weekday === 6;
+}
+
+function resolveDailyBacklogEndDate(input: {
+  reportEndDate: string | null;
+  today: string;
+}): string | null {
+  const yesterday = addIsoDays(input.today, -1);
+
+  if (!yesterday) {
+    return null;
+  }
+
+  return input.reportEndDate && input.reportEndDate < yesterday
+    ? input.reportEndDate
+    : yesterday;
+}
+
+function listDueWeeklyReportRanges(input: {
+  reportStartDate: string | null;
+  reportEndDate: string | null;
+  today: string;
+}): Array<{ weekStart: string; weekEnd: string }> {
+  if (!input.reportStartDate) {
+    return [];
+  }
+
+  const endDate =
+    input.reportEndDate && input.reportEndDate < input.today
+      ? input.reportEndDate
+      : input.today;
+  const firstWeek = resolveWeekRangeForDate(input.reportStartDate);
+
+  if (!firstWeek || input.reportStartDate > endDate) {
+    return [];
+  }
+
+  const ranges: Array<{ weekStart: string; weekEnd: string }> = [];
+  let cursor: string | null = input.reportStartDate;
+
+  for (let attempts = 0; attempts < 5200 && cursor; attempts += 1) {
+    const range = resolveWeekRangeForDate(cursor);
+
+    if (!range || range.weekEnd > endDate) {
+      break;
+    }
+
+    ranges.push({
+      weekStart:
+        cursor === input.reportStartDate
+          ? input.reportStartDate
+          : range.weekStart,
+      weekEnd: range.weekEnd,
+    });
+    cursor = addIsoDays(range.weekEnd, 1);
+  }
+
+  return ranges;
 }
 
 export function resolveDailyReportEntryMode(
@@ -126,31 +207,22 @@ export function buildHomeStatsSnapshot(input: {
   ).length;
   const manualCount = clampNonNegative(dailyReports.length - automaticCount);
   const effectiveEndDate =
-    input.reportEndDate && input.reportEndDate < input.today
-      ? input.reportEndDate
-      : input.today;
+    resolveDailyBacklogEndDate({
+      reportEndDate: input.reportEndDate,
+      today: input.today,
+    }) ?? input.today;
   const expectedDates =
     input.reportStartDate && input.reportStartDate <= effectiveEndDate
-      ? listDateRange(input.reportStartDate, effectiveEndDate)
+      ? listDateRange(input.reportStartDate, effectiveEndDate).filter(
+          (date) => !isWeekendDate(date),
+        )
       : [];
   const missingCount = expectedDates.filter(
     (date) => !reportDates.has(date),
   ).length;
-  const reportStartDate = input.reportStartDate;
-  const futureReportCount = reportStartDate
-    ? dailyReports.filter(
-        (dailyReport) =>
-          dailyReport.date > effectiveEndDate &&
-          isDateInReportRange({
-            date: dailyReport.date,
-            startDate: reportStartDate,
-            endDate: input.reportEndDate,
-          }),
-      ).length
-    : 0;
 
   return {
-    backlogDays: missingCount - futureReportCount,
+    backlogDays: missingCount,
     sameDayRate: dailyReports.length ? sameDayCount / dailyReports.length : 0,
     averageReportsPerEntryDay: entryDays.size
       ? dailyReports.length / entryDays.size
@@ -158,5 +230,44 @@ export function buildHomeStatsSnapshot(input: {
     manualCount,
     automaticCount,
     entryDayCount: entryDays.size,
+  };
+}
+
+export function buildHomeWeeklyReportStatsSnapshot(input: {
+  weeklyReports: WeeklyReportRecord[];
+  reportStartDate: string | null;
+  reportEndDate: string | null;
+  today: string;
+}): HomeWeeklyReportStatsSnapshot {
+  if (!input.reportStartDate) {
+    return {
+      totalCount: 0,
+      submittedCount: 0,
+      toSendCount: 0,
+    };
+  }
+
+  const dueRanges = listDueWeeklyReportRanges({
+    reportStartDate: input.reportStartDate,
+    reportEndDate: input.reportEndDate,
+    today: input.today,
+  });
+  const submittedCount = input.weeklyReports.filter(
+    (weeklyReport) =>
+      isWeeklyReportSubmitted(weeklyReport) &&
+      isDateInReportRange({
+        date: weeklyReport.weekEnd,
+        startDate: input.reportStartDate,
+        endDate:
+          input.reportEndDate && input.reportEndDate < input.today
+            ? input.reportEndDate
+            : input.today,
+      }),
+  ).length;
+
+  return {
+    totalCount: dueRanges.length,
+    submittedCount,
+    toSendCount: Math.max(dueRanges.length - submittedCount, 0),
   };
 }
