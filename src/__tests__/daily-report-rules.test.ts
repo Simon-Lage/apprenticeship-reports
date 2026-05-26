@@ -2,7 +2,11 @@ import {
   buildWeeklyAggregates,
   buildWeeklySectionDayGroups,
 } from '@/renderer/lib/report-values';
-import { resolveAutoDayTypeFromBase } from '@/renderer/pages/DailyReportPage/utils/day-type-defaults';
+import { parseUiSettings } from '@/renderer/lib/app-settings';
+import {
+  buildAutomaticFreeDayReportValues,
+  resolveAutoDayTypeFromBase,
+} from '@/renderer/pages/DailyReportPage/utils/day-type-defaults';
 import { parseAbsenceSettings } from '@/shared/absence/settings';
 
 describe('daily report rules', () => {
@@ -248,5 +252,36 @@ describe('daily report rules', () => {
         name: 'Osterferien',
       },
     });
+  });
+
+  it('builds automatic daily report values for inferred free days only', () => {
+    const uiSettings = parseUiSettings({});
+    const absenceSettings = parseAbsenceSettings({});
+
+    expect(
+      buildAutomaticFreeDayReportValues({
+        date: '2026-03-14',
+        uiSettings,
+        absenceSettings,
+        currentYear: 2026,
+      }),
+    ).toEqual({
+      entryMode: 'automatic',
+      dayType: 'free',
+      freeReason: 'Wochenende',
+      freeDayCategory: 'work',
+      activities: [],
+      trainings: [],
+      schoolTopics: [],
+      lessons: [],
+    });
+    expect(
+      buildAutomaticFreeDayReportValues({
+        date: '2026-03-16',
+        uiSettings,
+        absenceSettings,
+        currentYear: 2026,
+      }),
+    ).toBeNull();
   });
 });

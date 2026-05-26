@@ -31,7 +31,6 @@ import {
   resolveOnboardingSubdivisionCode,
 } from '@/shared/absence/settings';
 import {
-  isSchoolDayFromTimetable,
   parseOnboardingTrainingPeriod,
   parseUiSettings,
   parseOnboardingWorkplace,
@@ -52,10 +51,11 @@ import {
   listDailyReportAbsenceConflicts,
 } from '@/renderer/lib/report-conflicts';
 import {
-  resolveDayKey,
   resolveInitialWeeklyReportRange,
 } from '@/renderer/pages/DailyReportPage/utils/calendar-date-utils';
-import { resolveAutoDayType } from '@/renderer/pages/DailyReportPage/utils/day-type-defaults';
+import {
+  buildAutomaticFreeDayReportValues,
+} from '@/renderer/pages/DailyReportPage/utils/day-type-defaults';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -535,18 +535,18 @@ export default function WeeklyReportPage() {
     }
 
     const missingDates = weekDates.filter((date) => !reportedDateSet.has(date));
-    const autoFillDates = missingDates.filter((date) => {
-      const autoDayType = resolveAutoDayType({
+    const autoFillEntries = missingDates.flatMap((date) => {
+      const values = buildAutomaticFreeDayReportValues({
         date,
         uiSettings,
         absenceSettings,
         currentYear: new Date(date).getUTCFullYear(),
       });
 
-      return autoDayType.dayType === 'free';
+      return values ? [{ date, values }] : [];
     });
 
-    if (!autoFillDates.length) {
+    if (!autoFillEntries.length) {
       return;
     }
 
@@ -558,35 +558,14 @@ export default function WeeklyReportPage() {
       setIsAutoFillingWeek(true);
       try {
         await Promise.all(
-          autoFillDates.map((date) => {
-            const autoDayType = resolveAutoDayType({
-              date,
-              uiSettings,
-              absenceSettings,
-              currentYear: new Date(date).getUTCFullYear(),
-            });
-            const dayKey = resolveDayKey(date);
-            const freeDayCategory =
-              dayKey && isSchoolDayFromTimetable(uiSettings, dayKey)
-                ? 'school'
-                : 'work';
-
-            return runtime.api!.upsertDailyReport({
+          autoFillEntries.map((entry) =>
+            runtime.api!.upsertDailyReport({
               weekStart: form.weekStart,
               weekEnd: form.weekEnd,
-              date,
-              values: {
-                entryMode: 'automatic',
-                dayType: autoDayType.dayType,
-                freeReason: autoDayType.freeReason,
-                freeDayCategory,
-                activities: [],
-                trainings: [],
-                schoolTopics: [],
-                lessons: [],
-              },
-            });
-          }),
+              date: entry.date,
+              values: entry.values,
+            }),
+          ),
         );
         await refreshReportsState();
         notifyReportsStateChanged();

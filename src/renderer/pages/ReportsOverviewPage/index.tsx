@@ -28,7 +28,10 @@ import {
   parseUiSettings,
 } from '@/renderer/lib/app-settings';
 import { appRoutes } from '@/renderer/lib/app-routes';
-import { resolveAutoDayType } from '@/renderer/pages/DailyReportPage/utils/day-type-defaults';
+import {
+  buildAutomaticFreeDayReportValues,
+  resolveAutoDayType,
+} from '@/renderer/pages/DailyReportPage/utils/day-type-defaults';
 import {
   formatConflictDayTypeLabel,
   formatConflictReasonLabel,
@@ -83,7 +86,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { parseAbsenceSettings } from '@/shared/absence/settings';
+import {
+  parseAbsenceSettings,
+  resolveOnboardingSubdivisionCode,
+} from '@/shared/absence/settings';
 import { WeeklyReportRecord } from '@/shared/reports/models';
 import {
   IhkOselgbCredentialStatus,
@@ -190,6 +196,7 @@ export default function ReportsOverviewPage() {
   const toast = useToastController();
   const { saveWeeklyReportAtIhk } = useIhkOselgbWeeklyReportSave();
   const reportsState = useReportsState();
+  const refreshReportsState = reportsState.refresh;
   const settingsSnapshot = useSettingsSnapshot();
   const [search, setSearch] = useState('');
   const deferredSearch = useDeferredValue(search);
@@ -203,10 +210,13 @@ export default function ReportsOverviewPage() {
   const [isIhkSavePending, setIsIhkSavePending] = useState(false);
   const [failedIhkSubmission, setFailedIhkSubmission] =
     useState<FailedIhkSubmission | null>(null);
+  const [isSelectedWeekAutoFillPending, setIsSelectedWeekAutoFillPending] =
+    useState(false);
   const [submissionPageAdjustmentId, setSubmissionPageAdjustmentId] =
     useState(0);
   const initialPageAppliedRef = useRef(false);
   const handledSubmissionPageAdjustmentRef = useRef(0);
+  const selectedWeekAutoFillAttemptRef = useRef<string | null>(null);
 
   const absenceSettings = useMemo(
     () => parseAbsenceSettings(settingsSnapshot.value?.values ?? {}),
@@ -220,6 +230,13 @@ export default function ReportsOverviewPage() {
     () =>
       settingsSnapshot.value
         ? parseOnboardingWorkplace(settingsSnapshot.value.values)
+        : null,
+    [settingsSnapshot.value],
+  );
+  const subdivisionCode = useMemo(
+    () =>
+      settingsSnapshot.value
+        ? resolveOnboardingSubdivisionCode(settingsSnapshot.value.values)
         : null,
     [settingsSnapshot.value],
   );
@@ -591,6 +608,112 @@ export default function ReportsOverviewPage() {
     };
   }, [runtime.api]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!selectedWeeklyAction) {
+      selectedWeekAutoFillAttemptRef.current = null;
+      setIsSelectedWeekAutoFillPending(false);
+      return undefined;
+    }
+
+    const api = runtime.api;
+    const selectedWeekStart = selectedWeeklyAction.weekStart;
+    const selectedWeekEnd = selectedWeeklyAction.weekEnd;
+
+    if (
+      !api ||
+      !reportsState.value ||
+      !settingsSnapshot.value ||
+      !subdivisionCode
+    ) {
+      return undefined;
+    }
+
+    const selectedWeekKey = `${selectedWeekStart}-${selectedWeekEnd}`;
+
+    if (selectedWeekAutoFillAttemptRef.current === selectedWeekKey) {
+      return undefined;
+    }
+
+    const weeklyReport =
+      Object.values(reportsState.value.weeklyReports).find(
+        (report) =>
+          report.weekStart === selectedWeekStart &&
+          report.weekEnd === selectedWeekEnd,
+      ) ?? null;
+    const reportedDateSet = new Set(
+      (weeklyReport?.dailyReportIds ?? [])
+        .map((dailyReportId) => reportsState.value?.dailyReports[dailyReportId])
+        .filter((dailyReport): dailyReport is NonNullable<typeof dailyReport> =>
+          Boolean(dailyReport),
+        )
+        .map((dailyReport) => dailyReport.date),
+    );
+    const autoFillEntries = listWeekDates(
+      selectedWeekStart,
+      selectedWeekEnd,
+    )
+      .filter((date) => !reportedDateSet.has(date))
+      .flatMap((date) => {
+        const values = buildAutomaticFreeDayReportValues({
+          date,
+          uiSettings,
+          absenceSettings,
+          currentYear: Number(date.slice(0, 4)),
+        });
+
+        return values ? [{ date, values }] : [];
+      });
+
+    if (!autoFillEntries.length) {
+      return undefined;
+    }
+
+    selectedWeekAutoFillAttemptRef.current = selectedWeekKey;
+
+    async function applyAutoFill() {
+      setIsSelectedWeekAutoFillPending(true);
+      try {
+        await Promise.all(
+          autoFillEntries.map((entry) =>
+            api.upsertDailyReport({
+              weekStart: selectedWeekStart,
+              weekEnd: selectedWeekEnd,
+              date: entry.date,
+              values: entry.values,
+            }),
+          ),
+        );
+        await refreshReportsState();
+        notifyReportsStateChanged();
+      } catch {
+        if (!cancelled) {
+          toast.error(t('weeklyReport.notifications.autoFillFailed'));
+        }
+      } finally {
+        setIsSelectedWeekAutoFillPending(false);
+      }
+    }
+
+    applyAutoFill();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    absenceSettings,
+    reportsState.value,
+    refreshReportsState,
+    runtime.api,
+    selectedWeeklyAction,
+    settingsSnapshot.value,
+    subdivisionCode,
+    t,
+    toast,
+    uiSettings,
+  ]);
+
   const getDailyCellClassName = (className = ''): string => {
     return [
       className,
@@ -667,7 +790,7 @@ export default function ReportsOverviewPage() {
     : '';
   let ihkSaveDisabledReason: string | undefined;
 
-  if (isIhkSavePending) {
+  if (isIhkSavePending || isSelectedWeekAutoFillPending) {
     ihkSaveDisabledReason = t('common.disabledReasons.pending');
   } else if (!runtime.api) {
     ihkSaveDisabledReason = t('common.disabledReasons.runtimeUnavailable');
@@ -1183,7 +1306,7 @@ export default function ReportsOverviewPage() {
                   handleSaveSelectedWeeklyReportAtIhk().catch(() => undefined);
                 }}
               >
-                {isIhkSavePending
+                {isIhkSavePending || isSelectedWeekAutoFillPending
                   ? t('common.loading')
                   : t('reportsOverview.weeklyAction.saveAtIhk')}
               </Button>

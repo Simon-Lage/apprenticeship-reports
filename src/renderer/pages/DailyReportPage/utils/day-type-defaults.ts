@@ -7,6 +7,7 @@ import {
   AbsenceSettings,
   ManualAbsence,
 } from '@/shared/absence/settings';
+import type { JsonObject } from '@/shared/common/json';
 import { isWeekendDate, resolveDayKey } from './calendar-date-utils';
 
 export type BaseDayType = 'work' | 'school';
@@ -228,4 +229,34 @@ export function resolveAutoDayType(input: {
     absenceSettings: input.absenceSettings,
     currentYear: input.currentYear,
   });
+}
+
+export function buildAutomaticFreeDayReportValues(input: {
+  date: string;
+  uiSettings: UiSettingsValues;
+  absenceSettings: AbsenceSettings;
+  currentYear: number;
+}): JsonObject | null {
+  const autoDayType = resolveAutoDayType(input);
+
+  if (autoDayType.dayType !== 'free') {
+    return null;
+  }
+
+  const dayKey = resolveDayKey(input.date);
+  const freeDayCategory =
+    dayKey && isSchoolDayFromTimetable(input.uiSettings, dayKey)
+      ? 'school'
+      : 'work';
+
+  return {
+    entryMode: 'automatic',
+    dayType: autoDayType.dayType,
+    freeReason: autoDayType.freeReason,
+    freeDayCategory,
+    activities: [],
+    trainings: [],
+    schoolTopics: [],
+    lessons: [],
+  };
 }
