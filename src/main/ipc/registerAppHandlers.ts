@@ -29,7 +29,9 @@ import {
   SaveGoogleSessionInputSchema,
   SaveOnboardingDraftInputSchema,
   SavePasswordSessionInputSchema,
+  SaveIhkOselgbWeeklyReportInputSchema,
   SetDriveScopesInputSchema,
+  SetIhkOselgbPasswordInputSchema,
   UpsertDailyReportInputSchema,
   UpsertWeeklyReportInputSchema,
   VerifyPasswordInputSchema,
@@ -263,6 +265,26 @@ export default function registerAppHandlers(
 
   ipcMain.handle(AppIpcChannel.deleteDailyReport, (_event, input) =>
     appKernel.deleteDailyReport(DeleteDailyReportInputSchema.parse(input)),
+  );
+
+  ipcMain.handle(AppIpcChannel.getIhkOselgbCredentialStatus, () =>
+    appKernel.getIhkOselgbCredentialStatus(),
+  );
+
+  ipcMain.handle(AppIpcChannel.setIhkOselgbPassword, (_event, input) =>
+    appKernel.setIhkOselgbPassword(
+      SetIhkOselgbPasswordInputSchema.parse(input),
+    ),
+  );
+
+  ipcMain.handle(AppIpcChannel.clearIhkOselgbPassword, () =>
+    appKernel.clearIhkOselgbPassword(),
+  );
+
+  ipcMain.handle(AppIpcChannel.saveIhkOselgbWeeklyReport, (_event, input) =>
+    appKernel.saveIhkOselgbWeeklyReport(
+      SaveIhkOselgbWeeklyReportInputSchema.parse(input),
+    ),
   );
 
   ipcMain.handle(AppIpcChannel.setSettingsValues, (_event, values) =>

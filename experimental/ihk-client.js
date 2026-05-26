@@ -1,3 +1,4 @@
+const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
@@ -8,6 +9,20 @@ const LOGIN_URL = `${BASE_URL}${PORTAL_PATH}/azubiHome.jsp`;
 const COOKIE_FILE = path.join(__dirname, 'data', 'cookies.json');
 const LAST_FORM_FILE = path.join(__dirname, 'data', 'last-weekly-form.html');
 const DEFAULT_CONTRACT_ID = '11';
+const CHROME_NAVIGATION_HEADERS = {
+  accept:
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+  'cache-control': 'max-age=0',
+  'sec-ch-ua':
+    '"Chromium";v="148", "Google Chrome";v="148", "Not/A)Brand";v="99"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"Windows"',
+  'sec-fetch-dest': 'document',
+  'sec-fetch-mode': 'navigate',
+  'sec-fetch-site': 'same-origin',
+  'sec-fetch-user': '?1',
+  'upgrade-insecure-requests': '1',
+};
 
 const cookieJar = [];
 
@@ -181,8 +196,7 @@ async function login() {
 
   const initialResponse = await request(LOGIN_PAGE, {
     headers: {
-      accept:
-        'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      ...CHROME_NAVIGATION_HEADERS,
     },
   });
 
@@ -199,12 +213,10 @@ async function login() {
       old_url: 'null',
     }),
     headers: {
-      accept:
-        'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      ...CHROME_NAVIGATION_HEADERS,
       'content-type': 'application/x-www-form-urlencoded',
       origin: BASE_URL,
       referer: LOGIN_PAGE,
-      'upgrade-insecure-requests': '1',
     },
   });
 
@@ -313,8 +325,7 @@ async function getWeeklyReports(
   const result = await withLoginRetry(async () => {
     const response = await request(url, {
       headers: {
-        accept:
-          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        ...CHROME_NAVIGATION_HEADERS,
       },
     });
     const html = await response.text();
@@ -334,8 +345,7 @@ async function openWeeklyReportsPage(
 ) {
   return request(weeklyReportsUrl(contractId), {
     headers: {
-      accept:
-        'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      ...CHROME_NAVIGATION_HEADERS,
     },
   });
 }
@@ -377,12 +387,10 @@ async function openNewWeeklyReportForm() {
       method: 'POST',
       body: new URLSearchParams({ neu: '' }),
       headers: {
-        accept:
-          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        ...CHROME_NAVIGATION_HEADERS,
         'content-type': 'application/x-www-form-urlencoded',
         origin: BASE_URL,
         referer: reportsUrl,
-        'upgrade-insecure-requests': '1',
       },
     },
   );
@@ -391,8 +399,7 @@ async function openNewWeeklyReportForm() {
   if (response.status === 302 && redirectLocation) {
     response = await request(resolvePortalUrl(redirectLocation), {
       headers: {
-        accept:
-          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        ...CHROME_NAVIGATION_HEADERS,
         referer: `${BASE_URL}${PORTAL_PATH}/azubiHeftEditForm.jsp`,
       },
     });
@@ -409,27 +416,46 @@ async function openNewWeeklyReportForm() {
   };
 }
 
-function appendWeeklyReportForm(form, input) {
-  form.append('token', input.token);
-  form.append('lfdnr', '0');
-  form.append('edtvon', input.weekStart);
-  form.append('edtbis', input.weekEnd);
-  form.append('ausbabschnitt', input.department);
-  form.append('ausbabschnitt', '');
-  form.append('ausbMail', input.supervisorEmail);
-  form.append('ausbMail2', input.supervisorEmail);
-  form.append('ausbinhalt1', input.workText);
+function createWeeklyReportFields(input) {
+  return [
+    ['token', input.token],
+    ['lfdnr', '0'],
+    ['edtvon', input.weekStart],
+    ['edtbis', input.weekEnd],
+    ['ausbabschnitt', input.department],
+    ['ausbabschnitt', ''],
+    ['ausbMail', input.supervisorEmail],
+    ['ausbMail2', input.supervisorEmail],
+    ['ausbinhalt1', input.workText],
+    ['stdMo', '0'],
+    ['stdDi', '0'],
+    ['stdMi', '0'],
+    ['stdDo', '0'],
+    ['stdFr', '0'],
+    ['stdSa', '0'],
+    ['stdSo', '0'],
+    ['ausbinhalt2', input.trainingText],
+    ['ausbinhalt12', 'null'],
+    ['ausbinhalt3', input.schoolText],
+    ['ausbinhalt13', 'null'],
+    ['save', ''],
+  ];
+}
 
-  ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].forEach((day) => {
-    form.append(`std${day}`, '0');
-  });
+function buildMultipartBody(fields) {
+  const boundary = `----WebKitFormBoundary${crypto
+    .randomBytes(12)
+    .toString('base64url')
+    .slice(0, 16)}`;
+  const fieldParts = fields.map(
+    ([name, value]) =>
+      `--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`,
+  );
+  const filePart = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename=""\r\nContent-Type: application/octet-stream\r\n\r\n\r\n`;
+  const endPart = `--${boundary}--\r\n`;
+  const body = Buffer.from([...fieldParts, filePart, endPart].join(''), 'utf8');
 
-  form.append('ausbinhalt2', input.trainingText);
-  form.append('ausbinhalt12', 'null');
-  form.append('ausbinhalt3', input.schoolText);
-  form.append('ausbinhalt13', 'null');
-  form.append('file', new Blob([''], { type: 'application/octet-stream' }), '');
-  form.append('save', '');
+  return { body, boundary };
 }
 
 async function saveWeeklyReport(input) {
@@ -459,20 +485,23 @@ async function saveWeeklyReport(input) {
       );
     }
 
-    const form = new FormData();
-    appendWeeklyReportForm(form, { token: formPage.token, ...input });
+    const fields = createWeeklyReportFields({
+      token: formPage.token,
+      ...input,
+    });
+    const { body, boundary } = buildMultipartBody(fields);
 
     const response = await request(
       `${BASE_URL}${PORTAL_PATH}/azubiHeftAdd.jsp`,
       {
         method: 'POST',
-        body: form,
+        body,
         headers: {
-          accept:
-            'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+          ...CHROME_NAVIGATION_HEADERS,
+          'content-length': String(body.length),
+          'content-type': `multipart/form-data; boundary=${boundary}`,
           origin: BASE_URL,
           referer: `${BASE_URL}${PORTAL_PATH}/azubiHeftEditForm.jsp`,
-          'upgrade-insecure-requests': '1',
         },
       },
     );

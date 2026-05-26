@@ -28,6 +28,22 @@ export const AppUiStateSchema = z.object({
   isFullScreen: z.boolean().default(false),
 });
 
+export const ExperimentalStateSchema = z
+  .object({
+    ihkOselgb: z
+      .object({
+        encryptedPassword: z.string().min(1).nullable().default(null),
+      })
+      .default({
+        encryptedPassword: null,
+      }),
+  })
+  .default({
+    ihkOselgb: {
+      encryptedPassword: null,
+    },
+  });
+
 export const AppMetadataSchema = z.object({
   version: z.literal(1),
   auth: z.object({
@@ -49,6 +65,7 @@ export const AppMetadataSchema = z.object({
     pendingImport: SettingsImportPreviewSchema.nullable().default(null),
   }),
   reports: ReportsStateSchema,
+  experimental: ExperimentalStateSchema,
   ui: AppUiStateSchema.default({
     isFullScreen: false,
   }),
@@ -100,6 +117,11 @@ export function createDefaultAppMetadata(now: string): AppMetadata {
       pendingImport: null,
     },
     reports: createDefaultReportsState(),
+    experimental: {
+      ihkOselgb: {
+        encryptedPassword: null,
+      },
+    },
     ui: {
       isFullScreen: false,
     },

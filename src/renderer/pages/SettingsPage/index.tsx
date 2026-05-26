@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { FormField } from '@/renderer/components/app/FormField';
 import LoadingSpinner from '@/renderer/components/app/LoadingSpinner';
+import PasswordInput from '@/renderer/components/app/PasswordInput';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
 import SettingsBackupScopeSwitches from '@/renderer/components/backup/SettingsBackupScopeSwitches';
 import UnsavedChangesDialog from '@/renderer/components/app/UnsavedChangesDialog';
@@ -49,6 +50,10 @@ import {
   parseBackupSettings,
 } from '@/shared/backup/settings';
 import { JsonObject } from '@/shared/common/json';
+import {
+  IhkOselgbCredentialStatus,
+  isIhkOselgbLink,
+} from '@/shared/ihk/ihk-oselgb';
 
 type SettingsFormValues = UiSettingsValues & {
   firstName: string;
@@ -93,6 +98,7 @@ type ParsedSettingsFormValues = {
   };
   region: {
     subdivisionCode: string;
+    autoSyncHolidays: boolean;
   };
   companyLogo: {
     dataUrl: string | null;
@@ -334,6 +340,7 @@ function parseSettingsFormValues(input: {
     'region',
     {
       subdivisionCode: input.formValues.subdivisionCode,
+      autoSyncHolidays: input.formValues.autoSyncHolidays,
     },
     (value) => {
       parsed.region = value;
@@ -368,6 +375,10 @@ export default function SettingsPage() {
   const [formValues, setFormValues] = useState<SettingsFormValues | null>(null);
   const [fieldErrors, setFieldErrors] = useState<SettingsFieldErrors>({});
   const [isPending, setIsPending] = useState(false);
+  const [ihkCredentialStatus, setIhkCredentialStatus] =
+    useState<IhkOselgbCredentialStatus | null>(null);
+  const [ihkPassword, setIhkPassword] = useState('');
+  const [isIhkPasswordPending, setIsIhkPasswordPending] = useState(false);
   const baselineFormValues = settingsSnapshot.value
     ? resolveSettingsFormValues(settingsSnapshot.value.values)
     : null;
@@ -391,6 +402,28 @@ export default function SettingsPage() {
     setFormValues(resolveSettingsFormValues(settingsSnapshot.value.values));
     setFieldErrors({});
   }, [settingsSnapshot.value]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!runtime.api) {
+      return undefined;
+    }
+
+    runtime.api
+      .getIhkOselgbCredentialStatus()
+      .then((status) => {
+        if (!cancelled) {
+          setIhkCredentialStatus(status);
+        }
+        return undefined;
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [runtime.api]);
 
   function updateFormValue<K extends SettingsFieldKey>(
     key: K,
@@ -447,6 +480,48 @@ export default function SettingsPage() {
     }
 
     updateFormValue('companyLogoDataUrl', result.dataUrl);
+  }
+
+  async function saveIhkPassword() {
+    if (!runtime.api || !ihkPassword.trim()) {
+      return;
+    }
+
+    try {
+      setIsIhkPasswordPending(true);
+      const status = await runtime.api.setIhkOselgbPassword({
+        password: ihkPassword,
+      });
+      setIhkCredentialStatus(status);
+      setIhkPassword('');
+      toast.success(t('settings.ihkExperimental.feedback.saved'));
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : t('common.errors.unknown');
+      toast.error(t('settings.ihkExperimental.feedback.saveError'), message);
+    } finally {
+      setIsIhkPasswordPending(false);
+    }
+  }
+
+  async function clearIhkPassword() {
+    if (!runtime.api) {
+      return;
+    }
+
+    try {
+      setIsIhkPasswordPending(true);
+      const status = await runtime.api.clearIhkOselgbPassword();
+      setIhkCredentialStatus(status);
+      setIhkPassword('');
+      toast.success(t('settings.ihkExperimental.feedback.removed'));
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : t('common.errors.unknown');
+      toast.error(t('settings.ihkExperimental.feedback.removeError'), message);
+    } finally {
+      setIsIhkPasswordPending(false);
+    }
   }
 
   async function saveSettings() {
@@ -522,6 +597,7 @@ export default function SettingsPage() {
         },
         region: {
           subdivisionCode: region.subdivisionCode,
+          autoSyncHolidays: region.autoSyncHolidays,
         },
         companyLogo,
       });
@@ -608,6 +684,37 @@ export default function SettingsPage() {
         </AlertTitle>
         <AlertDescription>{t('settings.loadingDescription')}</AlertDescription>
       </Alert>
+    );
+  }
+
+  const ihkLinkSupported = isIhkOselgbLink(formValues.ihkLink);
+  const ihkExperimentalActive = Boolean(
+    ihkLinkSupported && ihkCredentialStatus?.passwordConfigured,
+  );
+  let ihkExperimentalStatusText = t('settings.ihkExperimental.inactiveLink');
+  let ihkPasswordSaveDisabledReason: string | undefined;
+
+  if (ihkExperimentalActive) {
+    ihkExperimentalStatusText = t('settings.ihkExperimental.active');
+  } else if (ihkLinkSupported) {
+    ihkExperimentalStatusText = t('settings.ihkExperimental.inactivePassword');
+  }
+
+  if (isIhkPasswordPending) {
+    ihkPasswordSaveDisabledReason = t('common.disabledReasons.pending');
+  } else if (!runtime.api) {
+    ihkPasswordSaveDisabledReason = t(
+      'common.disabledReasons.runtimeUnavailable',
+    );
+  } else if (!ihkCredentialStatus) {
+    ihkPasswordSaveDisabledReason = t('common.disabledReasons.loading');
+  } else if (!ihkCredentialStatus.encryptionAvailable) {
+    ihkPasswordSaveDisabledReason = t(
+      'settings.ihkExperimental.disabled.secureStorageUnavailable',
+    );
+  } else if (!ihkPassword.trim()) {
+    ihkPasswordSaveDisabledReason = t(
+      'settings.ihkExperimental.disabled.passwordMissing',
     );
   }
 
@@ -747,6 +854,91 @@ export default function SettingsPage() {
           </FormField>
         </div>
       </SectionCard>
+      {ihkLinkSupported ? (
+        <SectionCard
+          title={t('settings.ihkExperimental.title')}
+          description={t('settings.ihkExperimental.description')}
+          className="border-amber-300 bg-white"
+        >
+          <div className="space-y-4">
+            <Alert className="border-amber-300 bg-amber-50 text-amber-950">
+              <AlertTitle>
+                {t('settings.ihkExperimental.warningTitle')}
+              </AlertTitle>
+              <AlertDescription>
+                {t('settings.ihkExperimental.warningDescription')}
+              </AlertDescription>
+            </Alert>
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+              <FormField
+                id="ihk-oselgb-password"
+                label={t('settings.ihkExperimental.passwordLabel')}
+                hint={
+                  ihkCredentialStatus?.passwordConfigured
+                    ? t('settings.ihkExperimental.passwordConfigured')
+                    : t('settings.ihkExperimental.passwordNotConfigured')
+                }
+              >
+                <PasswordInput
+                  id="ihk-oselgb-password"
+                  value={ihkPassword}
+                  autoComplete="off"
+                  disabled={isIhkPasswordPending}
+                  placeholder={t(
+                    'settings.ihkExperimental.passwordPlaceholder',
+                  )}
+                  onChange={(event) => setIhkPassword(event.target.value)}
+                  showLabel={t('common.password.show')}
+                  hideLabel={t('common.password.hide')}
+                />
+              </FormField>
+              <div className="flex flex-wrap gap-2 md:justify-end">
+                <Button
+                  type="button"
+                  disabled={Boolean(ihkPasswordSaveDisabledReason)}
+                  disabledReason={ihkPasswordSaveDisabledReason}
+                  className="bg-primary text-primary-contrast hover:bg-primary-shade"
+                  onClick={() => {
+                    saveIhkPassword().catch(() => undefined);
+                  }}
+                >
+                  <Save className="size-4" />
+                  {ihkCredentialStatus?.passwordConfigured
+                    ? t('settings.ihkExperimental.updatePassword')
+                    : t('settings.ihkExperimental.savePassword')}
+                </Button>
+                {ihkCredentialStatus?.passwordConfigured ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isIhkPasswordPending || !runtime.api}
+                    disabledReason={
+                      isIhkPasswordPending
+                        ? t('common.disabledReasons.pending')
+                        : t('common.disabledReasons.runtimeUnavailable')
+                    }
+                    className="border-primary-tint"
+                    onClick={() => {
+                      clearIhkPassword().catch(() => undefined);
+                    }}
+                  >
+                    <Trash2 className="size-4" />
+                    {t('settings.ihkExperimental.removePassword')}
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+            <p
+              className={cn(
+                'text-sm font-medium',
+                ihkExperimentalActive ? 'text-emerald-700' : 'text-amber-800',
+              )}
+            >
+              {ihkExperimentalStatusText}
+            </p>
+          </div>
+        </SectionCard>
+      ) : null}
       <SectionCard
         title={t('settings.companyLogo.title')}
         className="border-primary-tint bg-white"

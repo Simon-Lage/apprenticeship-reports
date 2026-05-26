@@ -658,6 +658,37 @@ const deTranslation = {
       googleAccount: 'Verknüpftes Google-Konto',
       linkGoogleAccount: 'Google-Konto verknüpfen',
     },
+    ihkExperimental: {
+      title: 'Experimentell: IHK OSELGB',
+      description:
+        'Speichert Wochenberichte zusätzlich im Portal bildung-ihk-oselgb.de.',
+      warningTitle: 'Experimentelles Feature',
+      warningDescription:
+        'Diese Funktion ist nur für das IHK-Portal Osnabrück - Emsland - Grafschaft Bentheim vorgesehen. Das Passwort wird verschlüsselt im lokalen Systemspeicher abgelegt.',
+      passwordLabel: 'IHK-Passwort',
+      passwordPlaceholder: 'Passwort eingeben',
+      passwordConfigured: 'Ein Passwort ist hinterlegt.',
+      passwordNotConfigured: 'Noch kein Passwort hinterlegt.',
+      savePassword: 'Passwort speichern',
+      updatePassword: 'Passwort ändern',
+      removePassword: 'Passwort entfernen',
+      active: 'Aktiv: IHK-Link und Passwort sind für OSELGB hinterlegt.',
+      inactivePassword:
+        'Inaktiv: Der IHK-Link passt, aber das Passwort fehlt noch.',
+      inactiveLink:
+        'Inaktiv: Der hinterlegte IHK-Link gehört nicht zu bildung-ihk-oselgb.de.',
+      disabled: {
+        passwordMissing: 'Passwort fehlt.',
+        secureStorageUnavailable:
+          'Der sichere Systemspeicher ist nicht verfügbar.',
+      },
+      feedback: {
+        saved: 'IHK-Passwort gespeichert.',
+        saveError: 'IHK-Passwort konnte nicht gespeichert werden.',
+        removed: 'IHK-Passwort entfernt.',
+        removeError: 'IHK-Passwort konnte nicht entfernt werden.',
+      },
+    },
     companyLogo: {
       title: 'Firmenlogo',
       notice:
@@ -1143,6 +1174,26 @@ const deTranslation = {
       stay: 'Zurück',
     },
   },
+  ihkOselgb: {
+    feedback: {
+      savedTitle: 'IHK-Bericht gespeichert.',
+      savedDescription:
+        'Bericht von {{start}} bis {{end}} wurde bei der IHK gespeichert.',
+      saveErrorTitle: 'IHK-Speicherung fehlgeschlagen.',
+      saveErrorDescription:
+        'Bericht von {{start}} bis {{end}} konnte nicht bei der IHK gespeichert werden. {{message}}',
+      skippedTitle: 'IHK-Speicherung übersprungen.',
+      skipped: {
+        'unsupported-link': 'Der hinterlegte IHK-Link wird nicht unterstützt.',
+        'password-missing': 'Es ist kein IHK-Passwort hinterlegt.',
+        'apprentice-identifier-missing':
+          'Die Azubi-Identnummer fehlt in den Settings.',
+        'encryption-unavailable':
+          'Der sichere Systemspeicher ist nicht verfügbar.',
+        unknown: 'Die IHK-Speicherung ist nicht aktiv.',
+      },
+    },
+  },
   weeklyPdf: {
     title: 'Wochenbericht PDF',
     description:
@@ -1196,8 +1247,17 @@ const deTranslation = {
       calendarWeek: 'KW',
       calendarWeekValue: 'KW{{week}}',
       openDailyTooltip: 'Tagesbericht vom {{date}} öffnen',
-      openWeeklyTooltip: 'Wochenbericht {{start}} bis {{end}} öffnen',
+      openWeeklyTooltip: 'Aktionen für Wochenbericht {{start}} bis {{end}}',
       noResults: 'Keine Einträge gefunden.',
+    },
+    weeklyAction: {
+      title: 'Wochenbericht',
+      description: 'Aktion für {{range}} auswählen.',
+      open: 'Wochenbericht öffnen',
+      saveAtIhk: 'Wochenbericht bei der IHK speichern',
+      cancel: 'Abbrechen',
+      ihkInactiveReason:
+        'IHK-Speicherung ist nur mit OSELGB-Link und hinterlegtem IHK-Passwort aktiv.',
     },
     pagination: {
       summary: '{{start}}-{{end}} von {{total}} Einträgen',

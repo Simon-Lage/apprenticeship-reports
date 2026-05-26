@@ -178,10 +178,11 @@ function getConfiguredDriveScopes(): string[] {
 }
 
 function createAppKernel(): AppKernel {
+  const secretStorageService = new ElectronSecretStorageService();
   const repository = new AppMetadataRepository(
     path.join(app.getPath('userData'), 'app-metadata.json'),
     () => new Date().toISOString(),
-    new ElectronSecretStorageService(),
+    secretStorageService,
   );
   const googleOAuthService = new GoogleOAuthService({
     clientId: process.env.GOOGLE_OAUTH_CLIENT_ID ?? null,
@@ -203,6 +204,7 @@ function createAppKernel(): AppKernel {
     googleOAuthService,
     googleDriveService,
     openHolidaysService,
+    secretStorageService,
   });
 }
 

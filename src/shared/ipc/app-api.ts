@@ -27,6 +27,19 @@ import {
   SettingsImportPreview,
   SettingsSnapshot,
 } from '@/shared/settings/schema';
+import {
+  IhkOselgbCredentialStatus,
+  IhkOselgbSaveResult,
+  SaveIhkOselgbWeeklyReportInput,
+  SaveIhkOselgbWeeklyReportInputSchema,
+  SetIhkOselgbPasswordInput,
+  SetIhkOselgbPasswordInputSchema,
+} from '@/shared/ihk/ihk-oselgb';
+
+export {
+  SaveIhkOselgbWeeklyReportInputSchema,
+  SetIhkOselgbPasswordInputSchema,
+};
 
 export const AppIpcChannel = {
   getBootstrapState: 'app:get-bootstrap-state',
@@ -79,6 +92,10 @@ export const AppIpcChannel = {
   deleteWeeklyReport: 'app:delete-weekly-report',
   upsertDailyReport: 'app:upsert-daily-report',
   deleteDailyReport: 'app:delete-daily-report',
+  getIhkOselgbCredentialStatus: 'app:get-ihk-oselgb-credential-status',
+  setIhkOselgbPassword: 'app:set-ihk-oselgb-password',
+  clearIhkOselgbPassword: 'app:clear-ihk-oselgb-password',
+  saveIhkOselgbWeeklyReport: 'app:save-ihk-oselgb-weekly-report',
   setSettingsValues: 'app:set-settings-values',
   saveOnboardingDraft: 'app:save-onboarding-draft',
   completeOnboardingStep: 'app:complete-onboarding-step',
@@ -451,6 +468,14 @@ export type AppApi = {
   deleteDailyReport: (
     input: DeleteDailyReportInput,
   ) => Promise<AppBootstrapState>;
+  getIhkOselgbCredentialStatus: () => Promise<IhkOselgbCredentialStatus>;
+  setIhkOselgbPassword: (
+    input: SetIhkOselgbPasswordInput,
+  ) => Promise<IhkOselgbCredentialStatus>;
+  clearIhkOselgbPassword: () => Promise<IhkOselgbCredentialStatus>;
+  saveIhkOselgbWeeklyReport: (
+    input: SaveIhkOselgbWeeklyReportInput,
+  ) => Promise<IhkOselgbSaveResult>;
   setSettingsValues: (values: JsonObject) => Promise<AppBootstrapState>;
   saveOnboardingDraft: (
     input: SaveOnboardingDraftInput,

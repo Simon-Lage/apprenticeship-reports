@@ -65,6 +65,7 @@ describe('onboarding identity fields', () => {
       },
       region: {
         subdivisionCode: 'DE-NW',
+        autoSyncHolidays: true,
       },
     });
 

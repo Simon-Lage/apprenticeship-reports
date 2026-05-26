@@ -36,6 +36,7 @@ import { OnboardingResolver } from '@/main/services/OnboardingResolver';
 import { AppAccessGuard } from '@/main/services/AppAccessGuard';
 import OpenHolidaysService from '@/main/services/OpenHolidaysService';
 import { BackupEncryptionService } from '@/main/services/BackupEncryptionService';
+import { SecretStorageService } from '@/main/services/SecretStorageService';
 
 export type AppKernelOptions = {
   now?: () => string;
@@ -49,6 +50,7 @@ export type AppKernelOptions = {
   googleOAuthService?: GoogleOAuthService | null;
   googleDriveService?: GoogleDriveService | null;
   openHolidaysService?: OpenHolidaysService | null;
+  secretStorageService?: SecretStorageService | null;
 };
 
 export class AppKernelCore {
@@ -84,6 +86,8 @@ export class AppKernelCore {
 
   protected readonly openHolidaysService: OpenHolidaysService | null;
 
+  protected readonly secretStorageService: SecretStorageService | null;
+
   protected readonly backupEncryptionService: BackupEncryptionService;
 
   protected activeSession: GoogleSession | null = null;
@@ -118,6 +122,7 @@ export class AppKernelCore {
     this.googleOAuthService = options.googleOAuthService ?? null;
     this.googleDriveService = options.googleDriveService ?? null;
     this.openHolidaysService = options.openHolidaysService ?? null;
+    this.secretStorageService = options.secretStorageService ?? null;
     this.backupEncryptionService = new BackupEncryptionService();
     this.accessGuard = new AppAccessGuard({
       now: this.now,

@@ -22,6 +22,7 @@ import WeeklyReportDocument, {
 import WeeklyReportWeekSelector from '@/renderer/components/weekly-report/WeeklyReportWeekSelector';
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
+import useIhkOselgbWeeklyReportSave from '@/renderer/hooks/useIhkOselgbWeeklyReportSave';
 import { useSelectedCompleteWeek } from '@/renderer/hooks/useSelectedCompleteWeek';
 import {
   useReportsState,
@@ -38,8 +39,13 @@ import {
   serializeWeeklyDocumentSectionEntries,
 } from '@/renderer/lib/weekly-report-document';
 import { parseWeeklyReportValues } from '@/renderer/lib/report-values';
+import { buildIhkOselgbWeeklyReportInput } from '@/renderer/lib/ihk-oselgb-weekly-report';
 import { resolveReportStartDateFromSettings } from '@/shared/settings/report-start-date';
 import { resolveWeeklyReportSubmissionBlock } from '@/shared/reports/edit-locks';
+import {
+  IhkOselgbCredentialStatus,
+  isIhkOselgbLink,
+} from '@/shared/ihk/ihk-oselgb';
 
 export default function SendWeeklyReportPage() {
   const { t } = useTranslation();
@@ -47,9 +53,12 @@ export default function SendWeeklyReportPage() {
   const navigate = useNavigate();
   const runtime = useAppRuntime();
   const toast = useToastController();
+  const { saveWeeklyReportAtIhk } = useIhkOselgbWeeklyReportSave();
   const reportsState = useReportsState();
   const settingsSnapshot = useSettingsSnapshot();
   const [isPending, setIsPending] = useState(false);
+  const [ihkCredentialStatus, setIhkCredentialStatus] =
+    useState<IhkOselgbCredentialStatus | null>(null);
   const [hasResolvedDecision, setHasResolvedDecision] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<string | null>(null);
   const [isSendOrderDialogOpen, setIsSendOrderDialogOpen] = useState(false);
@@ -124,6 +133,9 @@ export default function SendWeeklyReportPage() {
     });
   }, [documentTranslations, selectedWeek, settingsSnapshot.value]);
   const ihkLink = workplace?.ihkLink ?? null;
+  const ihkOselgbActive = Boolean(
+    ihkCredentialStatus?.passwordConfigured && isIhkOselgbLink(ihkLink),
+  );
   const emptyValue = t('weeklyDocument.emptyValue');
   const requestedWeekIsInvalid = Boolean(
     reportsState.value && requestedWeekRange && !requestedWeekIsComplete,
@@ -163,6 +175,29 @@ export default function SendWeeklyReportPage() {
   useEffect(() => {
     setHasResolvedDecision(false);
   }, [selectedWeekIdentity]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!runtime.api) {
+      setIhkCredentialStatus(null);
+      return undefined;
+    }
+
+    runtime.api
+      .getIhkOselgbCredentialStatus()
+      .then((status) => {
+        if (!cancelled) {
+          setIhkCredentialStatus(status);
+        }
+        return undefined;
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [runtime.api]);
 
   useEffect(() => {
     if (!pendingRoute || !hasResolvedDecision) {
@@ -274,6 +309,28 @@ export default function SendWeeklyReportPage() {
       await reportsState.refresh();
       setHasResolvedDecision(true);
       toast.success(t('sendWeeklyReport.feedback.submitted'));
+      if (ihkOselgbActive && settingsSnapshot.value) {
+        try {
+          await saveWeeklyReportAtIhk(
+            buildIhkOselgbWeeklyReportInput({
+              week: selectedWeek,
+              settingsValues: settingsSnapshot.value.values,
+              t,
+            }),
+          );
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : t('common.errors.unknown');
+          toast.error(
+            t('ihkOselgb.feedback.saveErrorTitle'),
+            t('ihkOselgb.feedback.saveErrorDescription', {
+              start: formatGermanDate(selectedWeek.weeklyReport.weekStart),
+              end: formatGermanDate(selectedWeek.weeklyReport.weekEnd),
+              message,
+            }),
+          );
+        }
+      }
       return true;
     } catch (error) {
       const message =
@@ -286,11 +343,14 @@ export default function SendWeeklyReportPage() {
   }, [
     documentData,
     emptyValue,
+    ihkOselgbActive,
     parsedWeekValues,
     reportsState,
     runtime,
+    saveWeeklyReportAtIhk,
     selectedWeek,
     sendOrderBlocksSelectedWeek,
+    settingsSnapshot.value,
     futureWeekBlocksSelectedWeek,
     t,
     toast,

@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type { IpcRendererEvent } from 'electron';
 
 import { AppIpcChannel } from '@/shared/ipc/app-api';
 import type { AppApi, AppUpdateCheckStatus } from '@/shared/ipc/app-api';
@@ -11,10 +12,7 @@ const appApi: AppApi = {
   getAppBuildInfo: () => ipcRenderer.invoke(AppIpcChannel.getAppBuildInfo),
   checkForUpdates: () => ipcRenderer.invoke(AppIpcChannel.checkForUpdates),
   onUpdateCheckStatus: (listener) => {
-    const subscription = (
-      _event: Electron.IpcRendererEvent,
-      status: unknown,
-    ) => {
+    const subscription = (_event: IpcRendererEvent, status: unknown) => {
       listener(status as AppUpdateCheckStatus);
     };
 
@@ -119,6 +117,14 @@ const appApi: AppApi = {
     ipcRenderer.invoke(AppIpcChannel.upsertDailyReport, input),
   deleteDailyReport: (input) =>
     ipcRenderer.invoke(AppIpcChannel.deleteDailyReport, input),
+  getIhkOselgbCredentialStatus: () =>
+    ipcRenderer.invoke(AppIpcChannel.getIhkOselgbCredentialStatus),
+  setIhkOselgbPassword: (input) =>
+    ipcRenderer.invoke(AppIpcChannel.setIhkOselgbPassword, input),
+  clearIhkOselgbPassword: () =>
+    ipcRenderer.invoke(AppIpcChannel.clearIhkOselgbPassword),
+  saveIhkOselgbWeeklyReport: (input) =>
+    ipcRenderer.invoke(AppIpcChannel.saveIhkOselgbWeeklyReport, input),
   setSettingsValues: (values) =>
     ipcRenderer.invoke(AppIpcChannel.setSettingsValues, values),
   saveOnboardingDraft: (input) =>

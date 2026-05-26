@@ -16,11 +16,17 @@ import type { IconType } from 'react-icons';
 
 import DayTypeBadge from '@/renderer/components/app/DayTypeBadge';
 import { SectionCard } from '@/renderer/components/app/SectionCard';
+import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
+import { useToastController } from '@/renderer/contexts/ToastControllerContext';
+import useIhkOselgbWeeklyReportSave from '@/renderer/hooks/useIhkOselgbWeeklyReportSave';
 import {
   useReportsState,
   useSettingsSnapshot,
 } from '@/renderer/hooks/useKernelData';
-import { parseUiSettings } from '@/renderer/lib/app-settings';
+import {
+  parseOnboardingWorkplace,
+  parseUiSettings,
+} from '@/renderer/lib/app-settings';
 import { appRoutes } from '@/renderer/lib/app-routes';
 import { resolveAutoDayType } from '@/renderer/pages/DailyReportPage/utils/day-type-defaults';
 import {
@@ -32,11 +38,14 @@ import { resolveDailyReportDayTypeIcon } from '@/renderer/lib/daily-report-label
 import { formatGermanDate } from '@/renderer/lib/date-format';
 import { getIsoWeekNumber, parseIsoDate } from '@/renderer/lib/iso-date';
 import {
+  CompleteWeekWithReports,
   DayTypeValue,
+  listCompleteWeeksWithDailyReports,
   listWeekDates,
   parseDailyReportValues,
   parseWeeklyReportValues,
 } from '@/renderer/lib/report-values';
+import { buildIhkOselgbWeeklyReportInput } from '@/renderer/lib/ihk-oselgb-weekly-report';
 import { cn } from '@/renderer/lib/utils';
 import {
   Table,
@@ -47,6 +56,15 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Command,
   CommandGroup,
@@ -66,6 +84,10 @@ import {
 } from '@/components/ui/tooltip';
 import { parseAbsenceSettings } from '@/shared/absence/settings';
 import { WeeklyReportRecord } from '@/shared/reports/models';
+import {
+  IhkOselgbCredentialStatus,
+  isIhkOselgbLink,
+} from '@/shared/ihk/ihk-oselgb';
 import {
   filterWeekRangesThroughCurrentWeek,
   listReportWeekRanges,
@@ -156,6 +178,9 @@ function listPlainSchoolTopics(
 export default function ReportsOverviewPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const runtime = useAppRuntime();
+  const toast = useToastController();
+  const { saveWeeklyReportAtIhk } = useIhkOselgbWeeklyReportSave();
   const reportsState = useReportsState();
   const settingsSnapshot = useSettingsSnapshot();
   const [search, setSearch] = useState('');
@@ -163,6 +188,11 @@ export default function ReportsOverviewPage() {
   const [isDayTypeFilterOpen, setIsDayTypeFilterOpen] = useState(false);
   const [dayTypeFilter, setDayTypeFilter] = useState<DayTypeFilterValue>('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedWeeklyAction, setSelectedWeeklyAction] =
+    useState<WeeklyNavigationRow | null>(null);
+  const [ihkCredentialStatus, setIhkCredentialStatus] =
+    useState<IhkOselgbCredentialStatus | null>(null);
+  const [isIhkSavePending, setIsIhkSavePending] = useState(false);
 
   const absenceSettings = useMemo(
     () => parseAbsenceSettings(settingsSnapshot.value?.values ?? {}),
@@ -172,6 +202,29 @@ export default function ReportsOverviewPage() {
     () => parseUiSettings(settingsSnapshot.value?.values ?? {}),
     [settingsSnapshot.value?.values],
   );
+  const workplace = useMemo(
+    () =>
+      settingsSnapshot.value
+        ? parseOnboardingWorkplace(settingsSnapshot.value.values)
+        : null,
+    [settingsSnapshot.value],
+  );
+  const ihkOselgbLinkSupported = isIhkOselgbLink(workplace?.ihkLink);
+  const ihkOselgbActive = Boolean(
+    ihkCredentialStatus?.passwordConfigured && ihkOselgbLinkSupported,
+  );
+  const completeWeeksByIdentity = useMemo(() => {
+    if (!reportsState.value) {
+      return new Map<string, CompleteWeekWithReports>();
+    }
+
+    return new Map(
+      listCompleteWeeksWithDailyReports(reportsState.value).map((week) => [
+        `${week.weeklyReport.weekStart}-${week.weeklyReport.weekEnd}`,
+        week,
+      ]),
+    );
+  }, [reportsState.value]);
   const reportStartDate = useMemo(
     () =>
       settingsSnapshot.value
@@ -447,6 +500,29 @@ export default function ReportsOverviewPage() {
     }
   }, [currentPage, pageCount]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!runtime.api) {
+      setIhkCredentialStatus(null);
+      return undefined;
+    }
+
+    runtime.api
+      .getIhkOselgbCredentialStatus()
+      .then((status) => {
+        if (!cancelled) {
+          setIhkCredentialStatus(status);
+        }
+        return undefined;
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [runtime.api]);
+
   const getDailyCellClassName = (className = ''): string => {
     return [
       className,
@@ -477,14 +553,30 @@ export default function ReportsOverviewPage() {
     canOpenWeeklyReport: boolean;
     weekStart: string;
     weekEnd: string;
+    weeklyTooltipText: string;
   }) => {
     if (!row.canOpenWeeklyReport) {
       return;
     }
 
+    if (!ihkOselgbLinkSupported) {
+      navigate(
+        `${appRoutes.weeklyReport}?weekStart=${encodeURIComponent(row.weekStart)}&weekEnd=${encodeURIComponent(row.weekEnd)}`,
+      );
+      return;
+    }
+
+    setSelectedWeeklyAction(row);
+  };
+  const openSelectedWeeklyReport = () => {
+    if (!selectedWeeklyAction) {
+      return;
+    }
+
     navigate(
-      `${appRoutes.weeklyReport}?weekStart=${encodeURIComponent(row.weekStart)}&weekEnd=${encodeURIComponent(row.weekEnd)}`,
+      `${appRoutes.weeklyReport}?weekStart=${encodeURIComponent(selectedWeeklyAction.weekStart)}&weekEnd=${encodeURIComponent(selectedWeeklyAction.weekEnd)}`,
     );
+    setSelectedWeeklyAction(null);
   };
   const handleWeeklyCellKeyDown = (
     event: KeyboardEvent<HTMLTableCellElement>,
@@ -496,6 +588,60 @@ export default function ReportsOverviewPage() {
 
     event.preventDefault();
     handleWeeklyCellClick(row);
+  };
+  const selectedCompleteWeek = selectedWeeklyAction
+    ? (completeWeeksByIdentity.get(
+        `${selectedWeeklyAction.weekStart}-${selectedWeeklyAction.weekEnd}`,
+      ) ?? null)
+    : null;
+  const selectedWeeklyRangeLabel = selectedWeeklyAction
+    ? `${formatGermanDate(selectedWeeklyAction.weekStart)} - ${formatGermanDate(selectedWeeklyAction.weekEnd)}`
+    : '';
+  let ihkSaveDisabledReason: string | undefined;
+
+  if (isIhkSavePending) {
+    ihkSaveDisabledReason = t('common.disabledReasons.pending');
+  } else if (!runtime.api) {
+    ihkSaveDisabledReason = t('common.disabledReasons.runtimeUnavailable');
+  } else if (!settingsSnapshot.value) {
+    ihkSaveDisabledReason = t('common.disabledReasons.loading');
+  } else if (!ihkOselgbActive) {
+    ihkSaveDisabledReason = t('reportsOverview.weeklyAction.ihkInactiveReason');
+  } else if (!selectedCompleteWeek) {
+    ihkSaveDisabledReason = t('common.disabledReasons.incompleteWeekSend');
+  }
+
+  const handleSaveSelectedWeeklyReportAtIhk = async () => {
+    if (!selectedCompleteWeek || !settingsSnapshot.value) {
+      return;
+    }
+
+    setIsIhkSavePending(true);
+    try {
+      const saved = await saveWeeklyReportAtIhk(
+        buildIhkOselgbWeeklyReportInput({
+          week: selectedCompleteWeek,
+          settingsValues: settingsSnapshot.value.values,
+          t,
+        }),
+      );
+      if (saved) {
+        setSelectedWeeklyAction(null);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : t('common.errors.unknown');
+      toast.error(
+        t('ihkOselgb.feedback.saveErrorTitle'),
+        t('ihkOselgb.feedback.saveErrorDescription', {
+          start: formatGermanDate(selectedCompleteWeek.weeklyReport.weekStart),
+          end: formatGermanDate(selectedCompleteWeek.weeklyReport.weekEnd),
+          message,
+        }),
+      );
+    } finally {
+      setIsIhkSavePending(false);
+    }
   };
   const tableHeadClassName = 'bg-primary-tint/95 backdrop-blur';
 
@@ -850,6 +996,54 @@ export default function ReportsOverviewPage() {
           </div>
         </div>
       </SectionCard>
+      <Dialog
+        open={Boolean(selectedWeeklyAction)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedWeeklyAction(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('reportsOverview.weeklyAction.title')}</DialogTitle>
+            <DialogDescription>
+              {t('reportsOverview.weeklyAction.description', {
+                range: selectedWeeklyRangeLabel,
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col items-stretch sm:flex-row sm:items-center">
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                {t('reportsOverview.weeklyAction.cancel')}
+              </Button>
+            </DialogClose>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                className="border-primary-tint"
+                onClick={openSelectedWeeklyReport}
+              >
+                {t('reportsOverview.weeklyAction.open')}
+              </Button>
+              <Button
+                type="button"
+                disabled={Boolean(ihkSaveDisabledReason)}
+                disabledReason={ihkSaveDisabledReason}
+                onClick={() => {
+                  handleSaveSelectedWeeklyReportAtIhk().catch(() => undefined);
+                }}
+              >
+                {isIhkSavePending
+                  ? t('common.loading')
+                  : t('reportsOverview.weeklyAction.saveAtIhk')}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

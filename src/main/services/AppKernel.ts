@@ -8,9 +8,20 @@ import {
 } from '@/shared/app/backup-archive';
 import { EncryptedBackupEnvelope } from '@/shared/app/backup-encryption';
 import { AppBootstrapState } from '@/shared/app/bootstrap';
-import { AppMetadataSchema } from '@/shared/app/state';
+import { AppMetadata, AppMetadataSchema } from '@/shared/app/state';
 import { markBackupDirty } from '@/shared/backup/policy';
-import { JsonObject, JsonObjectSchema } from '@/shared/common/json';
+import {
+  ensureJsonObject,
+  JsonObject,
+  JsonObjectSchema,
+} from '@/shared/common/json';
+import {
+  IhkOselgbCredentialStatus,
+  IhkOselgbSaveResult,
+  SaveIhkOselgbWeeklyReportInput,
+  SetIhkOselgbPasswordInput,
+  isIhkOselgbLink,
+} from '@/shared/ihk/ihk-oselgb';
 import {
   ApplyBackupImportInput,
   BackupImportDecryptionInput,
@@ -48,6 +59,7 @@ import AppKernelReports from '@/main/services/AppKernelReports';
 import { AppKernelOptions } from '@/main/services/AppKernelCore';
 import { AppMetadataRepository } from '@/main/services/AppMetadataRepository';
 import { WeeklyReportHashService } from '@/main/services/WeeklyReportHashService';
+import IhkOselgbPortalClient from '@/main/services/IhkOselgbPortalClient';
 
 export type { AppKernelOptions };
 
@@ -58,6 +70,129 @@ export class AppKernel extends AppKernelReports {
     options: AppKernelOptions = {},
   ) {
     super(repository, weeklyReportHashService, options);
+  }
+
+  private resolveIhkOselgbAccess(currentState: AppMetadata): {
+    apprenticeIdentifier: string | null;
+    encryptedPassword: string | null;
+    ihkLink: string | null;
+  } {
+    const { values } = currentState.settings.current;
+    const onboarding = ensureJsonObject(values.onboarding ?? {});
+    const identity = ensureJsonObject(onboarding.identity ?? {});
+    const workplace = ensureJsonObject(onboarding.workplace ?? {});
+    const apprenticeIdentifier =
+      typeof identity.apprenticeIdentifier === 'string'
+        ? identity.apprenticeIdentifier.trim()
+        : '';
+    const ihkLink =
+      typeof workplace.ihkLink === 'string' ? workplace.ihkLink.trim() : '';
+
+    return {
+      apprenticeIdentifier: apprenticeIdentifier || null,
+      encryptedPassword: currentState.experimental.ihkOselgb.encryptedPassword,
+      ihkLink: ihkLink || null,
+    };
+  }
+
+  private buildIhkOselgbCredentialStatus(
+    currentState: AppMetadata,
+  ): IhkOselgbCredentialStatus {
+    return {
+      encryptionAvailable:
+        this.secretStorageService?.isEncryptionAvailable() ?? false,
+      passwordConfigured: Boolean(
+        currentState.experimental.ihkOselgb.encryptedPassword,
+      ),
+    };
+  }
+
+  async getIhkOselgbCredentialStatus(): Promise<IhkOselgbCredentialStatus> {
+    const currentState = await this.repository.read();
+    this.accessGuard.assertApplicationUnlocked(currentState);
+
+    return this.buildIhkOselgbCredentialStatus(currentState);
+  }
+
+  async setIhkOselgbPassword(
+    input: SetIhkOselgbPasswordInput,
+  ): Promise<IhkOselgbCredentialStatus> {
+    if (!this.secretStorageService?.isEncryptionAvailable()) {
+      throw new Error('Secure storage is not available.');
+    }
+
+    const encryptedPassword = this.secretStorageService.encryptString(
+      input.password,
+    );
+    const nextState = await this.repository.update((currentState) => {
+      this.accessGuard.assertApplicationUnlocked(currentState);
+
+      return AppMetadataSchema.parse({
+        ...currentState,
+        experimental: {
+          ...currentState.experimental,
+          ihkOselgb: {
+            ...currentState.experimental.ihkOselgb,
+            encryptedPassword,
+          },
+        },
+      });
+    });
+
+    return this.buildIhkOselgbCredentialStatus(nextState);
+  }
+
+  async clearIhkOselgbPassword(): Promise<IhkOselgbCredentialStatus> {
+    const nextState = await this.repository.update((currentState) => {
+      this.accessGuard.assertApplicationUnlocked(currentState);
+
+      return AppMetadataSchema.parse({
+        ...currentState,
+        experimental: {
+          ...currentState.experimental,
+          ihkOselgb: {
+            ...currentState.experimental.ihkOselgb,
+            encryptedPassword: null,
+          },
+        },
+      });
+    });
+
+    return this.buildIhkOselgbCredentialStatus(nextState);
+  }
+
+  async saveIhkOselgbWeeklyReport(
+    input: SaveIhkOselgbWeeklyReportInput,
+  ): Promise<IhkOselgbSaveResult> {
+    const currentState = await this.repository.read();
+    this.accessGuard.assertApplicationUnlocked(currentState);
+
+    const { apprenticeIdentifier, encryptedPassword, ihkLink } =
+      this.resolveIhkOselgbAccess(currentState);
+
+    if (!isIhkOselgbLink(ihkLink)) {
+      return { saved: false, skippedReason: 'unsupported-link' };
+    }
+
+    if (!encryptedPassword) {
+      return { saved: false, skippedReason: 'password-missing' };
+    }
+
+    if (!apprenticeIdentifier) {
+      return { saved: false, skippedReason: 'apprentice-identifier-missing' };
+    }
+
+    if (!this.secretStorageService?.isEncryptionAvailable()) {
+      return { saved: false, skippedReason: 'encryption-unavailable' };
+    }
+
+    const client = new IhkOselgbPortalClient({
+      login: apprenticeIdentifier,
+      password: this.secretStorageService.decryptString(encryptedPassword),
+    });
+
+    await client.saveWeeklyReport(input);
+    return { saved: true, skippedReason: null };
   }
 
   async getIsFullScreen(): Promise<boolean> {
