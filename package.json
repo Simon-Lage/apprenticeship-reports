@@ -32,6 +32,7 @@
     "reset:dev-state": "cross-env NODE_ENV=development ts-node ./.erb/scripts/reset-dev-state.ts",
     "clear:dev-test-data": "npm run reset:dev-state",
     "seed:dev-test-data": "cross-env NODE_ENV=development NODE_OPTIONS=\"-r tsconfig-paths/register\" ts-node ./.erb/scripts/seed-dev-test-data.ts",
+    "release:local": "powershell -ExecutionPolicy Bypass -File scripts/release-local.ps1",
     "test": "node .erb/scripts/run-jest-tests.js"
   },
   "browserslist": [
