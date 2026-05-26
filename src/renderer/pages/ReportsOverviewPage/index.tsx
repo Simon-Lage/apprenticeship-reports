@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
@@ -46,6 +46,7 @@ import {
   parseWeeklyReportValues,
 } from '@/renderer/lib/report-values';
 import { buildIhkOselgbWeeklyReportInput } from '@/renderer/lib/ihk-oselgb-weekly-report';
+import { notifyReportsStateChanged } from '@/renderer/lib/report-state-events';
 import { cn } from '@/renderer/lib/utils';
 import {
   Table,
@@ -86,6 +87,7 @@ import { parseAbsenceSettings } from '@/shared/absence/settings';
 import { WeeklyReportRecord } from '@/shared/reports/models';
 import {
   IhkOselgbCredentialStatus,
+  SaveIhkOselgbWeeklyReportInput,
   isIhkOselgbLink,
 } from '@/shared/ihk/ihk-oselgb';
 import {
@@ -108,6 +110,12 @@ type DayTypeFilterOption = {
   value: DayTypeFilterValue;
   label: string;
   Icon: IconType | null;
+};
+
+type FailedIhkSubmission = {
+  week: CompleteWeekWithReports;
+  ihkInput: SaveIhkOselgbWeeklyReportInput;
+  message: string;
 };
 
 const PAGE_SIZE = 14;
@@ -193,6 +201,12 @@ export default function ReportsOverviewPage() {
   const [ihkCredentialStatus, setIhkCredentialStatus] =
     useState<IhkOselgbCredentialStatus | null>(null);
   const [isIhkSavePending, setIsIhkSavePending] = useState(false);
+  const [failedIhkSubmission, setFailedIhkSubmission] =
+    useState<FailedIhkSubmission | null>(null);
+  const [submissionPageAdjustmentId, setSubmissionPageAdjustmentId] =
+    useState(0);
+  const initialPageAppliedRef = useRef(false);
+  const handledSubmissionPageAdjustmentRef = useRef(0);
 
   const absenceSettings = useMemo(
     () => parseAbsenceSettings(settingsSnapshot.value?.values ?? {}),
@@ -210,9 +224,6 @@ export default function ReportsOverviewPage() {
     [settingsSnapshot.value],
   );
   const ihkOselgbLinkSupported = isIhkOselgbLink(workplace?.ihkLink);
-  const ihkOselgbActive = Boolean(
-    ihkCredentialStatus?.passwordConfigured && ihkOselgbLinkSupported,
-  );
   const completeWeeksByIdentity = useMemo(() => {
     if (!reportsState.value) {
       return new Map<string, CompleteWeekWithReports>();
@@ -478,13 +489,39 @@ export default function ReportsOverviewPage() {
   }, [dayTypeFilter, rows, normalizedSearch]);
   const pageCount = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
   const safeCurrentPage = Math.min(currentPage, pageCount);
-  const paginatedRows = useMemo(() => {
+  const visiblePageRows = useMemo(() => {
     const startIndex = (safeCurrentPage - 1) * PAGE_SIZE;
 
-    return groupVisibleWeekRows(
-      filteredRows.slice(startIndex, startIndex + PAGE_SIZE),
-    );
+    return filteredRows.slice(startIndex, startIndex + PAGE_SIZE);
   }, [filteredRows, safeCurrentPage]);
+  const paginatedRows = useMemo(
+    () => groupVisibleWeekRows(visiblePageRows),
+    [visiblePageRows],
+  );
+  const oldestUnsubmittedPage = useMemo(() => {
+    let oldestUnsubmittedWeekStart: string | null = null;
+    let oldestUnsubmittedRowIndex: number | null = null;
+    const seenWeekKeys = new Set<string>();
+
+    filteredRows.forEach((row, rowIndex) => {
+      if (row.submitted || seenWeekKeys.has(row.weekKey)) {
+        return;
+      }
+
+      seenWeekKeys.add(row.weekKey);
+      if (
+        !oldestUnsubmittedWeekStart ||
+        row.weekStart < oldestUnsubmittedWeekStart
+      ) {
+        oldestUnsubmittedWeekStart = row.weekStart;
+        oldestUnsubmittedRowIndex = rowIndex;
+      }
+    });
+
+    return oldestUnsubmittedRowIndex === null
+      ? null
+      : Math.floor(oldestUnsubmittedRowIndex / PAGE_SIZE) + 1;
+  }, [filteredRows]);
   const pageStart = filteredRows.length
     ? (safeCurrentPage - 1) * PAGE_SIZE + 1
     : 0;
@@ -499,6 +536,37 @@ export default function ReportsOverviewPage() {
       setCurrentPage(pageCount);
     }
   }, [currentPage, pageCount]);
+
+  useEffect(() => {
+    if (
+      initialPageAppliedRef.current ||
+      !reportsState.value ||
+      !oldestUnsubmittedPage
+    ) {
+      return;
+    }
+
+    initialPageAppliedRef.current = true;
+    setCurrentPage(oldestUnsubmittedPage);
+  }, [oldestUnsubmittedPage, reportsState.value]);
+
+  useEffect(() => {
+    if (
+      submissionPageAdjustmentId === 0 ||
+      handledSubmissionPageAdjustmentRef.current === submissionPageAdjustmentId
+    ) {
+      return;
+    }
+
+    if (!visiblePageRows.length) {
+      return;
+    }
+
+    handledSubmissionPageAdjustmentRef.current = submissionPageAdjustmentId;
+    if (safeCurrentPage > 1 && visiblePageRows.every((row) => row.submitted)) {
+      setCurrentPage(safeCurrentPage - 1);
+    }
+  }, [safeCurrentPage, submissionPageAdjustmentId, visiblePageRows]);
 
   useEffect(() => {
     let cancelled = false;
@@ -605,11 +673,61 @@ export default function ReportsOverviewPage() {
     ihkSaveDisabledReason = t('common.disabledReasons.runtimeUnavailable');
   } else if (!settingsSnapshot.value) {
     ihkSaveDisabledReason = t('common.disabledReasons.loading');
-  } else if (!ihkOselgbActive) {
-    ihkSaveDisabledReason = t('reportsOverview.weeklyAction.ihkInactiveReason');
   } else if (!selectedCompleteWeek) {
     ihkSaveDisabledReason = t('common.disabledReasons.incompleteWeekSend');
+  } else if (!workplace?.ihkLink) {
+    ihkSaveDisabledReason = t('common.disabledReasons.missingIhkLink');
+  } else if (!ihkOselgbLinkSupported) {
+    ihkSaveDisabledReason = t(
+      'reportsOverview.weeklyAction.ihkUnsupportedLinkReason',
+    );
+  } else if (!ihkCredentialStatus) {
+    ihkSaveDisabledReason = t('common.disabledReasons.loading');
+  } else if (!ihkCredentialStatus.encryptionAvailable) {
+    ihkSaveDisabledReason = t(
+      'settings.ihkExperimental.disabled.secureStorageUnavailable',
+    );
+  } else if (!ihkCredentialStatus.passwordConfigured) {
+    ihkSaveDisabledReason = t(
+      'settings.ihkExperimental.disabled.passwordMissing',
+    );
   }
+
+  const openIhkLink = () => {
+    if (!workplace?.ihkLink) {
+      return;
+    }
+
+    window.open(workplace.ihkLink, '_blank', 'noopener,noreferrer');
+  };
+
+  const markWeeklyReportAsSubmitted = async (
+    week: CompleteWeekWithReports,
+    ihkInput: SaveIhkOselgbWeeklyReportInput,
+  ) => {
+    if (!runtime.api) {
+      throw new Error(t('common.disabledReasons.runtimeUnavailable'));
+    }
+
+    const values = parseWeeklyReportValues(week.weeklyReport.values);
+
+    await runtime.api.upsertWeeklyReport({
+      weekStart: week.weeklyReport.weekStart,
+      weekEnd: week.weeklyReport.weekEnd,
+      values: {
+        ...values,
+        area: ihkInput.area,
+        supervisorEmailPrimary: ihkInput.supervisorEmail,
+        submitted: true,
+        submittedToEmail: ihkInput.supervisorEmail,
+      },
+    });
+    await runtime.refresh();
+    await reportsState.refresh();
+    notifyReportsStateChanged();
+    setSubmissionPageAdjustmentId((value) => value + 1);
+    toast.success(t('sendWeeklyReport.feedback.submitted'));
+  };
 
   const handleSaveSelectedWeeklyReportAtIhk = async () => {
     if (!selectedCompleteWeek || !settingsSnapshot.value) {
@@ -618,15 +736,23 @@ export default function ReportsOverviewPage() {
 
     setIsIhkSavePending(true);
     try {
-      const saved = await saveWeeklyReportAtIhk(
-        buildIhkOselgbWeeklyReportInput({
-          week: selectedCompleteWeek,
-          settingsValues: settingsSnapshot.value.values,
-          t,
-        }),
-      );
-      if (saved) {
+      const ihkInput = buildIhkOselgbWeeklyReportInput({
+        week: selectedCompleteWeek,
+        settingsValues: settingsSnapshot.value.values,
+        t,
+      });
+      const outcome = await saveWeeklyReportAtIhk(ihkInput);
+
+      if (outcome.status === 'saved') {
+        await markWeeklyReportAsSubmitted(selectedCompleteWeek, ihkInput);
         setSelectedWeeklyAction(null);
+      } else if (outcome.status === 'failed') {
+        setSelectedWeeklyAction(null);
+        setFailedIhkSubmission({
+          week: selectedCompleteWeek,
+          ihkInput,
+          message: outcome.message,
+        });
       }
     } catch (error) {
       const message =
@@ -639,6 +765,27 @@ export default function ReportsOverviewPage() {
           message,
         }),
       );
+    } finally {
+      setIsIhkSavePending(false);
+    }
+  };
+  const handleSubmitDespiteIhkFailure = async () => {
+    if (!failedIhkSubmission) {
+      return;
+    }
+
+    setIsIhkSavePending(true);
+    try {
+      await markWeeklyReportAsSubmitted(
+        failedIhkSubmission.week,
+        failedIhkSubmission.ihkInput,
+      );
+      setFailedIhkSubmission(null);
+      openIhkLink();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : t('common.errors.unknown');
+      toast.error(t('sendWeeklyReport.feedback.submitError'), message);
     } finally {
       setIsIhkSavePending(false);
     }
@@ -1004,7 +1151,7 @@ export default function ReportsOverviewPage() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{t('reportsOverview.weeklyAction.title')}</DialogTitle>
             <DialogDescription>
@@ -1019,7 +1166,7 @@ export default function ReportsOverviewPage() {
                 {t('reportsOverview.weeklyAction.cancel')}
               </Button>
             </DialogClose>
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
               <Button
                 type="button"
                 variant="outline"
@@ -1041,6 +1188,50 @@ export default function ReportsOverviewPage() {
                   : t('reportsOverview.weeklyAction.saveAtIhk')}
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={Boolean(failedIhkSubmission)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setFailedIhkSubmission(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('ihkOselgb.fallbackDialog.title')}</DialogTitle>
+            <DialogDescription>
+              {failedIhkSubmission
+                ? t('ihkOselgb.fallbackDialog.description', {
+                    range: `${formatGermanDate(failedIhkSubmission.week.weeklyReport.weekStart)} - ${formatGermanDate(failedIhkSubmission.week.weeklyReport.weekEnd)}`,
+                    message: failedIhkSubmission.message,
+                  })
+                : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isIhkSavePending}
+              onClick={() => setFailedIhkSubmission(null)}
+            >
+              {t('ihkOselgb.fallbackDialog.no')}
+            </Button>
+            <Button
+              type="button"
+              disabled={isIhkSavePending}
+              disabledReason={t('common.disabledReasons.pending')}
+              onClick={() => {
+                handleSubmitDespiteIhkFailure().catch(() => undefined);
+              }}
+            >
+              {isIhkSavePending
+                ? t('common.loading')
+                : t('ihkOselgb.fallbackDialog.submitAndOpen')}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

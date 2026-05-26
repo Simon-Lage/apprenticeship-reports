@@ -22,8 +22,10 @@ import {
 } from '@/renderer/hooks/useKernelData';
 import { parseOnboardingTrainingPeriod } from '@/renderer/lib/app-settings';
 import { appRoutes } from '@/renderer/lib/app-routes';
-import { buildHomeStatsSnapshot } from '@/renderer/lib/home-stats';
-import { listCompleteWeeksWithDailyReports } from '@/renderer/lib/report-values';
+import {
+  buildHomeStatsSnapshot,
+  buildHomeWeeklyReportStatsSnapshot,
+} from '@/renderer/lib/home-stats';
 import { cn } from '@/renderer/lib/utils';
 import { Button } from '@/components/ui/button';
 import { resolveReportStartDateFromSettings } from '@/shared/settings/report-start-date';
@@ -34,7 +36,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { isWeeklyReportSubmitted } from '@/shared/reports/edit-locks';
 
 type AreaCard = {
   to: string;
@@ -244,21 +245,18 @@ export default function HomePage() {
     ],
   );
   const weeklyReportStats = useMemo(() => {
-    const weeklyReports = reportsState.value
-      ? listCompleteWeeksWithDailyReports(reportsState.value)
-          .filter((week) => week.weeklyReport.weekEnd <= today)
-          .map((week) => week.weeklyReport)
-      : [];
-    const submittedCount = weeklyReports.filter((weeklyReport) =>
-      isWeeklyReportSubmitted(weeklyReport),
-    ).length;
-
-    return {
-      totalCount: weeklyReports.length,
-      submittedCount,
-      toSendCount: Math.max(weeklyReports.length - submittedCount, 0),
-    };
-  }, [reportsState.value, today]);
+    return buildHomeWeeklyReportStatsSnapshot({
+      weeklyReports: Object.values(reportsState.value?.weeklyReports ?? {}),
+      reportStartDate,
+      reportEndDate: trainingPeriod.trainingEnd ?? null,
+      today,
+    });
+  }, [
+    reportStartDate,
+    reportsState.value?.weeklyReports,
+    today,
+    trainingPeriod.trainingEnd,
+  ]);
   const backlogValueClassName = resolveBacklogValueClassName(
     homeStats.backlogDays,
   );

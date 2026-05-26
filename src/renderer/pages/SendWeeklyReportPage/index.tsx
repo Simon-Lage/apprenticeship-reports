@@ -33,6 +33,7 @@ import { parseOnboardingWorkplace } from '@/renderer/lib/app-settings';
 import { appRoutes } from '@/renderer/lib/app-routes';
 import { formatGermanDate } from '@/renderer/lib/date-format';
 import { toLocalIsoDate } from '@/renderer/lib/iso-date';
+import { notifyReportsStateChanged } from '@/renderer/lib/report-state-events';
 import {
   buildWeeklyDocumentData,
   createWeeklyDocumentTranslations,
@@ -62,6 +63,9 @@ export default function SendWeeklyReportPage() {
   const [hasResolvedDecision, setHasResolvedDecision] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<string | null>(null);
   const [isSendOrderDialogOpen, setIsSendOrderDialogOpen] = useState(false);
+  const [failedIhkSubmission, setFailedIhkSubmission] = useState<{
+    message: string;
+  } | null>(null);
   const today = toLocalIsoDate(new Date());
   const {
     completeWeeks,
@@ -174,6 +178,7 @@ export default function SendWeeklyReportPage() {
 
   useEffect(() => {
     setHasResolvedDecision(false);
+    setFailedIhkSubmission(null);
   }, [selectedWeekIdentity]);
 
   useEffect(() => {
@@ -266,12 +271,62 @@ export default function SendWeeklyReportPage() {
     );
   }, [blockingUnsubmittedWeek]);
 
-  const submitReport = useCallback(async (): Promise<boolean> => {
-    if (!runtime.api || !selectedWeek || !parsedWeekValues || !documentData) {
-      toast.info(t('sendWeeklyReport.feedback.selectWeekFirst'));
-      return false;
-    }
+  const markSelectedWeekAsSubmitted =
+    useCallback(async (): Promise<boolean> => {
+      if (!runtime.api || !selectedWeek || !parsedWeekValues || !documentData) {
+        toast.info(t('sendWeeklyReport.feedback.selectWeekFirst'));
+        return false;
+      }
 
+      const effectiveArea =
+        documentData.areaField.value === emptyValue
+          ? null
+          : documentData.areaField.value;
+      const effectiveSupervisorEmail =
+        documentData.supervisorField.value === emptyValue
+          ? null
+          : documentData.supervisorField.value;
+
+      setIsPending(true);
+      try {
+        await runtime.api.upsertWeeklyReport({
+          weekStart: selectedWeek.weeklyReport.weekStart,
+          weekEnd: selectedWeek.weeklyReport.weekEnd,
+          values: {
+            ...parsedWeekValues,
+            area: effectiveArea,
+            supervisorEmailPrimary:
+              effectiveSupervisorEmail ??
+              parsedWeekValues.supervisorEmailPrimary,
+            submitted: true,
+            submittedToEmail:
+              effectiveSupervisorEmail ?? parsedWeekValues.submittedToEmail,
+          },
+        });
+        await runtime.refresh();
+        await reportsState.refresh();
+        notifyReportsStateChanged();
+        setHasResolvedDecision(true);
+        toast.success(t('sendWeeklyReport.feedback.submitted'));
+        return true;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : t('common.errors.unknown');
+        toast.error(t('sendWeeklyReport.feedback.submitError'), message);
+        return false;
+      }
+    }, [
+      documentData,
+      emptyValue,
+      parsedWeekValues,
+      reportsState,
+      runtime,
+      selectedWeek,
+      t,
+      toast,
+    ]);
+
+  const submitReport = useCallback(async (): Promise<boolean> => {
     if (sendOrderBlocksSelectedWeek) {
       setIsSendOrderDialogOpen(true);
       return false;
@@ -281,77 +336,40 @@ export default function SendWeeklyReportPage() {
       return false;
     }
 
-    const effectiveArea =
-      documentData.areaField.value === emptyValue
-        ? null
-        : documentData.areaField.value;
-    const effectiveSupervisorEmail =
-      documentData.supervisorField.value === emptyValue
-        ? null
-        : documentData.supervisorField.value;
-
     setIsPending(true);
     try {
-      await runtime.api.upsertWeeklyReport({
-        weekStart: selectedWeek.weeklyReport.weekStart,
-        weekEnd: selectedWeek.weeklyReport.weekEnd,
-        values: {
-          ...parsedWeekValues,
-          area: effectiveArea,
-          supervisorEmailPrimary:
-            effectiveSupervisorEmail ?? parsedWeekValues.supervisorEmailPrimary,
-          submitted: true,
-          submittedToEmail:
-            effectiveSupervisorEmail ?? parsedWeekValues.submittedToEmail,
-        },
-      });
-      await runtime.refresh();
-      await reportsState.refresh();
-      setHasResolvedDecision(true);
-      toast.success(t('sendWeeklyReport.feedback.submitted'));
-      if (ihkOselgbActive && settingsSnapshot.value) {
-        try {
-          await saveWeeklyReportAtIhk(
-            buildIhkOselgbWeeklyReportInput({
-              week: selectedWeek,
-              settingsValues: settingsSnapshot.value.values,
-              t,
-            }),
-          );
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : t('common.errors.unknown');
-          toast.error(
-            t('ihkOselgb.feedback.saveErrorTitle'),
-            t('ihkOselgb.feedback.saveErrorDescription', {
-              start: formatGermanDate(selectedWeek.weeklyReport.weekStart),
-              end: formatGermanDate(selectedWeek.weeklyReport.weekEnd),
-              message,
-            }),
-          );
+      if (ihkOselgbActive && settingsSnapshot.value && selectedWeek) {
+        const outcome = await saveWeeklyReportAtIhk(
+          buildIhkOselgbWeeklyReportInput({
+            week: selectedWeek,
+            settingsValues: settingsSnapshot.value.values,
+            t,
+          }),
+        );
+
+        if (outcome.status === 'failed') {
+          setFailedIhkSubmission({ message: outcome.message });
+          return false;
         }
       }
-      return true;
+
+      return await markSelectedWeekAsSubmitted();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : t('common.errors.unknown');
-      toast.error(t('sendWeeklyReport.feedback.submitError'), message);
+      toast.error(t('ihkOselgb.feedback.saveErrorTitle'), message);
       return false;
     } finally {
       setIsPending(false);
     }
   }, [
-    documentData,
-    emptyValue,
+    futureWeekBlocksSelectedWeek,
     ihkOselgbActive,
-    parsedWeekValues,
-    reportsState,
-    runtime,
+    markSelectedWeekAsSubmitted,
     saveWeeklyReportAtIhk,
     selectedWeek,
     sendOrderBlocksSelectedWeek,
     settingsSnapshot.value,
-    futureWeekBlocksSelectedWeek,
     t,
     toast,
   ]);
@@ -431,6 +449,25 @@ export default function SendWeeklyReportPage() {
   const handleMarkAsSubmittedClick = useCallback(() => {
     handleMarkAsSubmitted().catch(() => undefined);
   }, [handleMarkAsSubmitted]);
+
+  const handleSubmitDespiteIhkFailure = useCallback(async () => {
+    if (!failedIhkSubmission) {
+      return;
+    }
+
+    setIsPending(true);
+    try {
+      const submitted = await markSelectedWeekAsSubmitted();
+
+      if (submitted) {
+        setFailedIhkSubmission(null);
+        handleOpenIhk();
+        setPendingRoute(appRoutes.weeklyReport);
+      }
+    } finally {
+      setIsPending(false);
+    }
+  }, [failedIhkSubmission, handleOpenIhk, markSelectedWeekAsSubmitted]);
 
   const unsavedChangesGuard = useUnsavedChangesGuard({
     isDirty,
@@ -557,6 +594,51 @@ export default function SendWeeklyReportPage() {
             </DialogClose>
             <Button type="button" onClick={openOldestUnsubmittedWeek}>
               {t('weeklyReport.sendOrderDialog.openOldest')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(failedIhkSubmission)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setFailedIhkSubmission(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('ihkOselgb.fallbackDialog.title')}</DialogTitle>
+            <DialogDescription>
+              {selectedWeek && failedIhkSubmission
+                ? t('ihkOselgb.fallbackDialog.description', {
+                    range: `${formatGermanDate(selectedWeek.weeklyReport.weekStart)} - ${formatGermanDate(selectedWeek.weeklyReport.weekEnd)}`,
+                    message: failedIhkSubmission.message,
+                  })
+                : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isPending}
+              onClick={() => setFailedIhkSubmission(null)}
+            >
+              {t('ihkOselgb.fallbackDialog.no')}
+            </Button>
+            <Button
+              type="button"
+              disabled={isPending}
+              disabledReason={t('common.disabledReasons.pending')}
+              onClick={() => {
+                handleSubmitDespiteIhkFailure().catch(() => undefined);
+              }}
+            >
+              {isPending
+                ? t('common.loading')
+                : t('ihkOselgb.fallbackDialog.submitAndOpen')}
             </Button>
           </DialogFooter>
         </DialogContent>
