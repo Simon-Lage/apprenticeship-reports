@@ -187,14 +187,17 @@ if (-not $SkipInstall) {
 }
 
 if (-not $AllowDirty) {
-  $dirtyPaths = Get-DirtyPaths
+  $dirtyPaths = @(Get-DirtyPaths)
   $allowedResumePaths = @("package.json", "package-lock.json", "README.md")
-  $unexpectedDirtyPaths =
-    if ($UseCurrentVersion) {
-      @($dirtyPaths | Where-Object { $allowedResumePaths -notcontains $_ })
-    } else {
-      $dirtyPaths
-    }
+  $unexpectedDirtyPaths = @()
+
+  if ($UseCurrentVersion) {
+    $unexpectedDirtyPaths = @(
+      $dirtyPaths | Where-Object { $allowedResumePaths -notcontains $_ }
+    )
+  } else {
+    $unexpectedDirtyPaths = @($dirtyPaths)
+  }
 
   if ($unexpectedDirtyPaths.Count -gt 0) {
     throw "Working tree is not clean. Commit or stash changes first, or pass -AllowDirty. Dirty paths: $($unexpectedDirtyPaths -join ', ')"
