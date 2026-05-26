@@ -273,10 +273,7 @@ export default function SendWeeklyReportPage() {
       await runtime.refresh();
       await reportsState.refresh();
       setHasResolvedDecision(true);
-      toast.success(
-        t('sendWeeklyReport.feedback.submitted'),
-        effectiveSupervisorEmail || undefined,
-      );
+      toast.success(t('sendWeeklyReport.feedback.submitted'));
       return true;
     } catch (error) {
       const message =
@@ -368,8 +365,8 @@ export default function SendWeeklyReportPage() {
       return;
     }
 
-    setPendingRoute(resolveReturnRoute());
-  }, [resolveReturnRoute, submitReport]);
+    setPendingRoute(appRoutes.weeklyReport);
+  }, [submitReport]);
 
   const handleMarkAsSubmittedClick = useCallback(() => {
     handleMarkAsSubmitted().catch(() => undefined);
@@ -402,30 +399,28 @@ export default function SendWeeklyReportPage() {
           </Button>
         }
       >
-        <div className="max-w-[360px]">
-          <WeeklyReportWeekSelector
-            id="send-weekly-report-week"
-            label={t('sendWeeklyReport.selectorLabel')}
-            placeholder={t('sendWeeklyReport.selectorPlaceholder')}
-            completeWeeks={completeWeeks}
-            selectedWeekIdentity={selectedWeekIdentity}
-            onSelectedWeekIdentityChange={setSelectedWeekIdentity}
-          />
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="w-full max-w-[360px]">
+            <WeeklyReportWeekSelector
+              id="send-weekly-report-week"
+              label={t('sendWeeklyReport.selectorLabel')}
+              placeholder={t('sendWeeklyReport.selectorPlaceholder')}
+              completeWeeks={completeWeeks}
+              selectedWeekIdentity={selectedWeekIdentity}
+              onSelectedWeekIdentityChange={setSelectedWeekIdentity}
+            />
+          </div>
+
+          {parsedWeekValues?.submitted ? (
+            <Alert className="w-full border-amber-300 bg-amber-50 text-amber-950 lg:max-w-xl">
+              <AlertTitle>{t('sendWeeklyReport.submittedTitle')}</AlertTitle>
+              <AlertDescription>
+                {t('sendWeeklyReport.submittedDescription')}
+              </AlertDescription>
+            </Alert>
+          ) : null}
         </div>
       </SectionCard>
-
-      {parsedWeekValues?.submitted ? (
-        <Alert className="border-primary-tint bg-primary-tint/20">
-          <AlertTitle>{t('sendWeeklyReport.submittedTitle')}</AlertTitle>
-          <AlertDescription>
-            {parsedWeekValues.submittedToEmail
-              ? t('sendWeeklyReport.submittedDescriptionWithEmail', {
-                  email: parsedWeekValues.submittedToEmail,
-                })
-              : t('sendWeeklyReport.submittedDescription')}
-          </AlertDescription>
-        </Alert>
-      ) : null}
 
       {selectedWeek && documentData ? (
         <WeeklyReportDocument

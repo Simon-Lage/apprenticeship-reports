@@ -153,7 +153,7 @@ function resolveSectionEntries(
 ): WeeklyDocumentSectionEntry[] {
   return entries.map((entry) => ({
     date: entry.date,
-    heading: `${formatWeekday(entry.date)} - ${formatGermanDate(entry.date)}:`,
+    heading: `${formatWeekday(entry.date)} — ${formatGermanDate(entry.date)}:`,
     items: entry.items,
   }));
 }
@@ -389,11 +389,15 @@ export function buildWeeklyDocumentHtml(input: {
     .page.regular { font-size: 12px; }
     .page.compact { font-size: 11px; }
     .page.dense { font-size: 10px; }
-    h1 { box-sizing: border-box; margin: 0 0 4mm; padding: 0 30mm; text-align: center; font-size: 18px; font-weight: 700; white-space: nowrap; }
-    .summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.8mm 7mm; margin-bottom: 3.5mm; }
-    .summary-field { display: flex; justify-content: space-between; gap: 2mm; align-items: baseline; }
-    .summary-label { font-weight: 700; white-space: nowrap; }
-    .summary-value { text-align: right; min-width: 0; word-break: break-word; }
+    h1 { box-sizing: border-box; margin: 0 0 3mm; padding: 0 34mm; text-align: center; font-size: 18px; font-weight: 700; white-space: nowrap; }
+    .summary-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1.5mm; margin-bottom: 3mm; }
+    .summary-field { display: flex; justify-content: space-between; gap: 2mm; align-items: flex-start; min-height: 8mm; box-sizing: border-box; border: 1px solid #dbe7ef; border-radius: 2mm; background: #f6fafc; padding: 1.4mm 2mm; }
+    .summary-field:nth-child(1), .summary-field:nth-child(2), .summary-field:nth-child(5) { grid-column: span 3; }
+    .summary-field:nth-child(3) { grid-column: span 6; }
+    .summary-field:nth-child(4) { grid-column: span 4; }
+    .summary-field:nth-child(6) { grid-column: span 5; }
+    .summary-label { flex-shrink: 0; font-size: 0.86em; font-weight: 700; color: #4b5563; white-space: nowrap; }
+    .summary-value { text-align: right; min-width: 0; font-weight: 600; word-break: break-word; }
     .box-row { display: grid; gap: 4mm; margin-bottom: 3.25mm; }
     .box-row.two-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .box-row.one-column { grid-template-columns: minmax(0, 1fr); }
@@ -406,12 +410,14 @@ export function buildWeeklyDocumentHtml(input: {
     .section-entry ul { margin: 0; padding-left: 4.5mm; }
     .section-entry li { margin: 0 0 1mm; line-height: 1.35; white-space: pre-wrap; }
     .section-empty { margin: 0; }
-    .page.compact .summary-grid { gap: 2mm 3.5mm; margin-bottom: 4mm; }
+    .page.compact .summary-grid { gap: 1.3mm; margin-bottom: 3mm; }
+    .page.compact .summary-field { min-height: 7.5mm; padding: 1.2mm 1.8mm; }
     .page.compact .box-row { gap: 3.5mm; margin-bottom: 2.75mm; }
     .page.compact .box-value { min-height: 9.5mm; padding: 2.2mm 2.8mm; }
     .page.compact .content-section + .content-section { margin-top: 4mm; }
     .page.compact .section-entry + .section-entry { margin-top: 2mm; }
-    .page.dense .summary-grid { gap: 1.5mm 3mm; margin-bottom: 3.5mm; }
+    .page.dense .summary-grid { gap: 1.1mm; margin-bottom: 2.5mm; }
+    .page.dense .summary-field { min-height: 7mm; padding: 1mm 1.6mm; }
     .page.dense .box-row { gap: 3mm; margin-bottom: 2.2mm; }
     .page.dense .box-label { margin-bottom: 1mm; }
     .page.dense .box-value { min-height: 8.5mm; padding: 2mm 2.5mm; }
@@ -419,7 +425,7 @@ export function buildWeeklyDocumentHtml(input: {
     .page.dense .section-entry + .section-entry { margin-top: 1.5mm; }
     .page.dense .section-entry li { margin-bottom: 0.7mm; line-height: 1.28; }
     .document-header { position: relative; border-bottom: 1px solid #d1d5db; padding-bottom: 3.5mm; margin-bottom: 3.5mm; }
-    .company-logo { position: absolute; top: 0; right: 0; max-width: 28mm; max-height: 15mm; object-fit: contain; }
+    .company-logo { position: absolute; top: -4mm; right: -3mm; max-width: 31mm; max-height: 16mm; object-fit: contain; }
   </style>
 </head>
 <body>

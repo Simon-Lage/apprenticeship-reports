@@ -1,4 +1,5 @@
 # Offene Issues
+- [ ] Man muss einstellen/switchen können, dass Backups Lokal oder in Drive sind
 - [ ] Nach Updates öffnet sich die Anwendung nicht autoamtisch neu.
 - [ ] Prüfen ob Konflikt Spalte in Übersicht nicht redundant ist, sie sit zumindest verwirrend.
 - [?] In die Readme einbauen, dass Google Services aktuell noch in der Closed-Test-Phase sind und deswegen es nicht möglich ist, diese ohne freigegebenen Google-Account zu nutzen.

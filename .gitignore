@@ -31,3 +31,5 @@ npm-debug.log.*
 .env.local
 
 temp_files/*
+
+experimental/data/*

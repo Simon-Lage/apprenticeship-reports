@@ -236,12 +236,14 @@ export default function WeeklyReportDocument({
       <div
         key={field.label}
         className={cn(
-          'flex items-start gap-2',
+          'flex min-h-[8mm] items-start gap-2 rounded-md border border-primary-tint/60 bg-primary-tint/10 px-2.5 py-1.5',
           options.compact && 'justify-between',
         )}
       >
-        <span className="shrink-0 font-semibold">{field.label}</span>
-        <span className="min-w-0 flex-1 break-words text-right">
+        <span className="shrink-0 text-[0.86em] font-semibold text-text-color/75">
+          {field.label}
+        </span>
+        <span className="min-w-0 flex-1 break-words text-right font-medium">
           {field.value}
         </span>
         {onCopyField && copyActionLabel && options.copyField ? (
@@ -313,18 +315,18 @@ export default function WeeklyReportDocument({
             resolvePageTextClassName(document.density),
           )}
         >
-          <header className="relative shrink-0 space-y-3 border-b border-primary-tint/70 pb-3">
+          <header className="relative shrink-0 space-y-2.5 border-b border-primary-tint/70 pb-3">
             {document.companyLogoDataUrl ? (
               <img
                 src={document.companyLogoDataUrl}
                 alt=""
-                className="absolute right-0 top-0 max-h-[15mm] max-w-[28mm] object-contain"
+                className="absolute right-[-4mm] top-[-5mm] max-h-[16mm] max-w-[31mm] object-contain"
               />
             ) : null}
-            <h2 className="whitespace-nowrap px-[30mm] text-center text-[1.45em] font-semibold">
+            <h2 className="whitespace-nowrap px-[32mm] text-center text-[1.45em] font-semibold">
               {document.title}
             </h2>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 text-[1.02em]">
+            <div className="grid grid-cols-12 gap-1.5 text-[0.98em] [&>*:nth-child(1)]:col-span-3 [&>*:nth-child(2)]:col-span-3 [&>*:nth-child(3)]:col-span-6 [&>*:nth-child(4)]:col-span-4 [&>*:nth-child(5)]:col-span-3 [&>*:nth-child(6)]:col-span-5">
               {document.summaryFields.map((field) =>
                 renderDetailField(field, { compact: true }),
               )}

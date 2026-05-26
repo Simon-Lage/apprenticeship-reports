@@ -72,7 +72,7 @@ const deTranslation = {
       futureWeekSend:
         'Wochenberichte können erst nach Ende der Woche gesendet werden.',
       sendOrderBlocked:
-        'Der älteste ungesendete Wochenbericht muss zuerst geöffnet werden.',
+        'Der älteste ungesendete Wochenbericht muss zuerst gesendet werden.',
       noCompleteWeeks: 'Keine vollständige Woche verfügbar.',
       noSelectedWeek: 'Keine Woche ausgewählt.',
       missingPreview: 'Vorschau ist nicht verfügbar.',
@@ -1123,8 +1123,6 @@ const deTranslation = {
       'Senden ist nur manuell vorgesehen. Zusätzlich ist ein IHK-Link im Onboarding oder in den Settings erforderlich, damit die Zielseite direkt geöffnet werden kann.',
     submittedTitle: 'Wochenbericht bereits gesendet',
     submittedDescription: 'Diese Woche wurde bereits als gesendet markiert.',
-    submittedDescriptionWithEmail:
-      'Diese Woche wurde bereits als gesendet markiert: {{email}}',
     emptyTitle: 'Keine Wochenvorschau verfügbar',
     emptyDescription: 'Zuerst eine vollständige Woche auswählen.',
     noCompleteWeeks:
