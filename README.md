@@ -16,6 +16,19 @@ Der Fokus liegt auf lokal kontrollierten Daten, nachvollziehbaren Sicherungen un
 Die aktuelle Windows-Version steht über GitHub Releases bereit:
 
 [Download for Windows](https://github.com/Simon-Lage/apprenticeship-reports/releases/latest/download/Apprenticeship-Reports-Setup.exe)
+### Alpha-Hinweis
+
+AppRep befindet sich aktuell in einer frühen Alpha-Version.
+
+**Version:** `v0.0.31`
+**Status:** Alpha / experimentell
+
+Die App ist nur für den experimentellen persönlichen Gebrauch bestimmt. Sie kann Fehler enthalten, Daten falsch verarbeiten oder sich in zukünftigen Versionen grundlegend ändern.
+
+Die Nutzung erfolgt auf eigene Verantwortung. Ich übernehme keine Haftung für Schäden, Datenverlust, fehlerhafte oder nicht akzeptierte Ausbildungsberichte oder sonstige Folgen der Nutzung.
+
+Datenschutz- und Sicherheitsstandards befinden sich noch in Arbeit und sind nicht als produktionsreif anzusehen. Bitte lege regelmäßig eigene Backups an und prüfe alle exportierten Berichte vor der offiziellen Verwendung selbst.
+
 
 Nur die Datei `Apprenticeship-Reports-Setup.exe` ist für die manuelle Installation vorgesehen. Dateien wie `latest.yml` und `*.blockmap` werden vom Auto-Updater genutzt.
 
