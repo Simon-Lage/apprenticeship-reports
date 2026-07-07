@@ -14,12 +14,7 @@ Nur die Datei `Apprenticeship-Reports-Setup.exe` ist für die manuelle Installat
 [![Tests](https://github.com/Simon-Lage/apprenticeship-reports/actions/workflows/test.yml/badge.svg)](https://github.com/Simon-Lage/apprenticeship-reports/actions/workflows/test.yml)
 [![Release](https://img.shields.io/github/v/release/Simon-Lage/apprenticeship-reports?label=latest%20release)](https://github.com/Simon-Lage/apprenticeship-reports/releases/latest)
 
-### Alpha-Hinweis
-
 AppRep befindet sich aktuell in einer frühen Alpha-Version.
-
-**Version:** `v0.0.31`
-**Status:** Alpha / experimentell
 
 Die App ist nur für den experimentellen persönlichen Gebrauch bestimmt. Sie kann Fehler enthalten, Daten falsch verarbeiten oder sich in zukünftigen Versionen grundlegend ändern.
 
