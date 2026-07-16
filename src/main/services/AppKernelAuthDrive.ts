@@ -146,6 +146,21 @@ export abstract class AppKernelAuthDrive extends AppKernelCore {
     }
 
     if (!input.decryption) {
+      const currentState = await this.repository.read();
+      this.accessGuard.assertApplicationUnlocked(currentState);
+      const localMasterKey = currentState.backupEncryption.masterKey;
+
+      if (localMasterKey) {
+        try {
+          return this.backupEncryptionService.decryptSerializedPayload({
+            envelope: encryptedEnvelope,
+            masterKey: localMasterKey,
+          });
+        } catch {
+          // A backup from a different installation requires its password or Google recovery key.
+        }
+      }
+
       throw new Error(
         'APPREP_BACKUP_DECRYPTION_REQUIRED:Backup ist verschlüsselt.',
       );

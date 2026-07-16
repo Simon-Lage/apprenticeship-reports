@@ -147,6 +147,19 @@ describe('app kernel encrypted backup archives', () => {
     expect(preview.incoming.weeklyReportCount).toBe(1);
   });
 
+  it('imports a local encrypted report backup without requesting Google or the password again', async () => {
+    const { kernel, repository } = createBackupKernel();
+    await kernel.boot();
+    await signIn(kernel);
+    await completeRequiredOnboarding(kernel);
+    await seedReport(repository);
+
+    const envelope = await kernel.exportBackupArchive();
+    const preview = await kernel.prepareBackupImport(JSON.stringify(envelope));
+
+    expect(preview.incoming.weeklyReportCount).toBe(1);
+  });
+
   it('rejects encrypted report imports with a wrong password', async () => {
     const { kernel, repository } = createBackupKernel();
     await kernel.boot();
