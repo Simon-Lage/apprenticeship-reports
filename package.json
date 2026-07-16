@@ -223,7 +223,7 @@
     "node-abi": "3.92.0"
   },
   "build": {
-    "productName": "Apprenticeship Reports",
+    "productName": "AppRep - Ausbildungsberichte",
     "appId": "com.simonlage.apprenticeship-reports",
     "asar": true,
     "afterSign": ".erb/scripts/notarize.js",
@@ -322,5 +322,5 @@
     ],
     "logLevel": "quiet"
   },
-  "version": "0.0.34-alpha.1"
+  "version": "0.0.35-alpha.0"
 }
