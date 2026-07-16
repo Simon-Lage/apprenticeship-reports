@@ -162,8 +162,8 @@ const deTranslation = {
       title: 'Update bereit',
       message: 'Ein Update wurde heruntergeladen.',
       detail:
-        'Jetzt neu starten und installieren? Bei Auswahl von Später wird das Update automatisch beim Beenden installiert.',
-      installNow: 'Jetzt installieren',
+        'Beim Installieren schließt sich die App kurz. Die Installation kann bis zu einer Minute dauern; danach startet die App automatisch neu. Bitte nicht manuell erneut starten.',
+      installNow: 'Installieren und neu starten',
       later: 'Später',
     },
     closeWithUnsavedChanges: {
@@ -466,6 +466,7 @@ const deTranslation = {
       feedback: {
         loadError: 'Build-Informationen konnten nicht geladen werden.',
         updateFound: 'Update gefunden.',
+        updateDownloading: 'Update wird im Hintergrund heruntergeladen.',
         updatePreparing: 'Update wird vorbereitet.',
         updateCheckNotAvailable: 'Kein Update verfügbar.',
         updateCheckUnavailable: 'Update-Dienst ist aktuell nicht bereit.',

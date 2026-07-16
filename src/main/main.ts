@@ -29,13 +29,25 @@ import defaultOnboardingSteps from '@/shared/onboarding/default-steps';
 class AppUpdater {
   private readonly updateChecksEnabled: boolean;
 
+  private isDownloading = false;
+
   constructor(private readonly mainWindow: BrowserWindow) {
     log.transports.file.level = 'info';
     autoUpdater.logger = log;
     autoUpdater.autoInstallOnAppQuit = true;
     this.updateChecksEnabled = app.isPackaged;
 
+    autoUpdater.on('download-progress', () => {
+      if (this.isDownloading) {
+        return;
+      }
+
+      this.isDownloading = true;
+      this.sendUpdateStatus('update-downloading');
+    });
+
     autoUpdater.on('update-downloaded', async () => {
+      this.isDownloading = false;
       this.sendUpdateStatus('update-downloaded');
       const dialogTranslations = deTranslation.mainDialogs.updateReady;
       const result = await dialog.showMessageBox(this.mainWindow, {
@@ -73,7 +85,6 @@ class AppUpdater {
       const cleanup = () => {
         autoUpdater.off('update-available', handleUpdateAvailable);
         autoUpdater.off('update-not-available', handleUpdateNotAvailable);
-        autoUpdater.off('update-downloaded', handleUpdateDownloaded);
         autoUpdater.off('error', handleError);
       };
       const settle = (nextStatus: AppUpdateCheckStatus) => {
@@ -82,12 +93,10 @@ class AppUpdater {
       };
       const handleUpdateAvailable = () => {
         this.sendUpdateStatus('update-available');
+        settle('update-available');
       };
       const handleUpdateNotAvailable = () => {
         settle('update-not-available');
-      };
-      const handleUpdateDownloaded = () => {
-        settle('update-downloaded');
       };
       const handleError = (error: Error) => {
         log.error('Update check failed', error);
@@ -96,7 +105,6 @@ class AppUpdater {
 
       autoUpdater.once('update-available', handleUpdateAvailable);
       autoUpdater.once('update-not-available', handleUpdateNotAvailable);
-      autoUpdater.once('update-downloaded', handleUpdateDownloaded);
       autoUpdater.once('error', handleError);
 
       autoUpdater.checkForUpdates().catch(handleError);

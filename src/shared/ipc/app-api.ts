@@ -353,6 +353,7 @@ export type AppUpdateUnavailableReason = 'not-packaged' | 'updater-not-ready';
 
 export type AppUpdateCheckStatus =
   | 'update-available'
+  | 'update-downloading'
   | 'update-not-available'
   | 'update-downloaded'
   | 'error';
