@@ -22,13 +22,13 @@ jobs:
           node-version: 22.12.0
           cache: npm
 
-      # 1) Version lokal erhöhen, aber KEIN Tag/Push
-      - name: Bump version (patch) locally only
+      # 1) Alpha-Version lokal erhöhen, aber KEIN Tag/Push
+      - name: Bump alpha version locally only
         shell: pwsh
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          npm version patch --no-git-tag-version
+          npm version prerelease --preid=alpha --no-git-tag-version
           $ver = node -p "require('./package.json').version"
           "ver=$ver" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Host "v$ver"
@@ -125,8 +125,28 @@ jobs:
           $owner = "${{ github.repository_owner }}"
           $repo  = "${{ github.event.repository.name }}"
           $download = "https://github.com/$owner/$repo/releases/latest/download/Apprenticeship-Reports-Setup.exe"
+          $releaseNotes = Get-Content -Path release-notes.json -Raw | ConvertFrom-Json
+          $changes = @($releaseNotes.changes | ForEach-Object { "- $_" })
+          if ($changes.Count -eq 0) {
+            $changes = @("- Die Anwendung wurde auf Version v$ver aktualisiert.")
+          }
+          $changesBlock = $changes -join "`n"
 
           $body = @"
+          ## Änderungen
+
+          $changesBlock
+
+          ---
+
+          ## Alpha-Hinweis
+
+          AppRep befindet sich in einer frühen Alpha-Version und ist nur für den experimentellen persönlichen Gebrauch bestimmt. Die Nutzung erfolgt auf eigene Verantwortung; es wird keine Haftung für Schäden, Datenverlust, fehlerhafte oder nicht akzeptierte Ausbildungsberichte oder sonstige Folgen der Nutzung übernommen.
+
+          Datenschutz- und Sicherheitsstandards befinden sich noch in Arbeit und sind nicht produktionsreif. Bitte eigene Backups anlegen und exportierte Berichte vor der offiziellen Verwendung selbst prüfen.
+
+          ---
+
           **Download & Hinweise**
 
           Nur die Datei "Apprenticeship-Reports-Setup.exe" herunterladen und ausführen.

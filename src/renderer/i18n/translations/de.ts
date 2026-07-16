@@ -175,6 +175,12 @@ const deTranslation = {
       cancel: 'Abbrechen',
     },
   },
+  releaseNotes: {
+    title: 'Neu in Version {{version}}',
+    description: 'Diese Änderungen wurden mit dem letzten Update installiert.',
+    fallback:
+      'Die Anwendung wurde von Version {{previousVersion}} auf {{version}} aktualisiert.',
+  },
   login: {
     title: 'Anmeldung',
     passwordLabel: 'Passwort',

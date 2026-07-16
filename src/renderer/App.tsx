@@ -40,6 +40,7 @@ import { hasSeenOnboardingWelcome } from '@/renderer/lib/onboarding-welcome';
 import { Button } from '@/components/ui/button';
 import AppFooter from '@/renderer/components/app/AppFooter';
 import TimeTableUpdatePrompt from '@/renderer/components/app/TimeTableUpdatePrompt';
+import ReleaseNotesDialog from '@/renderer/components/app/ReleaseNotesDialog';
 import '@/renderer/i18n';
 import './globals.css';
 import './App.css';
@@ -413,6 +414,7 @@ function RuntimeRouter() {
     <DefaultLayout>
       <AppTopbar />
       <TimeTableUpdatePrompt />
+      <ReleaseNotesDialog />
       <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
         <AuthenticatedAppRoutes />
       </main>
