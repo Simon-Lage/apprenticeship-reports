@@ -87,6 +87,9 @@ export default function AppFooter() {
       if (status === 'update-available') {
         toast.success(t('home.footer.feedback.updateFound'));
       }
+      if (status === 'update-downloading') {
+        toast.info(t('home.footer.feedback.updateDownloading'));
+      }
     });
   }, [runtime.api, t, toast]);
 

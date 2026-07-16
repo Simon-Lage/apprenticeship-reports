@@ -38,7 +38,7 @@ export default function ReleaseNotesDialog() {
         const seenVersion = localStorage.getItem(seenVersionStorageKey);
 
         if (!seenVersion) {
-          localStorage.setItem(seenVersionStorageKey, buildInfo.version);
+          setVersion(buildInfo.version);
           return;
         }
 

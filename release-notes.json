@@ -3,6 +3,8 @@
     "Wochenberichte können nach ausdrücklicher Freigabe früher gesendet werden, wenn alle zukünftigen Tage automatisch eingetragen sind.",
     "Verschlüsselte lokale Backups werden beim Import mit dem Schlüssel der geöffneten Datenbank automatisch erkannt.",
     "Nach einem Update zeigt die Anwendung die Änderungen dieser Version einmalig an.",
-    "Die Desktop-Anwendung heißt jetzt AppRep - Ausbildungsberichte."
+    "Die Desktop-Anwendung heißt jetzt AppRep - Ausbildungsberichte.",
+    "Die Update-Prüfung informiert sofort über den Hintergrunddownload und erklärt den automatischen Neustart nach der Installation.",
+    "Versionshinweise werden nun auch beim ersten Start nach einem Update angezeigt."
   ]
 }
