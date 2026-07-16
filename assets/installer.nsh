@@ -30,7 +30,7 @@ Function ShortcutOptionsPageCreate
     Abort
   ${EndIf}
 
-  ${NSD_CreateLabel} 0 0 100% 24u "Du kannst festlegen, ob Apprenticeship Reports im Startmenü und auf dem Desktop verknüpft wird."
+  ${NSD_CreateLabel} 0 0 100% 24u "Du kannst festlegen, ob AppRep - Ausbildungsberichte im Startmenü und auf dem Desktop verknüpft wird."
   Pop $0
 
   ${NSD_CreateCheckbox} 0 34u 100% 12u "Startmenü-Verknüpfung erstellen"
