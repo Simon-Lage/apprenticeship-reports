@@ -193,6 +193,8 @@ export default function WeeklyReportPage() {
     () => parseUiSettings(settingsValues),
     [settingsValues],
   );
+  const allowEarlyWeeklyReportSubmission =
+    uiSettings.allowEarlyWeeklyReportSubmission;
   const absenceSettings = useMemo(
     () => parseAbsenceSettings(settingsValues),
     [settingsValues],
@@ -272,8 +274,15 @@ export default function WeeklyReportPage() {
       weekStart: currentWeeklyReport.weekStart,
       weekEnd: currentWeeklyReport.weekEnd,
       today,
+      allowEarlySubmission: allowEarlyWeeklyReportSubmission,
     });
-  }, [currentWeeklyReport, reportStartDate, reportsState.value, today]);
+  }, [
+    allowEarlyWeeklyReportSubmission,
+    currentWeeklyReport,
+    reportStartDate,
+    reportsState.value,
+    today,
+  ]);
   const sendOrderBlocksCurrentWeek =
     weeklySubmissionBlock?.kind === 'previous-week-unsubmitted' &&
     !currentWeeklyValues.submitted;

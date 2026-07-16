@@ -734,6 +734,15 @@ const deTranslation = {
       openHolidaysNoticeAfter:
         ' hergestellt und der passende Jahreskatalog anhand des Bundeslands geladen.',
     },
+    earlyWeeklySubmission: {
+      title: 'Wochenberichte vorzeitig senden',
+      description:
+        'Erlaubt das Senden laufender oder künftiger Wochen, wenn alle noch kommenden Tage automatisch eingetragen wurden.',
+      warningTitle: 'Nur in Ausnahmefällen aktivieren',
+      warningDescription:
+        'Ein vorzeitig gesendeter Wochenbericht wird gesperrt. Änderungen an Urlaub, Feiertagen oder automatisch eingetragenen Tagen sind danach nicht mehr möglich. Die Option sollte normalerweise ausgeschaltet bleiben.',
+      allow: 'Vorzeitiges Senden erlauben',
+    },
     validation: {
       firstNameRequired: 'Vorname darf nicht leer sein.',
       lastNameRequired: 'Nachname darf nicht leer sein.',

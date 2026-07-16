@@ -178,10 +178,43 @@ export function resolveWeeklyReportSubmissionBlock(input: {
   weekStart: string;
   weekEnd: string;
   today: string;
+  allowEarlySubmission?: boolean;
 }): WeeklyReportSubmissionBlock | null {
   if (!isIsoDate(input.weekStart) || !isIsoDate(input.weekEnd)) return null;
 
-  if (isIsoDate(input.today) && input.weekEnd > input.today) {
+  const weeklyReport = findWeeklyReportByRange({
+    reportsState: input.reportsState ?? {
+      weeklyHashes: {},
+      weeklyReports: {},
+      dailyReports: {},
+    },
+    weekStart: input.weekStart,
+    weekEnd: input.weekEnd,
+  });
+  const canSubmitEarly = Boolean(
+    input.allowEarlySubmission &&
+      weeklyReport &&
+      isIsoDate(input.today) &&
+      weeklyReport.dailyReportIds.length > 0 &&
+      weeklyReport.dailyReportIds.every((dailyReportId) => {
+        const dailyReport = input.reportsState?.dailyReports[dailyReportId];
+
+        return (
+          Boolean(
+            dailyReport &&
+              dailyReport.date > input.today &&
+              typeof dailyReport.values.entryMode === 'string' &&
+              dailyReport.values.entryMode === 'automatic',
+          ) || Boolean(dailyReport && dailyReport.date <= input.today)
+        );
+      }),
+  );
+
+  if (
+    isIsoDate(input.today) &&
+    input.weekEnd > input.today &&
+    !canSubmitEarly
+  ) {
     return {
       kind: 'future-week',
       blockingWeek: null,

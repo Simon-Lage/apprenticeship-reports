@@ -29,7 +29,10 @@ import {
   useSettingsSnapshot,
 } from '@/renderer/hooks/useKernelData';
 import useUnsavedChangesGuard from '@/renderer/hooks/useUnsavedChangesGuard';
-import { parseOnboardingWorkplace } from '@/renderer/lib/app-settings';
+import {
+  parseOnboardingWorkplace,
+  parseUiSettings,
+} from '@/renderer/lib/app-settings';
 import { appRoutes } from '@/renderer/lib/app-routes';
 import { formatGermanDate } from '@/renderer/lib/date-format';
 import { toLocalIsoDate } from '@/renderer/lib/iso-date';
@@ -67,6 +70,14 @@ export default function SendWeeklyReportPage() {
     message: string;
   } | null>(null);
   const today = toLocalIsoDate(new Date());
+  const allowEarlyWeeklyReportSubmission = useMemo(
+    () =>
+      settingsSnapshot.value
+        ? parseUiSettings(settingsSnapshot.value.values)
+            .allowEarlyWeeklyReportSubmission
+        : false,
+    [settingsSnapshot.value],
+  );
   const {
     completeWeeks,
     requestedWeekRange,
@@ -75,7 +86,7 @@ export default function SendWeeklyReportPage() {
     selectedWeekIdentity,
     setSelectedWeekIdentity,
   } = useSelectedCompleteWeek(reportsState.value, location.search, {
-    maxWeekEnd: today,
+    maxWeekEnd: allowEarlyWeeklyReportSubmission ? undefined : today,
   });
   const workplace = useMemo(
     () =>
@@ -113,8 +124,15 @@ export default function SendWeeklyReportPage() {
       weekStart: selectedWeek.weeklyReport.weekStart,
       weekEnd: selectedWeek.weeklyReport.weekEnd,
       today,
+      allowEarlySubmission: allowEarlyWeeklyReportSubmission,
     });
-  }, [reportStartDate, reportsState.value, selectedWeek, today]);
+  }, [
+    allowEarlyWeeklyReportSubmission,
+    reportStartDate,
+    reportsState.value,
+    selectedWeek,
+    today,
+  ]);
   const sendOrderBlocksSelectedWeek =
     weeklySubmissionBlock?.kind === 'previous-week-unsubmitted' &&
     !parsedWeekValues?.submitted;

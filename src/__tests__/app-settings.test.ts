@@ -178,6 +178,16 @@ describe('app settings', () => {
       thursday: false,
       friday: false,
     });
+    expect(parsed.allowEarlyWeeklyReportSubmission).toBe(false);
+  });
+
+  it('keeps early weekly submission disabled unless explicitly enabled', () => {
+    expect(parseUiSettings({}).allowEarlyWeeklyReportSubmission).toBe(false);
+    expect(
+      parseUiSettings({
+        appUi: { allowEarlyWeeklyReportSubmission: true },
+      }).allowEarlyWeeklyReportSubmission,
+    ).toBe(true);
   });
 
   it('merges subject and teacher presets from lesson values without duplicates', () => {
