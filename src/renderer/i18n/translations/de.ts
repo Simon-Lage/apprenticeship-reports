@@ -175,6 +175,12 @@ const deTranslation = {
       cancel: 'Abbrechen',
     },
   },
+  releaseNotes: {
+    title: 'Neu in Version {{version}}',
+    description: 'Diese Änderungen wurden mit dem letzten Update installiert.',
+    fallback:
+      'Die Anwendung wurde von Version {{previousVersion}} auf {{version}} aktualisiert.',
+  },
   login: {
     title: 'Anmeldung',
     passwordLabel: 'Passwort',
@@ -733,6 +739,15 @@ const deTranslation = {
       openHolidaysLink: 'OpenHolidays API',
       openHolidaysNoticeAfter:
         ' hergestellt und der passende Jahreskatalog anhand des Bundeslands geladen.',
+    },
+    earlyWeeklySubmission: {
+      title: 'Wochenberichte vorzeitig senden',
+      description:
+        'Erlaubt das Senden laufender oder künftiger Wochen, wenn alle noch kommenden Tage automatisch eingetragen wurden.',
+      warningTitle: 'Nur in Ausnahmefällen aktivieren',
+      warningDescription:
+        'Ein vorzeitig gesendeter Wochenbericht wird gesperrt. Änderungen an Urlaub, Feiertagen oder automatisch eingetragenen Tagen sind danach nicht mehr möglich. Die Option sollte normalerweise ausgeschaltet bleiben.',
+      allow: 'Vorzeitiges Senden erlauben',
     },
     validation: {
       firstNameRequired: 'Vorname darf nicht leer sein.',

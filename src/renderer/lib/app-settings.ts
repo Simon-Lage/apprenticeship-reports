@@ -71,6 +71,7 @@ const defaultSchoolDays = {
 const uiSettingsSchema = z.object({
   defaultDepartment: z.string().trim().max(120).default(''),
   supervisorEmailPrimary: z.string().trim().max(320).default(''),
+  allowEarlyWeeklyReportSubmission: z.boolean().default(false),
   teachers: z.array(z.string().trim().min(1).max(120)).default([]),
   subjects: z.array(z.string().trim().min(1).max(120)).default([]),
   timetable: timetableSchema.default(defaultTimetable),
@@ -300,6 +301,8 @@ export function parseUiSettings(values: JsonObject): UiSettingsValues {
     defaultDepartment: normalizeTextOrNull(appUi.defaultDepartment, 120) ?? '',
     supervisorEmailPrimary:
       normalizeEmailOrNull(appUi.supervisorEmailPrimary) ?? '',
+    allowEarlyWeeklyReportSubmission:
+      appUi.allowEarlyWeeklyReportSubmission === true,
     teachers: normalizeUiCatalogValues(appUi.teachers),
     subjects: normalizeUiCatalogValues(appUi.subjects),
     timetable: {

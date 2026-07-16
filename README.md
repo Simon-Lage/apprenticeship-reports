@@ -1,12 +1,5 @@
 # Apprenticeship Reports
 
-AppRep ist eine Desktop-App für Auszubildende in Deutschland, die ihre Ausbildungsberichte für die IHK schreiben.
-
-[![Tests](https://github.com/Simon-Lage/apprenticeship-reports/actions/workflows/test.yml/badge.svg)](https://github.com/Simon-Lage/apprenticeship-reports/actions/workflows/test.yml)
-[![Release](https://img.shields.io/github/v/release/Simon-Lage/apprenticeship-reports?label=latest%20release)](https://github.com/Simon-Lage/apprenticeship-reports/releases/latest)
-
-## Überblick
-
 Apprenticeship Reports ist eine Electron-React-App für digitale Ausbildungsberichte. Die Anwendung verwaltet Tagesberichte, aggregiert daraus Wochenberichte, unterstützt lokale Authentifizierung, optionale Google-Anbindung und JSON-basierte Import-/Export-Flüsse.
 
 Der Fokus liegt auf lokal kontrollierten Daten, nachvollziehbaren Sicherungen und einer UI, die für regelmäßige Berichtspflege optimiert ist.
@@ -16,8 +9,20 @@ Der Fokus liegt auf lokal kontrollierten Daten, nachvollziehbaren Sicherungen un
 Die aktuelle Windows-Version steht über GitHub Releases bereit:
 
 [Download for Windows](https://github.com/Simon-Lage/apprenticeship-reports/releases/latest/download/Apprenticeship-Reports-Setup.exe)
-
 Nur die Datei `Apprenticeship-Reports-Setup.exe` ist für die manuelle Installation vorgesehen. Dateien wie `latest.yml` und `*.blockmap` werden vom Auto-Updater genutzt.
+
+[![Tests](https://github.com/Simon-Lage/apprenticeship-reports/actions/workflows/test.yml/badge.svg)](https://github.com/Simon-Lage/apprenticeship-reports/actions/workflows/test.yml)
+[![Release](https://img.shields.io/github/v/release/Simon-Lage/apprenticeship-reports?label=latest%20release)](https://github.com/Simon-Lage/apprenticeship-reports/releases/latest)
+
+AppRep befindet sich aktuell in einer frühen Alpha-Version.
+
+Die App ist nur für den experimentellen persönlichen Gebrauch bestimmt. Sie kann Fehler enthalten, Daten falsch verarbeiten oder sich in zukünftigen Versionen grundlegend ändern.
+
+Die Nutzung erfolgt auf eigene Verantwortung. Ich übernehme keine Haftung für Schäden, Datenverlust, fehlerhafte oder nicht akzeptierte Ausbildungsberichte oder sonstige Folgen der Nutzung.
+
+Datenschutz- und Sicherheitsstandards befinden sich noch in Arbeit und sind nicht als produktionsreif anzusehen. Bitte lege regelmäßig eigene Backups an und prüfe alle exportierten Berichte vor der offiziellen Verwendung selbst.
+
+
 
 ## Aktuelle Version
 

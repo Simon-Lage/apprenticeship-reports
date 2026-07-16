@@ -70,6 +70,7 @@ type SettingsFormValues = UiSettingsValues & {
   reportsDailyThreshold: number;
   settingsEnabled: boolean;
   automaticBackupsEncrypted: boolean;
+  allowEarlyWeeklyReportSubmission: boolean;
   companyLogoDataUrl: string;
   automaticSettingsScope: SettingsBackupScopeValues;
   manualSettingsScope: SettingsBackupScopeValues;
@@ -158,6 +159,8 @@ function resolveSettingsFormValues(values: JsonObject): SettingsFormValues {
     reportsDailyThreshold: backup.reportsDailyThreshold,
     settingsEnabled: backup.settingsEnabled,
     automaticBackupsEncrypted: backup.automaticBackupsEncrypted,
+    allowEarlyWeeklyReportSubmission:
+      parsedUiSettings.allowEarlyWeeklyReportSubmission,
     companyLogoDataUrl: companyLogo.dataUrl ?? '',
     automaticSettingsScope: backup.automaticSettingsScope,
     manualSettingsScope: backup.manualSettingsScope,
@@ -552,6 +555,8 @@ export default function SettingsPage() {
       const nextUiSettings: UiSettingsValues = {
         defaultDepartment: workplace.department,
         supervisorEmailPrimary: workplace.trainerEmail,
+        allowEarlyWeeklyReportSubmission:
+          formValues.allowEarlyWeeklyReportSubmission,
         teachers: formValues.teachers,
         subjects: formValues.subjects,
         timetable: formValues.timetable,
@@ -1243,6 +1248,42 @@ export default function SettingsPage() {
                 />
               </div>
             ) : null}
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title={t('settings.earlyWeeklySubmission.title')}
+        description={t('settings.earlyWeeklySubmission.description')}
+        className="border-amber-300 bg-amber-50"
+      >
+        <div className="space-y-3">
+          <Alert className="border-amber-300 bg-white text-amber-950">
+            <AlertTitle>
+              {t('settings.earlyWeeklySubmission.warningTitle')}
+            </AlertTitle>
+            <AlertDescription>
+              {t('settings.earlyWeeklySubmission.warningDescription')}
+            </AlertDescription>
+          </Alert>
+          <div className="flex items-center gap-3">
+            <Switch
+              id="allow-early-weekly-report-submission"
+              checked={formValues.allowEarlyWeeklyReportSubmission}
+              onCheckedChange={(checked) =>
+                setFormValues((current) =>
+                  current
+                    ? { ...current, allowEarlyWeeklyReportSubmission: checked }
+                    : current,
+                )
+              }
+            />
+            <label
+              htmlFor="allow-early-weekly-report-submission"
+              className="text-sm font-medium"
+            >
+              {t('settings.earlyWeeklySubmission.allow')}
+            </label>
           </div>
         </div>
       </SectionCard>
