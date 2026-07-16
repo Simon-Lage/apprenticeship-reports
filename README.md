@@ -26,8 +26,8 @@ Datenschutz- und Sicherheitsstandards befinden sich noch in Arbeit und sind nich
 
 ## Aktuelle Version
 
-- Version: `v0.0.34`
-- Veröffentlicht am: `26.05.2026`
+- Version: `v0.0.34-alpha.1`
+- Veröffentlicht am: `16.07.2026`
 
 ## Funktionen
 
