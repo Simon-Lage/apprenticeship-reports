@@ -26,7 +26,7 @@ Datenschutz- und Sicherheitsstandards befinden sich noch in Arbeit und sind nich
 
 ## Aktuelle Version
 
-- Version: `v0.0.37`
+- Version: `v0.0.38`
 - Veröffentlicht am: `17.07.2026`
 
 ## Funktionen
