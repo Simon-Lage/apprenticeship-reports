@@ -631,6 +631,8 @@ export default function ReportsOverviewPage() {
       return undefined;
     }
 
+    const api = autoFillApi;
+
     const selectedWeekKey = `${selectedWeekStart}-${selectedWeekEnd}`;
 
     if (selectedWeekAutoFillAttemptRef.current === selectedWeekKey) {
@@ -675,7 +677,7 @@ export default function ReportsOverviewPage() {
       try {
         await Promise.all(
           autoFillEntries.map((entry) =>
-            autoFillApi.upsertDailyReport({
+            api.upsertDailyReport({
               weekStart: selectedWeekStart,
               weekEnd: selectedWeekEnd,
               date: entry.date,

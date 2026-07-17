@@ -239,7 +239,9 @@ export function buildHomeWeeklyReportStatsSnapshot(input: {
   reportEndDate: string | null;
   today: string;
 }): HomeWeeklyReportStatsSnapshot {
-  if (!input.reportStartDate) {
+  const { reportStartDate } = input;
+
+  if (!reportStartDate) {
     return {
       totalCount: 0,
       submittedCount: 0,
@@ -248,7 +250,7 @@ export function buildHomeWeeklyReportStatsSnapshot(input: {
   }
 
   const dueRanges = listDueWeeklyReportRanges({
-    reportStartDate: input.reportStartDate,
+    reportStartDate,
     reportEndDate: input.reportEndDate,
     today: input.today,
   });
@@ -257,7 +259,7 @@ export function buildHomeWeeklyReportStatsSnapshot(input: {
       isWeeklyReportSubmitted(weeklyReport) &&
       isDateInReportRange({
         date: weeklyReport.weekEnd,
-        startDate: input.reportStartDate,
+        startDate: reportStartDate,
         endDate:
           input.reportEndDate && input.reportEndDate < input.today
             ? input.reportEndDate
