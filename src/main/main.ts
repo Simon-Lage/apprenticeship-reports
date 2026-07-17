@@ -15,7 +15,7 @@ import { WeeklyReportHashService } from '@/main/services/WeeklyReportHashService
 import { PasswordAuthService } from '@/main/services/PasswordAuthService';
 import { DesktopFileDialogService } from '@/main/services/DesktopFileDialogService';
 import { ElectronSecretStorageService } from '@/main/services/SecretStorageService';
-import { resolvePersistentUserDataPath } from '@/main/persistent-user-data-path';
+import { preparePersistentUserDataPath } from '@/main/persistent-user-data-path';
 import OpenHolidaysService from '@/main/services/OpenHolidaysService';
 import deTranslation from '@/renderer/i18n/translations/de';
 import type {
@@ -163,7 +163,7 @@ if (process.env.NODE_ENV === 'development') {
 } else {
   app.setPath(
     'userData',
-    resolvePersistentUserDataPath(app.getPath('appData')),
+    preparePersistentUserDataPath(app.getPath('appData')),
   );
 }
 
