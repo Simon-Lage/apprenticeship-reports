@@ -6,6 +6,7 @@
     "Die Desktop-Anwendung heißt jetzt AppRep - Ausbildungsberichte.",
     "Die Update-Prüfung informiert sofort über den Hintergrunddownload und erklärt den automatischen Neustart nach der Installation.",
     "Versionshinweise werden nun auch beim ersten Start nach einem Update angezeigt.",
-    "Die Update-Prüfung ist wieder mit bestehenden 0.0.34-Installationen kompatibel und akzeptiert künftig Alpha-Updates."
+    "Die Update-Prüfung ist wieder mit bestehenden 0.0.34-Installationen kompatibel und akzeptiert künftig Alpha-Updates.",
+    "Bestehende Berichte bleiben nach der Umbenennung und einer Neuinstallation automatisch verfügbar."
   ]
 }

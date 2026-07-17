@@ -15,6 +15,7 @@ import { WeeklyReportHashService } from '@/main/services/WeeklyReportHashService
 import { PasswordAuthService } from '@/main/services/PasswordAuthService';
 import { DesktopFileDialogService } from '@/main/services/DesktopFileDialogService';
 import { ElectronSecretStorageService } from '@/main/services/SecretStorageService';
+import { resolvePersistentUserDataPath } from '@/main/persistent-user-data-path';
 import OpenHolidaysService from '@/main/services/OpenHolidaysService';
 import deTranslation from '@/renderer/i18n/translations/de';
 import type {
@@ -151,6 +152,11 @@ const isDebug =
 
 if (process.env.NODE_ENV === 'development') {
   app.setPath('userData', path.join(process.cwd(), '.dev-data', 'user-data'));
+} else {
+  app.setPath(
+    'userData',
+    resolvePersistentUserDataPath(app.getPath('appData')),
+  );
 }
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
