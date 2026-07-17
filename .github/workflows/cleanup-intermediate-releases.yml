@@ -1,0 +1,48 @@
+name: Cleanup intermediate releases
+
+on:
+  push:
+    branches: ['develop']
+    paths: ['.github/workflows/cleanup-intermediate-releases.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove consolidated releases and tags
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tags=(v0.0.35-alpha.1 v0.0.36-alpha.1 v0.0.36 v0.0.37 v0.0.38)
+          release_ids=(355256865 355266485 355567896 355584980 355607099)
+
+          for index in "${!tags[@]}"; do
+            tag="${tags[$index]}"
+            release_id="${release_ids[$index]}"
+            actual_tag="$(gh api "repos/$GITHUB_REPOSITORY/releases/$release_id" --jq '.tag_name')"
+
+            if [[ "$actual_tag" != "$tag" ]]; then
+              echo "Release $release_id belongs to $actual_tag instead of $tag." >&2
+              exit 1
+            fi
+
+            actual_ref="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.ref')"
+            if [[ "$actual_ref" != "refs/tags/$tag" ]]; then
+              echo "Tag lookup for $tag returned $actual_ref." >&2
+              exit 1
+            fi
+          done
+
+          for release_id in "${release_ids[@]}"; do
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/releases/$release_id"
+          done
+
+          for tag in "${tags[@]}"; do
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$tag"
+          done
