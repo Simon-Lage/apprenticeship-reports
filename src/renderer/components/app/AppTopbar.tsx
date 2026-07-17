@@ -38,7 +38,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import logoSmall from '../../../../assets/icon.png';
 
 type NavItem = {
   path: string;

@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { useAppRuntime } from '@/renderer/contexts/AppRuntimeContext';
-import {
-  DriveBackupFolder,
-  DriveBackupKind,
-} from '@/shared/drive/backups';
+import { DriveBackupFolder, DriveBackupKind } from '@/shared/drive/backups';
 
 export default function useDriveBackupFolder(
   kind: DriveBackupKind,
@@ -29,11 +26,15 @@ export default function useDriveBackupFolder(
         if (!isCanceled) {
           setFolder(nextFolder);
         }
+
+        return undefined;
       })
       .catch(() => {
         if (!isCanceled) {
           setFolder(null);
         }
+
+        return undefined;
       });
 
     return () => {

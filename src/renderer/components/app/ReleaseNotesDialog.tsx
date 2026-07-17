@@ -23,7 +23,7 @@ export default function ReleaseNotesDialog() {
 
   useEffect(() => {
     if (!runtime.api) {
-      return;
+      return undefined;
     }
 
     let active = true;
@@ -32,20 +32,22 @@ export default function ReleaseNotesDialog() {
       .getAppBuildInfo()
       .then((buildInfo) => {
         if (!active) {
-          return;
+          return undefined;
         }
 
         const seenVersion = localStorage.getItem(seenVersionStorageKey);
 
         if (!seenVersion) {
           setVersion(buildInfo.version);
-          return;
+          return undefined;
         }
 
         if (seenVersion !== buildInfo.version) {
           setPreviousVersion(seenVersion);
           setVersion(buildInfo.version);
         }
+
+        return undefined;
       })
       .catch(() => undefined);
 
