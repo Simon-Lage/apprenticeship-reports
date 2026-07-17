@@ -292,10 +292,10 @@
     ],
     "publish": [
       {
-        "provider": "github",
-        "owner": "Simon-Lage",
-        "repo": "apprenticeship-reports",
-        "releaseType": "release"
+        "provider": "generic",
+        "url": "https://github.com/Simon-Lage/apprenticeship-reports/releases/latest/download",
+        "channel": "latest",
+        "useMultipleRangeRequest": false
       }
     ]
   },

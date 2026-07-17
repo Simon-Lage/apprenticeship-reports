@@ -27,6 +27,9 @@ import type {
 import { AppIpcChannel } from '@/shared/ipc/app-api';
 import defaultOnboardingSteps from '@/shared/onboarding/default-steps';
 
+const updateFeedUrl =
+  'https://github.com/Simon-Lage/apprenticeship-reports/releases/latest/download';
+
 class AppUpdater {
   private readonly updateChecksEnabled: boolean;
 
@@ -37,6 +40,11 @@ class AppUpdater {
     autoUpdater.logger = log;
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.allowPrerelease = true;
+    autoUpdater.disableDifferentialDownload = true;
+    autoUpdater.setFeedURL({
+      provider: 'generic',
+      url: updateFeedUrl,
+    });
     this.updateChecksEnabled = app.isPackaged;
 
     autoUpdater.on('download-progress', () => {
