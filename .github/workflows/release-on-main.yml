@@ -106,8 +106,8 @@ jobs:
         if: ${{ success() }}
         shell: bash
         run: |
-          if ! git diff --quiet; then
-            git add package.json package-lock.json README.md || true
+          if ! git diff --quiet -- package.json package-lock.json README.md; then
+            git add package.json package-lock.json README.md
             git commit -m "ci(release): v${{ env.ver }} [skip ci]"
           fi
           git tag "v${{ env.ver }}"
