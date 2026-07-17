@@ -195,10 +195,13 @@ jobs:
             if ($global:LASTEXITCODE -eq 0) {
               gh release upload $tag @assets --clobber
               if ($global:LASTEXITCODE -eq 0) {
-                gh release edit $tag --title $tag --notes-file $bodyPath --latest
+                gh release edit $tag --title $tag --notes-file $bodyPath --draft=false --prerelease=false
                 if ($global:LASTEXITCODE -eq 0) {
-                  $success = $true
-                  break
+                  gh release edit $tag --latest
+                  if ($global:LASTEXITCODE -eq 0) {
+                    $success = $true
+                    break
+                  }
                 }
               }
             } else {
