@@ -35,6 +35,7 @@ class AppUpdater {
     log.transports.file.level = 'info';
     autoUpdater.logger = log;
     autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.allowPrerelease = true;
     this.updateChecksEnabled = app.isPackaged;
 
     autoUpdater.on('download-progress', () => {
