@@ -9,6 +9,6 @@
     "Die Update-Prüfung ist wieder mit bestehenden 0.0.34-Installationen kompatibel und akzeptiert künftig Alpha-Updates.",
     "Bestehende Berichte bleiben nach der Umbenennung und einer Neuinstallation automatisch verfügbar.",
     "Die Update-Prüfung nutzt nun einen direkten Release-Endpunkt und vermeidet fehleranfällige Teil-Downloads.",
-    "Vorhandene Berichte werden zuverlässig aus dem bisherigen App-Datenordner geladen."
+    "Der App-Datenordner entspricht wieder Version 0.0.34; neuere Datenstände werden sicher übernommen und ersetzte Stände zusätzlich gesichert."
   ]
 }
