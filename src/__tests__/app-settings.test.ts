@@ -61,6 +61,7 @@ describe('app settings', () => {
       uiSettings: {
         defaultDepartment: '',
         supervisorEmailPrimary: '',
+        allowEarlyWeeklyReportSubmission: false,
         teachers: ['Mr Old', 'Ms Other'],
         subjects: ['Math'],
         timetable: {
@@ -106,6 +107,7 @@ describe('app settings', () => {
       uiSettings: {
         defaultDepartment: '',
         supervisorEmailPrimary: '',
+        allowEarlyWeeklyReportSubmission: false,
         teachers: [],
         subjects: ['Biology', 'Math'],
         timetable: {
@@ -195,6 +197,7 @@ describe('app settings', () => {
       uiSettings: {
         defaultDepartment: '',
         supervisorEmailPrimary: '',
+        allowEarlyWeeklyReportSubmission: false,
         teachers: ['Ms Existing'],
         subjects: ['Math'],
         timetable: {

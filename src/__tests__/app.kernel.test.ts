@@ -957,6 +957,7 @@ describe('app kernel', () => {
     });
 
     const bootstrap = await kernel.changePassword({
+      currentPassword: 'CorrectHorse1',
       nextPassword: 'CorrectHorse2',
     });
 

@@ -608,6 +608,8 @@ export default function ReportsOverviewPage() {
     };
   }, [runtime.api]);
 
+  const { api: autoFillApi } = runtime;
+
   useEffect(() => {
     let cancelled = false;
 
@@ -617,18 +619,19 @@ export default function ReportsOverviewPage() {
       return undefined;
     }
 
-    const api = runtime.api;
     const selectedWeekStart = selectedWeeklyAction.weekStart;
     const selectedWeekEnd = selectedWeeklyAction.weekEnd;
 
     if (
-      !api ||
+      !autoFillApi ||
       !reportsState.value ||
       !settingsSnapshot.value ||
       !subdivisionCode
     ) {
       return undefined;
     }
+
+    const api = autoFillApi;
 
     const selectedWeekKey = `${selectedWeekStart}-${selectedWeekEnd}`;
 
@@ -650,10 +653,7 @@ export default function ReportsOverviewPage() {
         )
         .map((dailyReport) => dailyReport.date),
     );
-    const autoFillEntries = listWeekDates(
-      selectedWeekStart,
-      selectedWeekEnd,
-    )
+    const autoFillEntries = listWeekDates(selectedWeekStart, selectedWeekEnd)
       .filter((date) => !reportedDateSet.has(date))
       .flatMap((date) => {
         const values = buildAutomaticFreeDayReportValues({
@@ -703,9 +703,9 @@ export default function ReportsOverviewPage() {
     };
   }, [
     absenceSettings,
+    autoFillApi,
     reportsState.value,
     refreshReportsState,
-    runtime.api,
     selectedWeeklyAction,
     settingsSnapshot.value,
     subdivisionCode,

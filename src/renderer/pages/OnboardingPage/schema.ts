@@ -21,7 +21,8 @@ const googleSchema = z.object({
     .max(320)
     .nullable()
     .refine(
-      (value: any) => value === null || z.string().email().safeParse(value).success,
+      (value: any) =>
+        value === null || z.string().email().safeParse(value).success,
       {
         message: 'invalid-email',
       },

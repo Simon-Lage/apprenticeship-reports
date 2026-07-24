@@ -66,6 +66,40 @@ function findWeeklyReportByRange(input: {
   );
 }
 
+function areAllFutureDaysAutomatic(input: {
+  reportsState: ReportsState;
+  weeklyReport: WeeklyReportRecord;
+  today: string;
+}): boolean {
+  const dailyReportsByDate = input.weeklyReport.dailyReportIds.reduce<
+    ReportsState['dailyReports']
+  >((result, dailyReportId) => {
+    const dailyReport = input.reportsState.dailyReports[dailyReportId];
+
+    if (dailyReport) {
+      result[dailyReport.date] = dailyReport;
+    }
+
+    return result;
+  }, {});
+  let cursor =
+    input.weeklyReport.weekStart > input.today
+      ? input.weeklyReport.weekStart
+      : addIsoDays(input.today, 1);
+
+  while (cursor && cursor <= input.weeklyReport.weekEnd) {
+    const dailyReport = dailyReportsByDate[cursor];
+
+    if (dailyReport?.values.entryMode !== 'automatic') {
+      return false;
+    }
+
+    cursor = addIsoDays(cursor, 1);
+  }
+
+  return true;
+}
+
 export function isWeeklyReportSubmitted(
   weeklyReport: WeeklyReportRecord | null | undefined,
 ): boolean {
@@ -195,18 +229,11 @@ export function resolveWeeklyReportSubmissionBlock(input: {
     input.allowEarlySubmission &&
       weeklyReport &&
       isIsoDate(input.today) &&
-      weeklyReport.dailyReportIds.length > 0 &&
-      weeklyReport.dailyReportIds.every((dailyReportId) => {
-        const dailyReport = input.reportsState?.dailyReports[dailyReportId];
-
-        return (
-          Boolean(
-            dailyReport &&
-              dailyReport.date > input.today &&
-              typeof dailyReport.values.entryMode === 'string' &&
-              dailyReport.values.entryMode === 'automatic',
-          ) || Boolean(dailyReport && dailyReport.date <= input.today)
-        );
+      input.reportsState &&
+      areAllFutureDaysAutomatic({
+        reportsState: input.reportsState,
+        weeklyReport,
+        today: input.today,
       }),
   );
 

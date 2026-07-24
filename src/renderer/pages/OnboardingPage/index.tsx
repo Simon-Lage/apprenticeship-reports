@@ -215,7 +215,9 @@ export default function OnboardingPage() {
     setIsPending(false);
   }
 
-  function updateStepValues(nextValues: SetStateAction<Record<string, string>>) {
+  function updateStepValues(
+    nextValues: SetStateAction<Record<string, string>>,
+  ) {
     setStepValues((currentValues) => {
       const resolvedValues =
         typeof nextValues === 'function'

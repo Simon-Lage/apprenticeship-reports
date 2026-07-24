@@ -50,12 +50,8 @@ import {
   formatConflictReasonLabel,
   listDailyReportAbsenceConflicts,
 } from '@/renderer/lib/report-conflicts';
-import {
-  resolveInitialWeeklyReportRange,
-} from '@/renderer/pages/DailyReportPage/utils/calendar-date-utils';
-import {
-  buildAutomaticFreeDayReportValues,
-} from '@/renderer/pages/DailyReportPage/utils/day-type-defaults';
+import { resolveInitialWeeklyReportRange } from '@/renderer/pages/DailyReportPage/utils/calendar-date-utils';
+import { buildAutomaticFreeDayReportValues } from '@/renderer/pages/DailyReportPage/utils/day-type-defaults';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -193,8 +189,7 @@ export default function WeeklyReportPage() {
     () => parseUiSettings(settingsValues),
     [settingsValues],
   );
-  const allowEarlyWeeklyReportSubmission =
-    uiSettings.allowEarlyWeeklyReportSubmission;
+  const { allowEarlyWeeklyReportSubmission } = uiSettings;
   const absenceSettings = useMemo(
     () => parseAbsenceSettings(settingsValues),
     [settingsValues],

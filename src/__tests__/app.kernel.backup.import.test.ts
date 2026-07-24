@@ -3,6 +3,7 @@ import path from 'path';
 
 import { createDatabaseBackupEnvelope } from '@/shared/app/backup-archive';
 import { createDefaultAppMetadata } from '@/shared/app/state';
+import { createDefaultReportsState } from '@/shared/reports/models';
 import { useAppKernelTestHarness } from '@/src/test-utils/app-kernel-test-harness';
 
 describe('app kernel backup import', () => {
@@ -14,6 +15,67 @@ describe('app kernel backup import', () => {
     setCurrentTime,
     getRootDirectory,
   } = useAppKernelTestHarness();
+
+  it('preserves submitted report metadata through export and import', async () => {
+    const { kernel, repository } = createKernel();
+    await kernel.boot();
+    await signIn(kernel);
+    await completeRequiredOnboarding(kernel);
+
+    await writeReportsFixture(repository, {
+      weeklyReports: [
+        {
+          id: 'submitted-week-1',
+          weekStart: '2026-03-09',
+          weekEnd: '2026-03-13',
+          updatedAt: '2026-03-13T10:00:00.000Z',
+          values: {
+            submitted: true,
+            submittedToEmail: 'trainer@example.com',
+            area: 'Ausbildung',
+          },
+          dailyReports: [
+            {
+              id: 'submitted-day-1',
+              date: '2026-03-09',
+              updatedAt: '2026-03-13T10:00:00.000Z',
+              values: { activity: 'Ausbildungsbericht' },
+            },
+          ],
+        },
+      ],
+    });
+
+    const exported = await kernel.exportBackupArchive({
+      encryptionMode: 'plain',
+    });
+
+    await repository.update((currentState) => ({
+      ...currentState,
+      reports: createDefaultReportsState(),
+    }));
+
+    const preview = await kernel.prepareBackupImport(JSON.stringify(exported));
+    await kernel.applyBackupImport({
+      previewId: preview.id,
+      conflictStrategy: 'backup',
+    });
+
+    const importedState = await repository.read();
+    const importedWeek = Object.values(
+      importedState.reports.weeklyReports,
+    ).find(
+      (weeklyReport) =>
+        weeklyReport.weekStart === '2026-03-09' &&
+        weeklyReport.weekEnd === '2026-03-13',
+    );
+
+    expect(importedWeek?.values).toMatchObject({
+      submitted: true,
+      submittedToEmail: 'trainer@example.com',
+      area: 'Ausbildung',
+    });
+  });
 
   it('stores a backup import preview with available conflict strategies', async () => {
     const { kernel, repository } = createKernel();

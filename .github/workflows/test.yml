@@ -34,5 +34,6 @@ jobs:
         run: |
           npm run lint
           npm exec tsc -- --noEmit
+          npm run build
           npm test
           npm run package

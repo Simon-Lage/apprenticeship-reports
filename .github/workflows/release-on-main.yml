@@ -106,8 +106,8 @@ jobs:
         if: ${{ success() }}
         shell: bash
         run: |
-          if ! git diff --quiet; then
-            git add package.json package-lock.json README.md || true
+          if ! git diff --quiet -- package.json package-lock.json README.md; then
+            git add package.json package-lock.json README.md
             git commit -m "ci(release): v${{ env.ver }} [skip ci]"
           fi
           git tag "v${{ env.ver }}"
@@ -195,10 +195,13 @@ jobs:
             if ($global:LASTEXITCODE -eq 0) {
               gh release upload $tag @assets --clobber
               if ($global:LASTEXITCODE -eq 0) {
-                gh release edit $tag --title $tag --notes-file $bodyPath --latest
+                gh release edit $tag --title $tag --notes-file $bodyPath --draft=false --prerelease=false
                 if ($global:LASTEXITCODE -eq 0) {
-                  $success = $true
-                  break
+                  gh release edit $tag --latest
+                  if ($global:LASTEXITCODE -eq 0) {
+                    $success = $true
+                    break
+                  }
                 }
               }
             } else {

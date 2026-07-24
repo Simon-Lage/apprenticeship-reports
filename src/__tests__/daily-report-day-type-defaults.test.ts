@@ -6,6 +6,7 @@ function createUiSettings(): UiSettingsValues {
   return {
     defaultDepartment: '',
     supervisorEmailPrimary: '',
+    allowEarlyWeeklyReportSubmission: false,
     teachers: [],
     subjects: [],
     timetable: {

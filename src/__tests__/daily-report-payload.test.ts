@@ -8,6 +8,7 @@ import { DailyReportFormState } from '@/renderer/pages/DailyReportPage/utils/for
 const uiSettings: UiSettingsValues = {
   defaultDepartment: '',
   supervisorEmailPrimary: '',
+  allowEarlyWeeklyReportSubmission: false,
   teachers: ['Teacher A', 'Teacher B'],
   subjects: ['Math', 'English'],
   timetable: {

@@ -15,6 +15,7 @@ import { WeeklyReportHashService } from '@/main/services/WeeklyReportHashService
 import { PasswordAuthService } from '@/main/services/PasswordAuthService';
 import { DesktopFileDialogService } from '@/main/services/DesktopFileDialogService';
 import { ElectronSecretStorageService } from '@/main/services/SecretStorageService';
+import { preparePersistentUserDataPath } from '@/main/persistent-user-data-path';
 import OpenHolidaysService from '@/main/services/OpenHolidaysService';
 import deTranslation from '@/renderer/i18n/translations/de';
 import type {
@@ -26,6 +27,9 @@ import type {
 import { AppIpcChannel } from '@/shared/ipc/app-api';
 import defaultOnboardingSteps from '@/shared/onboarding/default-steps';
 
+const updateFeedUrl =
+  'https://github.com/Simon-Lage/apprenticeship-reports/releases/latest/download';
+
 class AppUpdater {
   private readonly updateChecksEnabled: boolean;
 
@@ -36,6 +40,11 @@ class AppUpdater {
     autoUpdater.logger = log;
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.allowPrerelease = true;
+    autoUpdater.disableDifferentialDownload = true;
+    autoUpdater.setFeedURL({
+      provider: 'generic',
+      url: updateFeedUrl,
+    });
     this.updateChecksEnabled = app.isPackaged;
 
     autoUpdater.on('download-progress', () => {
@@ -151,6 +160,11 @@ const isDebug =
 
 if (process.env.NODE_ENV === 'development') {
   app.setPath('userData', path.join(process.cwd(), '.dev-data', 'user-data'));
+} else {
+  app.setPath(
+    'userData',
+    preparePersistentUserDataPath(app.getPath('appData')),
+  );
 }
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
