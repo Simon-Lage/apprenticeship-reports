@@ -64,11 +64,12 @@ export default function LoginPage() {
       });
       await runtime.refresh();
       toast.success(t('login.feedback.passwordSuccess'));
-    } catch {
-      toast.error(
-        t('login.feedback.passwordError'),
-        t('login.feedback.passwordInvalid'),
-      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : t('login.feedback.passwordInvalid');
+      toast.error(t('login.feedback.passwordError'), message);
     } finally {
       setIsPasswordPending(false);
     }

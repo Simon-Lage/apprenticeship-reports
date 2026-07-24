@@ -33,9 +33,16 @@ async function ensurePassword(
   const hasPassword = await passwordAuthService.hasPassword();
 
   if (hasPassword) {
-    await passwordAuthService.changePassword({
-      nextPassword: DEV_TEST_APPRENTICE_PASSWORD,
-    });
+    const isUnlocked = await passwordAuthService.verify(
+      DEV_TEST_APPRENTICE_PASSWORD,
+    );
+
+    if (!isUnlocked) {
+      throw new Error(
+        'Das vorhandene Dev-Passwort weicht vom Testpasswort ab. Bitte zuerst npm run reset:dev-state ausfuehren.',
+      );
+    }
+
     return;
   }
 

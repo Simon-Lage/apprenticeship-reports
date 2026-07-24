@@ -23,7 +23,7 @@
     "lint": "cross-env NODE_ENV=development eslint . --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "cross-env NODE_ENV=development eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "package": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never && npm run build:dll",
-    "rebuild": "electron-rebuild --parallel --types prod,dev,optional --module-dir release/app --force-abi 133",
+    "rebuild": "electron-rebuild --force --parallel --types prod,dev,optional --module-dir release/app --force-abi 133",
     "prestart": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack-cli --config ./.erb/configs/webpack.config.main.dev.ts",
     "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run prestart && npm run start:renderer",
     "start:main": "concurrently -k -P \"cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack-cli --watch --config ./.erb/configs/webpack.config.main.dev.ts\" \"electronmon . -- {@}\" --",
@@ -31,7 +31,7 @@
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack-cli serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
     "reset:dev-state": "cross-env NODE_ENV=development ts-node ./.erb/scripts/reset-dev-state.ts",
     "clear:dev-test-data": "npm run reset:dev-state",
-    "seed:dev-test-data": "cross-env NODE_ENV=development NODE_OPTIONS=\"-r tsconfig-paths/register\" ts-node ./.erb/scripts/seed-dev-test-data.ts",
+    "seed:dev-test-data": "node .erb/scripts/run-dev-test-seed.js",
     "release:local": "powershell -ExecutionPolicy Bypass -File scripts/release-local.ps1",
     "test": "node .erb/scripts/run-jest-tests.js"
   },
