@@ -113,10 +113,19 @@ function Replace-ReadmeValue {
 
 function New-ReleaseBody {
   param(
-    [Parameter(Mandatory = $true)][string]$DownloadUrl
+    [Parameter(Mandatory = $true)][string]$DownloadUrl,
+    [Parameter(Mandatory = $true)][string[]]$Changes
   )
 
+  $changesBlock = @($Changes | ForEach-Object { "- $_" }) -join "`n"
+
   $body = @"
+## Änderungen
+
+$changesBlock
+
+---
+
 **Download & Hinweise**
 
 Nur die Datei "Apprenticeship-Reports-Setup.exe" herunterladen und ausführen.
@@ -218,6 +227,20 @@ Invoke-Step "Resolve release version" {
   Write-Host $script:Tag
 }
 
+Invoke-Step "Validate release notes" {
+  $releaseNotes = Get-Content -Path release-notes.json -Raw | ConvertFrom-Json
+  $script:ReleaseChanges = @(
+    $releaseNotes.changes | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+  )
+
+  if ($releaseNotes.version -ne $script:Version) {
+    throw "release-notes.json version '$($releaseNotes.version)' does not match release version '$script:Version'."
+  }
+  if ($script:ReleaseChanges.Count -eq 0) {
+    throw "release-notes.json must contain at least one change."
+  }
+}
+
 Invoke-Step "Validate Google OAuth config" {
   if ([string]::IsNullOrWhiteSpace($env:GOOGLE_OAUTH_CLIENT_ID)) {
     throw "Missing GOOGLE_OAUTH_CLIENT_ID in environment or .env.local."
@@ -299,7 +322,7 @@ Invoke-Step "Create GitHub Release" {
   Invoke-Native gh auth status
 
   $bodyPath = Join-Path ([System.IO.Path]::GetTempPath()) "apprenticeship-release-body.md"
-  Set-Content -Path $bodyPath -Value (New-ReleaseBody -DownloadUrl $download) -Encoding UTF8
+  Set-Content -Path $bodyPath -Value (New-ReleaseBody -DownloadUrl $download -Changes $script:ReleaseChanges) -Encoding UTF8
 
   $assets = @(
     "release/build/Apprenticeship-Reports-Setup.exe",

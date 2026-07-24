@@ -1,4 +1,5 @@
 {
+  "version": "0.0.35",
   "changes": [
     "Wochenberichte können nach ausdrücklicher Freigabe früher gesendet werden, wenn alle zukünftigen Tage automatisch eingetragen sind.",
     "Verschlüsselte lokale Backups werden beim Import mit dem Schlüssel der geöffneten Datenbank automatisch erkannt.",

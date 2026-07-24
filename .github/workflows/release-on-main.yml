@@ -29,6 +29,14 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           $ver = node -p "require('./package.json').version"
+          $releaseNotes = Get-Content -Path release-notes.json -Raw | ConvertFrom-Json
+          $changes = @($releaseNotes.changes | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+          if ($releaseNotes.version -ne $ver) {
+            throw "release-notes.json version '$($releaseNotes.version)' does not match package version '$ver'."
+          }
+          if ($changes.Count -eq 0) {
+            throw "release-notes.json must contain at least one change."
+          }
           "ver=$ver" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Host "v$ver"
 
@@ -126,9 +134,6 @@ jobs:
           $download = "https://github.com/$owner/$repo/releases/latest/download/Apprenticeship-Reports-Setup.exe"
           $releaseNotes = Get-Content -Path release-notes.json -Raw | ConvertFrom-Json
           $changes = @($releaseNotes.changes | ForEach-Object { "- $_" })
-          if ($changes.Count -eq 0) {
-            $changes = @("- Die Anwendung wurde auf Version v$ver aktualisiert.")
-          }
           $changesBlock = $changes -join "`n"
 
           $body = @"

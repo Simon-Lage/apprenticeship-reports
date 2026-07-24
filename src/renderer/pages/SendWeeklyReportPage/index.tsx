@@ -66,6 +66,7 @@ export default function SendWeeklyReportPage() {
   const [hasResolvedDecision, setHasResolvedDecision] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<string | null>(null);
   const [isSendOrderDialogOpen, setIsSendOrderDialogOpen] = useState(false);
+  const [isIhkDecisionDialogOpen, setIsIhkDecisionDialogOpen] = useState(false);
   const [failedIhkSubmission, setFailedIhkSubmission] = useState<{
     message: string;
   } | null>(null);
@@ -344,53 +345,61 @@ export default function SendWeeklyReportPage() {
       toast,
     ]);
 
-  const submitReport = useCallback(async (): Promise<boolean> => {
-    if (sendOrderBlocksSelectedWeek) {
-      setIsSendOrderDialogOpen(true);
-      return false;
-    }
-
-    if (futureWeekBlocksSelectedWeek) {
-      return false;
-    }
-
-    setIsPending(true);
-    try {
-      if (ihkOselgbActive && settingsSnapshot.value && selectedWeek) {
-        const outcome = await saveWeeklyReportAtIhk(
-          buildIhkOselgbWeeklyReportInput({
-            week: selectedWeek,
-            settingsValues: settingsSnapshot.value.values,
-            t,
-          }),
-        );
-
-        if (outcome.status === 'failed') {
-          setFailedIhkSubmission({ message: outcome.message });
-          return false;
-        }
+  const submitReport = useCallback(
+    async (submitToIhk: boolean): Promise<boolean> => {
+      if (sendOrderBlocksSelectedWeek) {
+        setIsSendOrderDialogOpen(true);
+        return false;
       }
 
-      return await markSelectedWeekAsSubmitted();
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : t('common.errors.unknown');
-      toast.error(t('ihkOselgb.feedback.saveErrorTitle'), message);
-      return false;
-    } finally {
-      setIsPending(false);
-    }
-  }, [
-    futureWeekBlocksSelectedWeek,
-    ihkOselgbActive,
-    markSelectedWeekAsSubmitted,
-    saveWeeklyReportAtIhk,
-    selectedWeek,
-    sendOrderBlocksSelectedWeek,
-    settingsSnapshot.value,
-    t,
-    toast,
-  ]);
+      if (futureWeekBlocksSelectedWeek) {
+        return false;
+      }
+
+      setIsPending(true);
+      try {
+        if (
+          submitToIhk &&
+          ihkOselgbActive &&
+          settingsSnapshot.value &&
+          selectedWeek
+        ) {
+          const outcome = await saveWeeklyReportAtIhk(
+            buildIhkOselgbWeeklyReportInput({
+              week: selectedWeek,
+              settingsValues: settingsSnapshot.value.values,
+              t,
+            }),
+          );
+
+          if (outcome.status === 'failed') {
+            setFailedIhkSubmission({ message: outcome.message });
+            return false;
+          }
+        }
+
+        return await markSelectedWeekAsSubmitted();
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : t('common.errors.unknown');
+        toast.error(t('ihkOselgb.feedback.saveErrorTitle'), message);
+        return false;
+      } finally {
+        setIsPending(false);
+      }
+    },
+    [
+      futureWeekBlocksSelectedWeek,
+      ihkOselgbActive,
+      markSelectedWeekAsSubmitted,
+      saveWeeklyReportAtIhk,
+      selectedWeek,
+      sendOrderBlocksSelectedWeek,
+      settingsSnapshot.value,
+      t,
+      toast,
+    ],
+  );
 
   const handleCopySection = useCallback(
     async (sectionIndex: number) => {
@@ -455,14 +464,19 @@ export default function SendWeeklyReportPage() {
   }, [resolveReturnRoute]);
 
   const handleMarkAsSubmitted = useCallback(async () => {
-    const submitted = await submitReport();
+    if (ihkOselgbActive) {
+      setIsIhkDecisionDialogOpen(true);
+      return;
+    }
+
+    const submitted = await submitReport(false);
 
     if (!submitted) {
       return;
     }
 
     setPendingRoute(appRoutes.weeklyReport);
-  }, [submitReport]);
+  }, [ihkOselgbActive, submitReport]);
 
   const handleMarkAsSubmittedClick = useCallback(() => {
     handleMarkAsSubmitted().catch(() => undefined);
@@ -487,9 +501,28 @@ export default function SendWeeklyReportPage() {
     }
   }, [failedIhkSubmission, handleOpenIhk, markSelectedWeekAsSubmitted]);
 
+  const handleIhkDecision = useCallback(
+    async (submitToIhk: boolean) => {
+      setIsIhkDecisionDialogOpen(false);
+      const submitted = await submitReport(submitToIhk);
+
+      if (submitted) {
+        setPendingRoute(appRoutes.weeklyReport);
+      }
+    },
+    [submitReport],
+  );
+
   const unsavedChangesGuard = useUnsavedChangesGuard({
     isDirty,
-    onSave: submitReport,
+    onSave: async () => {
+      if (ihkOselgbActive) {
+        setIsIhkDecisionDialogOpen(true);
+        return false;
+      }
+
+      return submitReport(false);
+    },
   });
   const handleUnsavedChangesSave = useCallback(() => {
     unsavedChangesGuard.saveAndProceed().catch(() => undefined);
@@ -612,6 +645,42 @@ export default function SendWeeklyReportPage() {
             </DialogClose>
             <Button type="button" onClick={openOldestUnsubmittedWeek}>
               {t('weeklyReport.sendOrderDialog.openOldest')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isIhkDecisionDialogOpen}
+        onOpenChange={setIsIhkDecisionDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('ihkOselgb.decisionDialog.title')}</DialogTitle>
+            <DialogDescription>
+              {t('ihkOselgb.decisionDialog.description')}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isPending}
+              onClick={() => {
+                handleIhkDecision(false).catch(() => undefined);
+              }}
+            >
+              {t('ihkOselgb.decisionDialog.localOnly')}
+            </Button>
+            <Button
+              type="button"
+              disabled={isPending}
+              disabledReason={t('common.disabledReasons.pending')}
+              onClick={() => {
+                handleIhkDecision(true).catch(() => undefined);
+              }}
+            >
+              {t('ihkOselgb.decisionDialog.submitToIhk')}
             </Button>
           </DialogFooter>
         </DialogContent>

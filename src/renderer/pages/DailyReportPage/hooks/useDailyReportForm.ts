@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useToastController } from '@/renderer/contexts/ToastControllerContext';
+import { appRoutes } from '@/renderer/lib/app-routes';
 import { formatGermanDate } from '@/renderer/lib/date-format';
 import { normalizeIsoDate, toLocalIsoDate } from '@/renderer/lib/iso-date';
 import { listCompleteTimetableSlots } from '@/renderer/lib/app-settings';
@@ -27,6 +29,7 @@ import useDailyReportData from './useDailyReportData';
 
 export default function useDailyReportForm() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const toast = useToastController();
 
   const [form, setForm] = useState<DailyReportFormState>(
@@ -154,16 +157,15 @@ export default function useDailyReportForm() {
   }, [form.date, form.dayType, form.lessons.length, data.uiSettings]);
 
   // Handlers
-  const selectDate = useCallback((dateValue: string) => {
-    setIsDatePickerOpen(false);
-    setLessonTopicDrafts({});
-    setLessonInsertSelection({});
-    freeLessonCacheRef.current = {};
-    setForm({
-      ...defaultDailyReportFormState,
-      date: dateValue,
-    });
-  }, []);
+  const selectDate = useCallback(
+    (dateValue: string) => {
+      setIsDatePickerOpen(false);
+      navigate(
+        `${appRoutes.dailyReport}?date=${encodeURIComponent(dateValue)}`,
+      );
+    },
+    [navigate],
+  );
 
   const appendListValue = useCallback(
     (

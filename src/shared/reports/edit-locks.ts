@@ -1,4 +1,5 @@
 import { ReportsState, WeeklyReportRecord } from '@/shared/reports/models';
+import { resolveDailyReportEntryMode } from '@/shared/reports/entry-mode';
 
 export type WeeklyReportSubmissionBlock =
   | {
@@ -90,7 +91,10 @@ function areAllFutureDaysAutomatic(input: {
   while (cursor && cursor <= input.weeklyReport.weekEnd) {
     const dailyReport = dailyReportsByDate[cursor];
 
-    if (dailyReport?.values.entryMode !== 'automatic') {
+    if (
+      !dailyReport ||
+      resolveDailyReportEntryMode(dailyReport.values) !== 'automatic'
+    ) {
       return false;
     }
 

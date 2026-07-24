@@ -1191,6 +1191,13 @@ const deTranslation = {
     },
   },
   ihkOselgb: {
+    decisionDialog: {
+      title: 'Wochenbericht auch an die IHK senden?',
+      description:
+        'Für diesen Zugang ist die direkte IHK-Übertragung eingerichtet. Soll der Wochenbericht zusätzlich bei der IHK gespeichert oder nur in AppRep als gesendet markiert werden?',
+      localOnly: 'Nur in AppRep markieren',
+      submitToIhk: 'Auch an die IHK senden',
+    },
     feedback: {
       savedTitle: 'IHK-Bericht gespeichert.',
       savedDescription:

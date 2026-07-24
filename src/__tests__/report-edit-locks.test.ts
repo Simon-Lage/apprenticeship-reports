@@ -204,4 +204,41 @@ describe('report edit locks', () => {
       }),
     ).toBeNull();
   });
+
+  it('allows early submission with legacy automatic weekend entries', () => {
+    const weeklyReport = createWeeklyReport({
+      id: 'week-1',
+      weekStart: '2026-05-04',
+      weekEnd: '2026-05-10',
+      submitted: false,
+    });
+    weeklyReport.dailyReportIds = Array.from(
+      { length: 7 },
+      (_, index) => `day-${index + 1}`,
+    );
+    const reportsState = createReportsState([weeklyReport]);
+
+    weeklyReport.dailyReportIds.forEach((id, index) => {
+      const day = index + 4;
+      reportsState.dailyReports[id] = {
+        id,
+        weeklyReportId: weeklyReport.id,
+        date: `2026-05-${String(day).padStart(2, '0')}`,
+        values: index >= 5 ? { type: 'free' } : { entryMode: 'manual' },
+        createdAt: '2026-05-04T00:00:00.000Z',
+        updatedAt: '2026-05-04T00:00:00.000Z',
+      };
+    });
+
+    expect(
+      resolveWeeklyReportSubmissionBlock({
+        reportsState,
+        reportStartDate: '2026-05-04',
+        weekStart: '2026-05-04',
+        weekEnd: '2026-05-10',
+        today: '2026-05-08',
+        allowEarlySubmission: true,
+      }),
+    ).toBeNull();
+  });
 });
