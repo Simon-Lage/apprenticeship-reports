@@ -1,6 +1,6 @@
 {
   "name": "apprenticeship-reports",
-  "description": "A programm to generate reports for apprenticeships",
+  "description": "Ein Programm, um Ausbildungsberichte zu schreiben",
   "license": "MIT",
   "contributors": [
     {
